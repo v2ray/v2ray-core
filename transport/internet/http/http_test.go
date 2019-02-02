@@ -41,12 +41,12 @@ func TestHTTPConnection(t *testing.T) {
 					return
 				}
 				nBytes, err := conn.Write(b.Bytes())
-				assert(err, IsNil)
+				common.Must(err)
 				assert(int32(nBytes), Equals, b.Len())
 			}
 		}()
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	defer listener.Close()
 
@@ -62,7 +62,7 @@ func TestHTTPConnection(t *testing.T) {
 			AllowInsecure: true,
 		},
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	defer conn.Close()
 
 	const N = 1024
@@ -72,7 +72,7 @@ func TestHTTPConnection(t *testing.T) {
 
 	nBytes, err := conn.Write(b1)
 	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must(err)
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
@@ -80,7 +80,7 @@ func TestHTTPConnection(t *testing.T) {
 
 	nBytes, err = conn.Write(b1)
 	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must(err)
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))

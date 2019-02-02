@@ -26,7 +26,7 @@ func TestWriter(t *testing.T) {
 	writer := NewBufferedWriter(NewWriter(writeBuffer))
 	writer.SetBuffered(false)
 	err := writer.WriteMultiBuffer(MultiBuffer{lb})
-	assert(err, IsNil)
+	common.Must(err)
 	assert(writer.Flush(), IsNil)
 	assert(expectedBytes, Equals, writeBuffer.Bytes())
 }
@@ -46,7 +46,7 @@ func TestBytesWriterReadFrom(t *testing.T) {
 	}
 
 	mb, err := pReader.ReadMultiBuffer()
-	assert(err, IsNil)
+	common.Must(err)
 	assert(mb.Len(), Equals, int32(size))
 }
 
@@ -58,7 +58,7 @@ func TestDiscardBytes(t *testing.T) {
 
 	nBytes, err := io.Copy(DiscardBytes, b)
 	assert(nBytes, Equals, int64(Size))
-	assert(err, IsNil)
+	common.Must(err)
 }
 
 func TestDiscardBytesMultiBuffer(t *testing.T) {
@@ -71,7 +71,7 @@ func TestDiscardBytesMultiBuffer(t *testing.T) {
 	r := NewReader(buffer)
 	nBytes, err := io.Copy(DiscardBytes, &BufferedReader{Reader: r})
 	assert(nBytes, Equals, int64(size))
-	assert(err, IsNil)
+	common.Must(err)
 }
 
 func TestWriterInterface(t *testing.T) {

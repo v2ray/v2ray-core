@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol/udp"
@@ -50,7 +51,7 @@ func TestSameDestinationDispatching(t *testing.T) {
 				break
 			}
 			err = downlinkWriter.WriteMultiBuffer(data)
-			assert(err, IsNil)
+			common.Must(err)
 		}
 	}()
 

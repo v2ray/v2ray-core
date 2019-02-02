@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	. "v2ray.com/core/transport/internet/kcp"
@@ -36,7 +37,7 @@ func TestDialAndListen(t *testing.T) {
 			c.Close()
 		}(conn)
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	port := net.Port(listerner.Addr().(*net.UDPAddr).Port)
 
 	wg := new(sync.WaitGroup)
@@ -45,7 +46,7 @@ func TestDialAndListen(t *testing.T) {
 			ProtocolName:     "mkcp",
 			ProtocolSettings: &Config{},
 		})
-		assert(err, IsNil)
+		common.Must(err)
 		wg.Add(1)
 
 		go func() {

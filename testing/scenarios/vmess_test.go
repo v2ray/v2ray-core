@@ -370,7 +370,7 @@ func TestVMessGCMUDP(t *testing.T) {
 		MsgProcessor: xor,
 	}
 	dest, err := udpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer udpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -456,7 +456,7 @@ func TestVMessGCMUDP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -466,19 +466,19 @@ func TestVMessGCMUDP(t *testing.T) {
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
 			})
-			assert(err, IsNil)
+			common.Must(err)
 
 			payload := make([]byte, 1024)
 			rand.Read(payload)
 
 			nBytes, err := conn.Write([]byte(payload))
-			assert(err, IsNil)
+			common.Must(err)
 			assert(nBytes, Equals, len(payload))
 
 			payload1 := make([]byte, 1024)
 			rand.Read(payload1)
 			nBytes, err = conn.Write([]byte(payload1))
-			assert(err, IsNil)
+			common.Must(err)
 			assert(nBytes, Equals, len(payload1))
 
 			response := readFrom(conn, time.Second*5, 1024)
@@ -1082,14 +1082,14 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	udpServer := udp.Server{
 		MsgProcessor: xor,
 	}
 	udpDest, err := udpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer udpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -1195,7 +1195,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	for range "abcd" {
 		var wg sync.WaitGroup
@@ -1207,7 +1207,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 					IP:   []byte{127, 0, 0, 1},
 					Port: int(clientPort),
 				})
-				assert(err, IsNil)
+				common.Must(err)
 
 				payload := make([]byte, 10240)
 				rand.Read(payload)
@@ -1215,7 +1215,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				xorpayload := xor(payload)
 
 				nBytes, err := conn.Write(payload)
-				assert(err, IsNil)
+				common.Must(err)
 				assert(nBytes, Equals, len(payload))
 
 				response := readFrom(conn, time.Second*20, 10240)
@@ -1230,7 +1230,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 					IP:   []byte{127, 0, 0, 1},
 					Port: int(clientUDPPort),
 				})
-				assert(err, IsNil)
+				common.Must(err)
 
 				conn.SetDeadline(time.Now().Add(time.Second * 10))
 
@@ -1241,7 +1241,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 
 				for j := 0; j < 2; j++ {
 					nBytes, _, err := conn.WriteMsgUDP(payload, nil, nil)
-					assert(err, IsNil)
+					common.Must(err)
 					assert(nBytes, Equals, len(payload))
 				}
 
@@ -1249,7 +1249,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				oob := make([]byte, 16)
 				for j := 0; j < 2; j++ {
 					nBytes, _, _, _, err := conn.ReadMsgUDP(response, oob)
-					assert(err, IsNil)
+					common.Must(err)
 					assert(nBytes, Equals, 1024)
 					assert(response, Equals, xorpayload)
 				}

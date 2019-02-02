@@ -53,7 +53,7 @@ func TestNewUUID(t *testing.T) {
 	uuid := New()
 	uuid2, err := ParseString(uuid.String())
 
-	assert(err, IsNil)
+	common.Must(err)
 	assert(uuid.String(), Equals, uuid2.String())
 	assert(uuid.Bytes(), Equals, uuid2.Bytes())
 }

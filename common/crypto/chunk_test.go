@@ -40,7 +40,7 @@ func TestChunkStreamIO(t *testing.T) {
 	assert(mb[0].Bytes(), Equals, []byte("abcd"))
 
 	mb, err = reader.ReadMultiBuffer()
-	assert(err, IsNil)
+	common.Must(err)
 	assert(mb.Len(), Equals, int32(3))
 	assert(mb[0].Bytes(), Equals, []byte("efg"))
 

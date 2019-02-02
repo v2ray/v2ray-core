@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol/tls/cert"
 	"v2ray.com/core/transport/internet"
@@ -29,17 +30,17 @@ func Test_listenWSAndDial(t *testing.T) {
 
 			var b [1024]byte
 			n, err := c.Read(b[:])
-			//assert(err, IsNil)
+			//common.Must(err)
 			if err != nil {
 				return
 			}
 			assert(bytes.HasPrefix(b[:n], []byte("Test connection")), IsTrue)
 
 			_, err = c.Write([]byte("Response"))
-			assert(err, IsNil)
+			common.Must(err)
 		}(conn)
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	ctx := context.Background()
 	streamSettings := &internet.MemoryStreamConfig{
@@ -48,23 +49,23 @@ func Test_listenWSAndDial(t *testing.T) {
 	}
 	conn, err := Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146), streamSettings)
 
-	assert(err, IsNil)
+	common.Must(err)
 	_, err = conn.Write([]byte("Test connection 1"))
-	assert(err, IsNil)
+	common.Must(err)
 
 	var b [1024]byte
 	n, err := conn.Read(b[:])
-	assert(err, IsNil)
+	common.Must(err)
 	assert(string(b[:n]), Equals, "Response")
 
 	assert(conn.Close(), IsNil)
 	<-time.After(time.Second * 5)
 	conn, err = Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146), streamSettings)
-	assert(err, IsNil)
+	common.Must(err)
 	_, err = conn.Write([]byte("Test connection 2"))
-	assert(err, IsNil)
+	common.Must(err)
 	n, err = conn.Read(b[:])
-	assert(err, IsNil)
+	common.Must(err)
 	assert(string(b[:n]), Equals, "Response")
 	assert(conn.Close(), IsNil)
 
@@ -86,30 +87,30 @@ func TestDialWithRemoteAddr(t *testing.T) {
 
 			var b [1024]byte
 			n, err := c.Read(b[:])
-			//assert(err, IsNil)
+			//common.Must(err)
 			if err != nil {
 				return
 			}
 			assert(bytes.HasPrefix(b[:n], []byte("Test connection")), IsTrue)
 
 			_, err = c.Write([]byte("Response"))
-			assert(err, IsNil)
+			common.Must(err)
 		}(conn)
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	conn, err := Dial(context.Background(), net.TCPDestination(net.DomainAddress("localhost"), 13148), &internet.MemoryStreamConfig{
 		ProtocolName:     "websocket",
 		ProtocolSettings: &Config{Path: "ws", Header: []*Header{{Key: "X-Forwarded-For", Value: "1.1.1.1"}}},
 	})
 
-	assert(err, IsNil)
+	common.Must(err)
 	_, err = conn.Write([]byte("Test connection 1"))
-	assert(err, IsNil)
+	common.Must(err)
 
 	var b [1024]byte
 	n, err := conn.Read(b[:])
-	assert(err, IsNil)
+	common.Must(err)
 	assert(string(b[:n]), Equals, "Response")
 
 	assert(listen.Close(), IsNil)
@@ -140,11 +141,11 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 			_ = conn.Close()
 		}()
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	defer listen.Close()
 
 	conn, err := Dial(context.Background(), net.TCPDestination(net.DomainAddress("localhost"), 13143), streamSettings)
-	assert(err, IsNil)
+	common.Must(err)
 	_ = conn.Close()
 
 	end := time.Now()

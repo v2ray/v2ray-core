@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	. "v2ray.com/core/common/retry"
 	. "v2ray.com/ext/assert"
@@ -22,7 +23,7 @@ func TestNoRetry(t *testing.T) {
 	})
 	endTime := time.Now().Unix()
 
-	assert(err, IsNil)
+	common.Must(err)
 	assert(endTime-startTime, AtLeast, int64(0))
 }
 
@@ -40,7 +41,7 @@ func TestRetryOnce(t *testing.T) {
 	})
 	duration := time.Since(startTime)
 
-	assert(err, IsNil)
+	common.Must(err)
 	assert(int64(duration/time.Millisecond), AtLeast, int64(900))
 }
 
@@ -58,7 +59,7 @@ func TestRetryMultiple(t *testing.T) {
 	})
 	duration := time.Since(startTime)
 
-	assert(err, IsNil)
+	common.Must(err)
 	assert(int64(duration/time.Millisecond), AtLeast, int64(4900))
 }
 

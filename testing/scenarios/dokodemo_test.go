@@ -127,7 +127,7 @@ func TestDokodemoUDP(t *testing.T) {
 		MsgProcessor: xor,
 	}
 	dest, err := udpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer udpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -197,23 +197,23 @@ func TestDokodemoUDP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	for port := clientPort; port <= clientPort+clientPortRange; port++ {
 		conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
 			IP:   []byte{127, 0, 0, 1},
 			Port: int(port),
 		})
-		assert(err, IsNil)
+		common.Must(err)
 
 		payload := "dokodemo request."
 		nBytes, err := conn.Write([]byte(payload))
-		assert(err, IsNil)
+		common.Must(err)
 		assert(nBytes, Equals, len(payload))
 
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
-		assert(err, IsNil)
+		common.Must(err)
 		assert(response[:nBytes], Equals, xor([]byte(payload)))
 		assert(conn.Close(), IsNil)
 	}

@@ -4,6 +4,7 @@ import (
 	"io"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/mux"
 	"v2ray.com/core/common/net"
@@ -63,72 +64,72 @@ func TestReaderWriter(t *testing.T) {
 
 	var meta FrameMetadata
 	err := meta.Unmarshal(bytesReader)
-	assert(err, IsNil)
+	common.Must(err)
 	assert(meta.SessionID, Equals, uint16(1))
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
 	assert(meta.Target, Equals, dest)
 	assert(byte(meta.Option), Equals, byte(OptionData))
 
 	data, err := readAll(NewStreamReader(bytesReader))
-	assert(err, IsNil)
+	common.Must(err)
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "abcd")
 
 	err = meta.Unmarshal(bytesReader)
-	assert(err, IsNil)
+	common.Must(err)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
 	assert(meta.SessionID, Equals, uint16(2))
 	assert(byte(meta.Option), Equals, byte(0))
 	assert(meta.Target, Equals, dest2)
 
 	err = meta.Unmarshal(bytesReader)
-	assert(err, IsNil)
+	common.Must(err)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusKeep))
 	assert(meta.SessionID, Equals, uint16(1))
 	assert(byte(meta.Option), Equals, byte(1))
 
 	data, err = readAll(NewStreamReader(bytesReader))
-	assert(err, IsNil)
+	common.Must(err)
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "efgh")
 
 	err = meta.Unmarshal(bytesReader)
-	assert(err, IsNil)
+	common.Must(err)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
 	assert(meta.SessionID, Equals, uint16(3))
 	assert(byte(meta.Option), Equals, byte(1))
 	assert(meta.Target, Equals, dest3)
 
 	data, err = readAll(NewStreamReader(bytesReader))
-	assert(err, IsNil)
+	common.Must(err)
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "x")
 
 	err = meta.Unmarshal(bytesReader)
-	assert(err, IsNil)
+	common.Must(err)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
 	assert(meta.SessionID, Equals, uint16(1))
 	assert(byte(meta.Option), Equals, byte(0))
 
 	err = meta.Unmarshal(bytesReader)
-	assert(err, IsNil)
+	common.Must(err)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
 	assert(meta.SessionID, Equals, uint16(3))
 	assert(byte(meta.Option), Equals, byte(0))
 
 	err = meta.Unmarshal(bytesReader)
-	assert(err, IsNil)
+	common.Must(err)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusKeep))
 	assert(meta.SessionID, Equals, uint16(2))
 	assert(byte(meta.Option), Equals, byte(1))
 
 	data, err = readAll(NewStreamReader(bytesReader))
-	assert(err, IsNil)
+	common.Must(err)
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "y")
 
 	err = meta.Unmarshal(bytesReader)
-	assert(err, IsNil)
+	common.Must(err)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
 	assert(meta.SessionID, Equals, uint16(2))
 	assert(byte(meta.Option), Equals, byte(0))

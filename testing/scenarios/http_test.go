@@ -32,7 +32,7 @@ func TestHttpConformance(t *testing.T) {
 		PathHandler: make(map[string]http.HandlerFunc),
 	}
 	_, err := httpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer httpServer.Close()
 
 	serverPort := tcp.PickPort()
@@ -54,7 +54,7 @@ func TestHttpConformance(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	{
 		transport := &http.Transport{
@@ -68,11 +68,11 @@ func TestHttpConformance(t *testing.T) {
 		}
 
 		resp, err := client.Get("http://127.0.0.1:" + httpServerPort.String())
-		assert(err, IsNil)
+		common.Must(err)
 		assert(resp.StatusCode, Equals, 200)
 
 		content, err := ioutil.ReadAll(resp.Body)
-		assert(err, IsNil)
+		common.Must(err)
 		assert(string(content), Equals, "Home")
 
 	}
@@ -89,7 +89,7 @@ func TestHttpError(t *testing.T) {
 		},
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	time.AfterFunc(time.Second*2, func() {
@@ -115,7 +115,7 @@ func TestHttpError(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	{
 		transport := &http.Transport{
@@ -129,7 +129,7 @@ func TestHttpError(t *testing.T) {
 		}
 
 		resp, err := client.Get("http://127.0.0.1:" + dest.Port.String())
-		assert(err, IsNil)
+		common.Must(err)
 		assert(resp.StatusCode, Equals, 503)
 	}
 
@@ -143,7 +143,7 @@ func TestHttpConnectMethod(t *testing.T) {
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	serverPort := tcp.PickPort()
@@ -165,7 +165,7 @@ func TestHttpConnectMethod(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	{
 		transport := &http.Transport{
@@ -186,12 +186,12 @@ func TestHttpConnectMethod(t *testing.T) {
 		common.Must(err)
 
 		resp, err := client.Do(req)
-		assert(err, IsNil)
+		common.Must(err)
 		assert(resp.StatusCode, Equals, 200)
 
 		content := make([]byte, len(payload))
 		common.Must2(io.ReadFull(resp.Body, content))
-		assert(err, IsNil)
+		common.Must(err)
 		assert(content, Equals, xor(payload))
 
 	}
@@ -222,7 +222,7 @@ func TestHttpPost(t *testing.T) {
 	}
 
 	_, err := httpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer httpServer.Close()
 
 	serverPort := tcp.PickPort()
@@ -244,7 +244,7 @@ func TestHttpPost(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	{
 		transport := &http.Transport{
@@ -261,11 +261,11 @@ func TestHttpPost(t *testing.T) {
 		common.Must2(rand.Read(payload))
 
 		resp, err := client.Post("http://127.0.0.1:"+httpServerPort.String()+"/testpost", "application/x-www-form-urlencoded", bytes.NewReader(payload))
-		assert(err, IsNil)
+		common.Must(err)
 		assert(resp.StatusCode, Equals, 200)
 
 		content, err := ioutil.ReadAll(resp.Body)
-		assert(err, IsNil)
+		common.Must(err)
 		assert(content, Equals, xor(payload))
 
 	}
@@ -288,7 +288,7 @@ func TestHttpBasicAuth(t *testing.T) {
 		PathHandler: make(map[string]http.HandlerFunc),
 	}
 	_, err := httpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer httpServer.Close()
 
 	serverPort := tcp.PickPort()
@@ -314,7 +314,7 @@ func TestHttpBasicAuth(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	{
 		transport := &http.Transport{
@@ -329,31 +329,31 @@ func TestHttpBasicAuth(t *testing.T) {
 
 		{
 			resp, err := client.Get("http://127.0.0.1:" + httpServerPort.String())
-			assert(err, IsNil)
+			common.Must(err)
 			assert(resp.StatusCode, Equals, 407)
 		}
 
 		{
 			req, err := http.NewRequest("GET", "http://127.0.0.1:"+httpServerPort.String(), nil)
-			assert(err, IsNil)
+			common.Must(err)
 
 			setProxyBasicAuth(req, "a", "c")
 			resp, err := client.Do(req)
-			assert(err, IsNil)
+			common.Must(err)
 			assert(resp.StatusCode, Equals, 407)
 		}
 
 		{
 			req, err := http.NewRequest("GET", "http://127.0.0.1:"+httpServerPort.String(), nil)
-			assert(err, IsNil)
+			common.Must(err)
 
 			setProxyBasicAuth(req, "a", "b")
 			resp, err := client.Do(req)
-			assert(err, IsNil)
+			common.Must(err)
 			assert(resp.StatusCode, Equals, 200)
 
 			content, err := ioutil.ReadAll(resp.Body)
-			assert(err, IsNil)
+			common.Must(err)
 			assert(string(content), Equals, "Home")
 		}
 	}

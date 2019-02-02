@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-
 	. "v2ray.com/core/common/protocol/http"
 	. "v2ray.com/ext/assert"
 )
@@ -41,7 +41,7 @@ Accept-Language: de,en;q=0.7,en-us;q=0.3
 `
 	b := bufio.NewReader(strings.NewReader(rawRequest))
 	req, err := http.ReadRequest(b)
-	assert(err, IsNil)
+	common.Must(err)
 	assert(req.Header.Get("Foo"), Equals, "foo")
 	assert(req.Header.Get("Bar"), Equals, "bar")
 	assert(req.Header.Get("Connection"), Equals, "keep-alive,Foo, Bar")

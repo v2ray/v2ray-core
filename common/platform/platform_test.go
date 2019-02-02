@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"testing"
 
+	"v2ray.com/core/common"
 	. "v2ray.com/core/common/platform"
 	. "v2ray.com/ext/assert"
 )
@@ -47,7 +48,7 @@ func TestGetAssetLocation(t *testing.T) {
 	assert := With(t)
 
 	exec, err := os.Executable()
-	assert(err, IsNil)
+	common.Must(err)
 
 	loc := GetAssetLocation("t")
 	assert(filepath.Dir(loc), Equals, filepath.Dir(exec))
@@ -64,7 +65,7 @@ func TestGetPluginLocation(t *testing.T) {
 	assert := With(t)
 
 	exec, err := os.Executable()
-	assert(err, IsNil)
+	common.Must(err)
 
 	loc := GetPluginDirectory()
 	assert(loc, Equals, filepath.Join(filepath.Dir(exec), "plugins"))

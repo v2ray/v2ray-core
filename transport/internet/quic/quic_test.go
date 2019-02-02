@@ -45,12 +45,12 @@ func TestQuicConnection(t *testing.T) {
 					return
 				}
 				nBytes, err := conn.Write(b.Bytes())
-				assert(err, IsNil)
+				common.Must(err)
 				assert(int32(nBytes), Equals, b.Len())
 			}
 		}()
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	defer listener.Close()
 
@@ -66,7 +66,7 @@ func TestQuicConnection(t *testing.T) {
 			AllowInsecure: true,
 		},
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	defer conn.Close()
 
 	const N = 1024
@@ -76,7 +76,7 @@ func TestQuicConnection(t *testing.T) {
 
 	nBytes, err := conn.Write(b1)
 	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must(err)
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
@@ -84,7 +84,7 @@ func TestQuicConnection(t *testing.T) {
 
 	nBytes, err = conn.Write(b1)
 	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must(err)
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
@@ -112,12 +112,12 @@ func TestQuicConnectionWithoutTLS(t *testing.T) {
 					return
 				}
 				nBytes, err := conn.Write(b.Bytes())
-				assert(err, IsNil)
+				common.Must(err)
 				assert(int32(nBytes), Equals, b.Len())
 			}
 		}()
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	defer listener.Close()
 
@@ -128,7 +128,7 @@ func TestQuicConnectionWithoutTLS(t *testing.T) {
 		ProtocolName:     "quic",
 		ProtocolSettings: &quic.Config{},
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	defer conn.Close()
 
 	const N = 1024
@@ -138,7 +138,7 @@ func TestQuicConnectionWithoutTLS(t *testing.T) {
 
 	nBytes, err := conn.Write(b1)
 	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must(err)
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
@@ -146,7 +146,7 @@ func TestQuicConnectionWithoutTLS(t *testing.T) {
 
 	nBytes, err = conn.Write(b1)
 	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must(err)
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
@@ -180,12 +180,12 @@ func TestQuicConnectionAuthHeader(t *testing.T) {
 					return
 				}
 				nBytes, err := conn.Write(b.Bytes())
-				assert(err, IsNil)
+				common.Must(err)
 				assert(int32(nBytes), Equals, b.Len())
 			}
 		}()
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	defer listener.Close()
 
@@ -202,7 +202,7 @@ func TestQuicConnectionAuthHeader(t *testing.T) {
 			},
 		},
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	defer conn.Close()
 
 	const N = 1024
@@ -212,7 +212,7 @@ func TestQuicConnectionAuthHeader(t *testing.T) {
 
 	nBytes, err := conn.Write(b1)
 	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must(err)
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
@@ -220,7 +220,7 @@ func TestQuicConnectionAuthHeader(t *testing.T) {
 
 	nBytes, err = conn.Write(b1)
 	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must(err)
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))

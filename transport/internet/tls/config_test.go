@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/protocol/tls/cert"
 	. "v2ray.com/core/transport/internet/tls"
 	. "v2ray.com/ext/assert"
@@ -27,10 +28,10 @@ func TestCertificateIssuing(t *testing.T) {
 	v2rayCert, err := tlsConfig.GetCertificate(&gotls.ClientHelloInfo{
 		ServerName: "www.v2ray.com",
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	x509Cert, err := x509.ParseCertificate(v2rayCert.Certificate[0])
-	assert(err, IsNil)
+	common.Must(err)
 	assert(x509Cert.NotAfter.After(time.Now()), IsTrue)
 }
 
@@ -56,10 +57,10 @@ func TestExpiredCertificate(t *testing.T) {
 	v2rayCert, err := tlsConfig.GetCertificate(&gotls.ClientHelloInfo{
 		ServerName: "www.v2ray.com",
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	x509Cert, err := x509.ParseCertificate(v2rayCert.Certificate[0])
-	assert(err, IsNil)
+	common.Must(err)
 	assert(x509Cert.NotAfter.After(time.Now()), IsTrue)
 }
 

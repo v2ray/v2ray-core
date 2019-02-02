@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/blackhole"
@@ -25,7 +26,7 @@ func TestResolveIP(t *testing.T) {
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	serverPort := tcp.PickPort()
@@ -83,22 +84,22 @@ func TestResolveIP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	{
 		noAuthDialer, err := xproxy.SOCKS5("tcp", net.TCPDestination(net.LocalHostIP, serverPort).NetAddr(), nil, xproxy.Direct)
-		assert(err, IsNil)
+		common.Must(err)
 		conn, err := noAuthDialer.Dial("tcp", fmt.Sprintf("google.com:%d", dest.Port))
-		assert(err, IsNil)
+		common.Must(err)
 
 		payload := "test payload"
 		nBytes, err := conn.Write([]byte(payload))
-		assert(err, IsNil)
+		common.Must(err)
 		assert(nBytes, Equals, len(payload))
 
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
-		assert(err, IsNil)
+		common.Must(err)
 		assert(response[:nBytes], Equals, xor([]byte(payload)))
 		assert(conn.Close(), IsNil)
 	}

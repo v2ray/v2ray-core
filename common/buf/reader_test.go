@@ -28,11 +28,11 @@ func TestBytesReaderWriteTo(t *testing.T) {
 	writer.SetBuffered(false)
 
 	nBytes, err := io.Copy(writer, reader)
-	assert(err, IsNil)
+	common.Must(err)
 	assert(nBytes, Equals, int64(6))
 
 	mb, err := pReader2.ReadMultiBuffer()
-	assert(err, IsNil)
+	common.Must(err)
 	assert(len(mb), Equals, 2)
 	assert(mb[0].String(), Equals, "abc")
 	assert(mb[1].String(), Equals, "efg")
@@ -52,7 +52,7 @@ func TestBytesReaderMultiBuffer(t *testing.T) {
 
 	mbReader := NewReader(reader)
 	mb, err := mbReader.ReadMultiBuffer()
-	assert(err, IsNil)
+	common.Must(err)
 	assert(len(mb), Equals, 2)
 	assert(mb[0].String(), Equals, "abc")
 	assert(mb[1].String(), Equals, "efg")

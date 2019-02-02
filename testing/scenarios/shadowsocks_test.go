@@ -544,7 +544,7 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 		MsgProcessor: xor,
 	}
 	dest, err := udpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer udpServer.Close()
 
 	account := serial.ToTypedMessage(&shadowsocks.Account{
@@ -625,7 +625,7 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -635,13 +635,13 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
 			})
-			assert(err, IsNil)
+			common.Must(err)
 
 			payload := make([]byte, 1024)
 			rand.Read(payload)
 
 			nBytes, err := conn.Write([]byte(payload))
-			assert(err, IsNil)
+			common.Must(err)
 			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Second*5, 1024)
@@ -662,7 +662,7 @@ func TestShadowsocksAES128GCMUDPMux(t *testing.T) {
 		MsgProcessor: xor,
 	}
 	dest, err := udpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer udpServer.Close()
 
 	account := serial.ToTypedMessage(&shadowsocks.Account{
@@ -749,7 +749,7 @@ func TestShadowsocksAES128GCMUDPMux(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -759,13 +759,13 @@ func TestShadowsocksAES128GCMUDPMux(t *testing.T) {
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
 			})
-			assert(err, IsNil)
+			common.Must(err)
 
 			payload := make([]byte, 1024)
 			rand.Read(payload)
 
 			nBytes, err := conn.Write([]byte(payload))
-			assert(err, IsNil)
+			common.Must(err)
 			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Second*5, 1024)

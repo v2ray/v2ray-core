@@ -18,6 +18,7 @@ import (
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/app/stats"
 	statscmd "v2ray.com/core/app/stats/command"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -38,7 +39,7 @@ func TestCommanderRemoveHandler(t *testing.T) {
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	clientPort := tcp.PickPort()
@@ -97,7 +98,7 @@ func TestCommanderRemoveHandler(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	defer CloseAllServers(servers)
 
@@ -113,26 +114,26 @@ func TestCommanderRemoveHandler(t *testing.T) {
 
 		payload := "commander request."
 		nBytes, err := conn.Write([]byte(payload))
-		assert(err, IsNil)
+		common.Must(err)
 		assert(nBytes, Equals, len(payload))
 
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
-		assert(err, IsNil)
+		common.Must(err)
 		if r := cmp.Diff(response[:nBytes], xor([]byte(payload))); r != "" {
 			t.Fatal(r)
 		}
 	}
 
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
-	assert(err, IsNil)
+	common.Must(err)
 	defer cmdConn.Close()
 
 	hsClient := command.NewHandlerServiceClient(cmdConn)
 	resp, err := hsClient.RemoveInbound(context.Background(), &command.RemoveInboundRequest{
 		Tag: "d",
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	assert(resp, IsNotNil)
 
 	{
@@ -151,7 +152,7 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	u1 := protocol.NewID(uuid.New())
@@ -282,18 +283,18 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
 
 	{
 		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 			IP:   []byte{127, 0, 0, 1},
 			Port: int(clientPort),
 		})
-		assert(err, IsNil)
+		common.Must(err)
 
 		payload := "commander request."
 		nBytes, err := conn.Write([]byte(payload))
-		assert(err, IsNil)
+		common.Must(err)
 		assert(nBytes, Equals, len(payload))
 
 		response := make([]byte, 1024)
@@ -304,7 +305,7 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 	}
 
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
-	assert(err, IsNil)
+	common.Must(err)
 	defer cmdConn.Close()
 
 	hsClient := command.NewHandlerServiceClient(cmdConn)
@@ -321,7 +322,7 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 				},
 			}),
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	assert(resp, IsNotNil)
 
 	{
@@ -329,16 +330,16 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 			IP:   []byte{127, 0, 0, 1},
 			Port: int(clientPort),
 		})
-		assert(err, IsNil)
+		common.Must(err)
 
 		payload := "commander request."
 		nBytes, err := conn.Write([]byte(payload))
-		assert(err, IsNil)
+		common.Must(err)
 		assert(nBytes, Equals, len(payload))
 
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
-		assert(err, IsNil)
+		common.Must(err)
 		assert(response[:nBytes], Equals, xor([]byte(payload)))
 		assert(conn.Close(), IsNil)
 	}
@@ -348,7 +349,7 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 		Operation: serial.ToTypedMessage(&command.RemoveUserOperation{Email: "test@v2ray.com"}),
 	})
 	assert(resp, IsNotNil)
-	assert(err, IsNil)
+	common.Must(err)
 
 	CloseAllServers(servers)
 }
@@ -360,7 +361,7 @@ func TestCommanderStats(t *testing.T) {
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -503,7 +504,7 @@ func TestCommanderStats(t *testing.T) {
 	}
 
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
-	assert(err, IsNil)
+	common.Must(err)
 	defer cmdConn.Close()
 
 	const name = "user>>>test>>>traffic>>>uplink"
@@ -513,14 +514,14 @@ func TestCommanderStats(t *testing.T) {
 		Name:   name,
 		Reset_: true,
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	assert(sresp.Stat.Name, Equals, name)
 	assert(sresp.Stat.Value, Equals, int64(10240*1024))
 
 	sresp, err = sClient.GetStats(context.Background(), &statscmd.GetStatsRequest{
 		Name: name,
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	assert(sresp.Stat.Name, Equals, name)
 	assert(sresp.Stat.Value, Equals, int64(0))
 
@@ -528,6 +529,6 @@ func TestCommanderStats(t *testing.T) {
 		Name:   "inbound>>>vmess>>>traffic>>>uplink",
 		Reset_: true,
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	assert(sresp.Stat.Value, GreaterThan, int64(10240*1024))
 }

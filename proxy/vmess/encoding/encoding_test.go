@@ -58,7 +58,7 @@ func TestRequestSerialization(t *testing.T) {
 
 	server := NewServerSession(userValidator, sessionHistory)
 	actualRequest, err := server.DecodeRequestHeader(buffer)
-	assert(err, IsNil)
+	common.Must(err)
 
 	assert(expectedRequest.Version, Equals, actualRequest.Version)
 	assert(byte(expectedRequest.Command), Equals, byte(actualRequest.Command))
@@ -151,7 +151,7 @@ func TestMuxRequest(t *testing.T) {
 
 	server := NewServerSession(userValidator, sessionHistory)
 	actualRequest, err := server.DecodeRequestHeader(buffer)
-	assert(err, IsNil)
+	common.Must(err)
 
 	assert(expectedRequest.Version, Equals, actualRequest.Version)
 	assert(byte(expectedRequest.Command), Equals, byte(actualRequest.Command))
