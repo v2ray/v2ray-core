@@ -11,31 +11,30 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	. "v2ray.com/core/transport/internet/headers/http"
-	. "v2ray.com/ext/assert"
 )
 
 func TestReaderWriter(t *testing.T) {
-	assert := With(t)
-
 	cache := buf.New()
 	b := buf.New()
 	common.Must2(b.WriteString("abcd" + ENDING))
 	writer := NewHeaderWriter(b)
 	err := writer.Write(cache)
 	common.Must(err)
-	assert(cache.Len(), Equals, int32(8))
+	if v := cache.Len(); v != 8 {
+		t.Error("cache len: ", v)
+	}
 	_, err = cache.Write([]byte{'e', 'f', 'g'})
 	common.Must(err)
 
 	reader := &HeaderReader{}
 	buffer, err := reader.Read(cache)
 	common.Must(err)
-	assert(buffer.Bytes(), Equals, []byte{'e', 'f', 'g'})
+	if buffer.String() != "efg" {
+		t.Error("buffer: ", buffer.String())
+	}
 }
 
 func TestRequestHeader(t *testing.T) {
-	assert := With(t)
-
 	auth, err := NewHttpAuthenticator(context.Background(), &Config{
 		Request: &RequestConfig{
 			Uri: []string{"/"},
@@ -53,7 +52,9 @@ func TestRequestHeader(t *testing.T) {
 	err = auth.GetClientWriter().Write(cache)
 	common.Must(err)
 
-	assert(cache.String(), Equals, "GET / HTTP/1.1\r\nTest: Value\r\n\r\n")
+	if cache.String() != "GET / HTTP/1.1\r\nTest: Value\r\n\r\n" {
+		t.Error("cache: ", cache.String())
+	}
 }
 
 func TestLongRequestHeader(t *testing.T) {
@@ -71,8 +72,6 @@ func TestLongRequestHeader(t *testing.T) {
 }
 
 func TestConnection(t *testing.T) {
-	assert := With(t)
-
 	auth, err := NewHttpAuthenticator(context.Background(), &Config{
 		Request: &RequestConfig{
 			Method: &Method{Value: "Post"},
@@ -110,7 +109,9 @@ func TestConnection(t *testing.T) {
 		b := make([]byte, 256)
 		for {
 			n, err := authConn.Read(b)
-			common.Must(err)
+			if err != nil {
+				break
+			}
 			_, err = authConn.Write(b[:n])
 			common.Must(err)
 		}
@@ -120,6 +121,8 @@ func TestConnection(t *testing.T) {
 	common.Must(err)
 
 	authConn := auth.Client(conn)
+	defer authConn.Close()
+
 	authConn.Write([]byte("Test payload"))
 	authConn.Write([]byte("Test payload 2"))
 
@@ -136,5 +139,7 @@ func TestConnection(t *testing.T) {
 		}
 	}
 
-	assert(string(actualResponse[:totalBytes]), Equals, expectedResponse)
+	if string(actualResponse[:totalBytes]) != expectedResponse {
+		t.Error("response: ", string(actualResponse[:totalBytes]))
+	}
 }

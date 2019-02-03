@@ -2,7 +2,6 @@ package scenarios
 
 import (
 	"crypto/rand"
-	"sync"
 	"testing"
 	"time"
 
@@ -23,7 +22,6 @@ import (
 	"v2ray.com/core/proxy/shadowsocks"
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/testing/servers/udp"
-	. "v2ray.com/ext/assert"
 )
 
 func TestShadowsocksAES256TCP(t *testing.T) {
@@ -538,8 +536,6 @@ func TestShadowsocksAES256GCMTCP(t *testing.T) {
 }
 
 func TestShadowsocksAES128GCMUDP(t *testing.T) {
-	assert := With(t)
-
 	udpServer := udp.Server{
 		MsgProcessor: xor,
 	}
@@ -626,38 +622,18 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(10)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		go func() {
-			conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			common.Must(err)
-
-			payload := make([]byte, 1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write([]byte(payload))
-			common.Must(err)
-			assert(nBytes, Equals, len(payload))
-
-			response := readFrom(conn, time.Second*5, 1024)
-			assert(response, Equals, xor([]byte(payload)))
-			assert(conn.Close(), IsNil)
-			wg.Done()
-		}()
+		errg.Go(testUDPConn(clientPort, 1024, time.Second*5))
 	}
-	wg.Wait()
-
-	CloseAllServers(servers)
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestShadowsocksAES128GCMUDPMux(t *testing.T) {
-	assert := With(t)
-
 	udpServer := udp.Server{
 		MsgProcessor: xor,
 	}
@@ -750,33 +726,15 @@ func TestShadowsocksAES128GCMUDPMux(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(10)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		go func() {
-			conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			common.Must(err)
-
-			payload := make([]byte, 1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write([]byte(payload))
-			common.Must(err)
-			assert(nBytes, Equals, len(payload))
-
-			response := readFrom(conn, time.Second*5, 1024)
-			assert(response, Equals, xor([]byte(payload)))
-			assert(conn.Close(), IsNil)
-			wg.Done()
-		}()
+		errg.Go(testUDPConn(clientPort, 1024, time.Second*5))
 	}
-	wg.Wait()
-
-	CloseAllServers(servers)
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestShadowsocksNone(t *testing.T) {

@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
@@ -20,7 +22,6 @@ import (
 	"v2ray.com/core/proxy/vmess/outbound"
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/testing/servers/udp"
-	. "v2ray.com/ext/assert"
 )
 
 func TestDokodemoTCP(t *testing.T) {
@@ -121,8 +122,6 @@ func TestDokodemoTCP(t *testing.T) {
 }
 
 func TestDokodemoUDP(t *testing.T) {
-	assert := With(t)
-
 	udpServer := udp.Server{
 		MsgProcessor: xor,
 	}
@@ -198,25 +197,13 @@ func TestDokodemoUDP(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
+	var errg errgroup.Group
 	for port := clientPort; port <= clientPort+clientPortRange; port++ {
-		conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
-			IP:   []byte{127, 0, 0, 1},
-			Port: int(port),
-		})
-		common.Must(err)
-
-		payload := "dokodemo request."
-		nBytes, err := conn.Write([]byte(payload))
-		common.Must(err)
-		assert(nBytes, Equals, len(payload))
-
-		response := make([]byte, 1024)
-		nBytes, err = conn.Read(response)
-		common.Must(err)
-		assert(response[:nBytes], Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+		errg.Go(testUDPConn(net.Port(port), 1024, time.Second*5))
 	}
-
-	CloseAllServers(servers)
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }

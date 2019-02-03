@@ -3,6 +3,7 @@ package scenarios
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	xproxy "golang.org/x/net/proxy"
 	"v2ray.com/core"
@@ -16,12 +17,9 @@ import (
 	"v2ray.com/core/proxy/freedom"
 	"v2ray.com/core/proxy/socks"
 	"v2ray.com/core/testing/servers/tcp"
-	. "v2ray.com/ext/assert"
 )
 
 func TestResolveIP(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
@@ -85,24 +83,17 @@ func TestResolveIP(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
 	{
 		noAuthDialer, err := xproxy.SOCKS5("tcp", net.TCPDestination(net.LocalHostIP, serverPort).NetAddr(), nil, xproxy.Direct)
 		common.Must(err)
 		conn, err := noAuthDialer.Dial("tcp", fmt.Sprintf("google.com:%d", dest.Port))
 		common.Must(err)
+		defer conn.Close()
 
-		payload := "test payload"
-		nBytes, err := conn.Write([]byte(payload))
-		common.Must(err)
-		assert(nBytes, Equals, len(payload))
-
-		response := make([]byte, 1024)
-		nBytes, err = conn.Read(response)
-		common.Must(err)
-		assert(response[:nBytes], Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+		if err := testTCPConn2(conn, 1024, time.Second*5)(); err != nil {
+			t.Error(err)
+		}
 	}
-
-	CloseAllServers(servers)
 }

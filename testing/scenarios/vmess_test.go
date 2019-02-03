@@ -1,9 +1,7 @@
 package scenarios
 
 import (
-	"crypto/rand"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -26,7 +24,6 @@ import (
 	"v2ray.com/core/testing/servers/udp"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/kcp"
-	. "v2ray.com/ext/assert"
 )
 
 func TestVMessDynamicPort(t *testing.T) {
@@ -364,8 +361,6 @@ func TestVMessGCMReadv(t *testing.T) {
 }
 
 func TestVMessGCMUDP(t *testing.T) {
-	assert := With(t)
-
 	udpServer := udp.Server{
 		MsgProcessor: xor,
 	}
@@ -457,43 +452,15 @@ func TestVMessGCMUDP(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	common.Must(err)
-
-	var wg sync.WaitGroup
-	wg.Add(10)
-	for i := 0; i < 10; i++ {
-		go func() {
-			conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			common.Must(err)
-
-			payload := make([]byte, 1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write([]byte(payload))
-			common.Must(err)
-			assert(nBytes, Equals, len(payload))
-
-			payload1 := make([]byte, 1024)
-			rand.Read(payload1)
-			nBytes, err = conn.Write([]byte(payload1))
-			common.Must(err)
-			assert(nBytes, Equals, len(payload1))
-
-			response := readFrom(conn, time.Second*5, 1024)
-			assert(response, Equals, xor([]byte(payload)))
-
-			response = readFrom(conn, time.Second*5, 1024)
-			assert(response, Equals, xor([]byte(payload1)))
-
-			assert(conn.Close(), IsNil)
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-
 	CloseAllServers(servers)
+
+	var errg errgroup.Group
+	for i := 0; i < 10; i++ {
+		errg.Go(testTCPConn(clientPort, 1024, time.Second*5))
+	}
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestVMessChacha20(t *testing.T) {
@@ -1076,8 +1043,6 @@ func TestVMessGCMMux(t *testing.T) {
 }
 
 func TestVMessGCMMuxUDP(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
@@ -1196,71 +1161,17 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
 	for range "abcd" {
-		var wg sync.WaitGroup
-		const nConnection = 16
-		wg.Add(nConnection * 2)
-		for i := 0; i < nConnection; i++ {
-			go func() {
-				conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-					IP:   []byte{127, 0, 0, 1},
-					Port: int(clientPort),
-				})
-				common.Must(err)
-
-				payload := make([]byte, 10240)
-				rand.Read(payload)
-
-				xorpayload := xor(payload)
-
-				nBytes, err := conn.Write(payload)
-				common.Must(err)
-				assert(nBytes, Equals, len(payload))
-
-				response := readFrom(conn, time.Second*20, 10240)
-				assert(response, Equals, xorpayload)
-				assert(conn.Close(), IsNil)
-				wg.Done()
-			}()
+		var errg errgroup.Group
+		for i := 0; i < 16; i++ {
+			errg.Go(testTCPConn(clientPort, 10240, time.Second*20))
+			errg.Go(testUDPConn(clientUDPPort, 1024, time.Second*10))
 		}
-		for i := 0; i < nConnection; i++ {
-			go func() {
-				conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
-					IP:   []byte{127, 0, 0, 1},
-					Port: int(clientUDPPort),
-				})
-				common.Must(err)
-
-				conn.SetDeadline(time.Now().Add(time.Second * 10))
-
-				payload := make([]byte, 1024)
-				rand.Read(payload)
-
-				xorpayload := xor(payload)
-
-				for j := 0; j < 2; j++ {
-					nBytes, _, err := conn.WriteMsgUDP(payload, nil, nil)
-					common.Must(err)
-					assert(nBytes, Equals, len(payload))
-				}
-
-				response := make([]byte, 1024)
-				oob := make([]byte, 16)
-				for j := 0; j < 2; j++ {
-					nBytes, _, _, _, err := conn.ReadMsgUDP(response, oob)
-					common.Must(err)
-					assert(nBytes, Equals, 1024)
-					assert(response, Equals, xorpayload)
-				}
-
-				assert(conn.Close(), IsNil)
-				wg.Done()
-			}()
+		if err := errg.Wait(); err != nil {
+			t.Error(err)
 		}
-		wg.Wait()
 		time.Sleep(time.Second)
 	}
-
-	CloseAllServers(servers)
 }

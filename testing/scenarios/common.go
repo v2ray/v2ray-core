@@ -160,6 +160,27 @@ func testTCPConn(port net.Port, payloadSize int, timeout time.Duration) func() e
 		}
 		defer conn.Close()
 
+		return testTCPConn2(conn, payloadSize, timeout)()
+	}
+}
+
+func testUDPConn(port net.Port, payloadSize int, timeout time.Duration) func() error {
+	return func() error {
+		conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
+			IP:   []byte{127, 0, 0, 1},
+			Port: int(port),
+		})
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		return testTCPConn2(conn, payloadSize, timeout)()
+	}
+}
+
+func testTCPConn2(conn net.Conn, payloadSize int, timeout time.Duration) func() error {
+	return func() error {
 		payload := make([]byte, payloadSize)
 		common.Must2(rand.Read(payload))
 

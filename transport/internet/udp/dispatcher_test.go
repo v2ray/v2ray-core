@@ -14,7 +14,6 @@ import (
 	"v2ray.com/core/transport"
 	. "v2ray.com/core/transport/internet/udp"
 	"v2ray.com/core/transport/pipe"
-	. "v2ray.com/ext/assert"
 )
 
 type TestDispatcher struct {
@@ -38,8 +37,6 @@ func (*TestDispatcher) Type() interface{} {
 }
 
 func TestSameDestinationDispatching(t *testing.T) {
-	assert := With(t)
-
 	ctx, cancel := context.WithCancel(context.Background())
 	uplinkReader, uplinkWriter := pipe.New(pipe.WithSizeLimit(1024))
 	downlinkReader, downlinkWriter := pipe.New(pipe.WithSizeLimit(1024))
@@ -80,6 +77,10 @@ func TestSameDestinationDispatching(t *testing.T) {
 	time.Sleep(time.Second)
 	cancel()
 
-	assert(count, Equals, uint32(1))
-	assert(atomic.LoadUint32(&msgCount), Equals, uint32(6))
+	if count != 1 {
+		t.Error("count: ", count)
+	}
+	if v := atomic.LoadUint32(&msgCount); v != 6 {
+		t.Error("msgCount: ", v)
+	}
 }

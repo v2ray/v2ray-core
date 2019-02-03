@@ -20,7 +20,6 @@ import (
 	"v2ray.com/core/proxy/socks"
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/testing/servers/udp"
-	. "v2ray.com/ext/assert"
 )
 
 func TestSocksBridgeTCP(t *testing.T) {
@@ -105,8 +104,6 @@ func TestSocksBridgeTCP(t *testing.T) {
 }
 
 func TestSocksBridageUDP(t *testing.T) {
-	assert := With(t)
-
 	udpServer := udp.Server{
 		MsgProcessor: xor,
 	}
@@ -180,30 +177,14 @@ func TestSocksBridageUDP(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
-	conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
-		IP:   []byte{127, 0, 0, 1},
-		Port: int(clientPort),
-	})
-	common.Must(err)
-
-	payload := "dokodemo request."
-	nBytes, err := conn.Write([]byte(payload))
-	common.Must(err)
-	assert(nBytes, Equals, len(payload))
-
-	response := make([]byte, 1024)
-	nBytes, err = conn.Read(response)
-	common.Must(err)
-	assert(response[:nBytes], Equals, xor([]byte(payload)))
-	assert(conn.Close(), IsNil)
-
-	CloseAllServers(servers)
+	if err := testUDPConn(clientPort, 1024, time.Second*5)(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSocksBridageUDPWithRouting(t *testing.T) {
-	assert := With(t)
-
 	udpServer := udp.Server{
 		MsgProcessor: xor,
 	}
@@ -283,30 +264,14 @@ func TestSocksBridageUDPWithRouting(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
-	conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
-		IP:   []byte{127, 0, 0, 1},
-		Port: int(clientPort),
-	})
-	common.Must(err)
-
-	payload := "dokodemo request."
-	nBytes, err := conn.Write([]byte(payload))
-	common.Must(err)
-	assert(nBytes, Equals, len(payload))
-
-	response := make([]byte, 1024)
-	nBytes, err = conn.Read(response)
-	common.Must(err)
-	assert(response[:nBytes], Equals, xor([]byte(payload)))
-	assert(conn.Close(), IsNil)
-
-	CloseAllServers(servers)
+	if err := testUDPConn(clientPort, 1024, time.Second*5)(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSocksConformance(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
@@ -356,23 +321,18 @@ func TestSocksConformance(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
 	{
 		noAuthDialer, err := xproxy.SOCKS5("tcp", net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr(), nil, xproxy.Direct)
 		common.Must(err)
 		conn, err := noAuthDialer.Dial("tcp", dest.NetAddr())
 		common.Must(err)
+		defer conn.Close()
 
-		payload := "test payload"
-		nBytes, err := conn.Write([]byte(payload))
-		common.Must(err)
-		assert(nBytes, Equals, len(payload))
-
-		response := make([]byte, 1024)
-		nBytes, err = conn.Read(response)
-		common.Must(err)
-		assert(response[:nBytes], Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+		if err := testTCPConn2(conn, 1024, time.Second*5)(); err != nil {
+			t.Error(err)
+		}
 	}
 
 	{
@@ -380,52 +340,32 @@ func TestSocksConformance(t *testing.T) {
 		common.Must(err)
 		conn, err := authDialer.Dial("tcp", dest.NetAddr())
 		common.Must(err)
+		defer conn.Close()
 
-		payload := "test payload"
-		nBytes, err := conn.Write([]byte(payload))
-		common.Must(err)
-		assert(nBytes, Equals, len(payload))
-
-		response := make([]byte, 1024)
-		nBytes, err = conn.Read(response)
-		common.Must(err)
-		assert(response[:nBytes], Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+		if err := testTCPConn2(conn, 1024, time.Second*5)(); err != nil {
+			t.Error(err)
+		}
 	}
 
 	{
 		dialer := socks4.DialSocksProxy(socks4.SOCKS4, net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr())
 		conn, err := dialer("tcp", dest.NetAddr())
 		common.Must(err)
+		defer conn.Close()
 
-		payload := "test payload"
-		nBytes, err := conn.Write([]byte(payload))
-		common.Must(err)
-		assert(nBytes, Equals, len(payload))
-
-		response := make([]byte, 1024)
-		nBytes, err = conn.Read(response)
-		common.Must(err)
-		assert(response[:nBytes], Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+		if err := testTCPConn2(conn, 1024, time.Second*5)(); err != nil {
+			t.Error(err)
+		}
 	}
 
 	{
 		dialer := socks4.DialSocksProxy(socks4.SOCKS4A, net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr())
 		conn, err := dialer("tcp", net.TCPDestination(net.LocalHostDomain, tcpServer.Port).NetAddr())
 		common.Must(err)
+		defer conn.Close()
 
-		payload := "test payload"
-		nBytes, err := conn.Write([]byte(payload))
-		common.Must(err)
-		assert(nBytes, Equals, len(payload))
-
-		response := make([]byte, 1024)
-		nBytes, err = conn.Read(response)
-		common.Must(err)
-		assert(response[:nBytes], Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+		if err := testTCPConn2(conn, 1024, time.Second*5)(); err != nil {
+			t.Error(err)
+		}
 	}
-
-	CloseAllServers(servers)
 }
