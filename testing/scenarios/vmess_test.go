@@ -456,7 +456,7 @@ func TestVMessGCMUDP(t *testing.T) {
 
 	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		errg.Go(testTCPConn(clientPort, 1024, time.Second*5))
+		errg.Go(testUDPConn(clientPort, 1024, time.Second*5))
 	}
 	if err := errg.Wait(); err != nil {
 		t.Error(err)

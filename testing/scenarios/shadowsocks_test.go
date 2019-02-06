@@ -342,7 +342,7 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 
 	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*40))
 	}
 
 	if err := errg.Wait(); err != nil {
