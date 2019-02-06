@@ -216,18 +216,18 @@ func (h *Handler) handleIPQuery(id uint16, qType dnsmessage.Type, domain string,
 		RCode:    dnsmessage.RCodeSuccess,
 		Response: true,
 	})
-	builder.StartAnswers()
+	common.Must(builder.StartAnswers())
 
 	rHeader := dnsmessage.ResourceHeader{Name: dnsmessage.MustNewName(domain), Class: dnsmessage.ClassINET, TTL: 600}
 	for _, ip := range ips {
 		if len(ip) == net.IPv4len {
 			var r dnsmessage.AResource
 			copy(r.A[:], ip)
-			builder.AResource(rHeader, r)
+			common.Must(builder.AResource(rHeader, r))
 		} else {
 			var r dnsmessage.AAAAResource
 			copy(r.AAAA[:], ip)
-			builder.AAAAResource(rHeader, r)
+			common.Must(builder.AAAAResource(rHeader, r))
 		}
 	}
 	msgBytes, err := builder.Finish()

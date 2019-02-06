@@ -196,6 +196,14 @@ func toNetIP(ips []net.Address) []net.IP {
 }
 
 func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, error) {
+	if len(domain) == 0 {
+		return nil, newError("empty domain name")
+	}
+
+	if domain[len(domain)-1] == '.' {
+		domain = domain[:len(domain)-1]
+	}
+
 	ips := s.lookupStatic(domain, option, 0)
 	if ips != nil && ips[0].Family().IsIP() {
 		return toNetIP(ips), nil
