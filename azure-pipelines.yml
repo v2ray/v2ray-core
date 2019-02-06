@@ -1,5 +1,10 @@
 trigger:
   batch: true
+  branches:
+    include:
+    - master
+
+pr: none
 
 jobs:
 - template: azure-pipelines.template.yml
