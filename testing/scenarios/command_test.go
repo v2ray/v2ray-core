@@ -262,7 +262,7 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	common.Must(err)
-	CloseAllServers(servers)
+	defer CloseAllServers(servers)
 
 	if err := testTCPConn(clientPort, 1024, time.Second*5)(); err != nil {
 		t.Fatal(err)
