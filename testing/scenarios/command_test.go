@@ -3,6 +3,7 @@ package scenarios
 import (
 	"context"
 	"fmt"
+	"io"
 	"testing"
 	"time"
 
@@ -264,8 +265,8 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 	common.Must(err)
 	defer CloseAllServers(servers)
 
-	if err := testTCPConn(clientPort, 1024, time.Second*5)(); err != nil {
-		t.Fatal(err)
+	if err := testTCPConn(clientPort, 1024, time.Second*5)(); err != io.EOF {
+		t.Fatal("expected error: ", err)
 	}
 
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())

@@ -452,7 +452,7 @@ func TestVMessGCMUDP(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	common.Must(err)
-	CloseAllServers(servers)
+	defer CloseAllServers(servers)
 
 	var errg errgroup.Group
 	for i := 0; i < 10; i++ {

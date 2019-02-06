@@ -537,7 +537,7 @@ func TestUDPConnection(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(clientConfig)
 	common.Must(err)
-	CloseAllServers(servers)
+	defer CloseAllServers(servers)
 
 	if err := testUDPConn(clientPort, 1024, time.Second*5)(); err != nil {
 		t.Error(err)
