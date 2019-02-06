@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/miekg/dns"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/dispatcher"
@@ -18,8 +19,6 @@ import (
 	feature_dns "v2ray.com/core/features/dns"
 	"v2ray.com/core/proxy/freedom"
 	"v2ray.com/core/testing/servers/udp"
-
-	"github.com/miekg/dns"
 )
 
 type staticHandler struct {
