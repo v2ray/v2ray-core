@@ -212,8 +212,9 @@ func (h *Handler) handleIPQuery(id uint16, qType dnsmessage.Type, domain string,
 	b := buf.New()
 	rawBytes := b.Extend(buf.Size)
 	builder := dnsmessage.NewBuilder(rawBytes[:0], dnsmessage.Header{
-		ID:    id,
-		RCode: dnsmessage.RCodeSuccess,
+		ID:       id,
+		RCode:    dnsmessage.RCodeSuccess,
+		Response: true,
 	})
 	builder.StartAnswers()
 
