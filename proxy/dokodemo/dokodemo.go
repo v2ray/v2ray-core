@@ -117,7 +117,12 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			}
 		}()
 
-		reader := buf.NewReader(conn)
+		var reader buf.Reader
+		if dest.Network == net.Network_UDP {
+			reader = &buf.PacketReader{Reader: conn}
+		} else {
+			reader = buf.NewReader(conn)
+		}
 		if err := buf.Copy(reader, link.Writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport request").Base(err)
 		}
@@ -151,7 +156,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			defer tConn.Close()
 
 			writer = &buf.SequentialWriter{Writer: tConn}
-			tReader := buf.NewReader(tConn)
+			tReader := &buf.PacketReader{Reader: tConn}
 			requestCount++
 			tproxyRequest = func() error {
 				defer func() {

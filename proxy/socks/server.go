@@ -200,7 +200,7 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 		newError("client UDP connection from ", inbound.Source).WriteToLog(session.ExportIDToError(ctx))
 	}
 
-	reader := buf.NewReader(conn)
+	reader := &buf.PacketReader{Reader: conn}
 	for {
 		mpayload, err := reader.ReadMultiBuffer()
 		if err != nil {
