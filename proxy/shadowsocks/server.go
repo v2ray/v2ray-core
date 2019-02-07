@@ -97,7 +97,7 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 	}
 	inbound.User = s.user
 
-	reader := &buf.PacketReader{Reader: conn}
+	reader := buf.NewPacketReader(conn)
 	for {
 		mpayload, err := reader.ReadMultiBuffer()
 		if err != nil {

@@ -131,7 +131,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, d internet.
 		}
 	} else {
 		connReader = &dns_proto.UDPReader{
-			Reader: &buf.PacketReader{Reader: conn},
+			Reader: buf.NewPacketReader(conn),
 		}
 		connWriter = &dns_proto.UDPWriter{
 			Writer: buf.NewWriter(conn),

@@ -73,6 +73,17 @@ func NewReader(reader io.Reader) Reader {
 	}
 }
 
+// NewPacketReader creates a new PacketReader based on the given reader.
+func NewPacketReader(reader io.Reader) Reader {
+	if mr, ok := reader.(Reader); ok {
+		return mr
+	}
+
+	return &PacketReader{
+		Reader: reader,
+	}
+}
+
 func isPacketWriter(writer io.Writer) bool {
 	if _, ok := writer.(net.PacketConn); ok {
 		return true

@@ -119,7 +119,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 
 		var reader buf.Reader
 		if dest.Network == net.Network_UDP {
-			reader = &buf.PacketReader{Reader: conn}
+			reader = buf.NewPacketReader(conn)
 		} else {
 			reader = buf.NewReader(conn)
 		}
@@ -156,7 +156,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			defer tConn.Close()
 
 			writer = &buf.SequentialWriter{Writer: tConn}
-			tReader := &buf.PacketReader{Reader: tConn}
+			tReader := buf.NewPacketReader(tConn)
 			requestCount++
 			tproxyRequest = func() error {
 				defer func() {
