@@ -76,13 +76,13 @@ jobs:
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Fetch sources'
   - script: |
-      curl -L -O https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VER}/bazel-${BAZEL_VER}-installer-linux-x86_64.sh
-      chmod +x bazel-${BAZEL_VER}-installer-linux-x86_64.sh
-      ./bazel-${BAZEL_VER}-installer-linux-x86_64.sh
+      curl -L -o bazel-installer.sh https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VER}/bazel-${BAZEL_VER}-installer-linux-x86_64.sh
+      chmod +x bazel-installer.sh
+      ./bazel-installer.sh --user
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Install Bazel'
   - script: |
       cd ./src/v2ray.com/core
-      bazel build --action_env=GOPATH=$GOPATH --action_env=PATH=$PATH --action_env=GPG_PASS=${SIGN_KEY_PASS} //release:all
+      $HOME/bin/bazel build --action_env=GOPATH=$GOPATH --action_env=PATH=$PATH --action_env=GPG_PASS=${SIGN_KEY_PASS} //release:all
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Build Binaries'
