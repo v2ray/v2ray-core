@@ -194,6 +194,10 @@ cp ${ART_ROOT}/v2ray-openbsd-64.zip .
 cp ${ART_ROOT}/v2ray-openbsd-32.zip .
 cp ${ART_ROOT}/v2ray-dragonfly-64.zip .
 cp /v2/build/src_all.zip .
+cp "$GOPATH/src/v2ray.com/core/release/install-release.sh" .
+
+sed -i "s/^NEW_VER=\"\"$/NEW_VER=\"${RELEASE_TAG}\"/" "install-release.sh"
+sed -i 's/^DIST_SRC=".*"$/DIST_SRC="jsdelivr"/' "install-release.sh"
 
 git add .
 git commit -m "Version ${RELEASE_TAG}"
