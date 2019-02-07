@@ -2,7 +2,6 @@ package scenarios
 
 import (
 	"context"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -442,8 +441,8 @@ func TestBlackhole(t *testing.T) {
 	common.Must(err)
 	defer CloseAllServers(servers)
 
-	if err := testTCPConn(serverPort2, 1024, time.Second*5)(); err != io.EOF {
-		t.Error("unexpected error: ", err)
+	if err := testTCPConn(serverPort2, 1024, time.Second*5)(); err == nil {
+		t.Error("nil error")
 	}
 }
 
