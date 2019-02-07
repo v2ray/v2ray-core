@@ -61,7 +61,6 @@ jobs:
   
   variables:
     GOPATH: '$(system.defaultWorkingDirectory)'
-    CODECOV_TOKEN: '$(coverage.token)'
     BAZEL_VER: '0.22.0'
 
   steps:
@@ -70,11 +69,21 @@ jobs:
     inputs:
       version: '1.11.5'
   - script: |
+      sudo apt-get -y update
+      sudo apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python openssl
+    displayName: Apt Install
+  - script: |
       go version
       go get -v -t -d v2ray.com/core/...
       go get -v -t -d v2ray.com/ext/...
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Fetch sources'
+  - script: |
+      mkdir release
+      cd src
+      zip -9 -r ../release/src_all.zip * -x '*.git*'
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Dump sources'
   - script: |
       curl -L -o bazel-installer.sh https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VER}/bazel-${BAZEL_VER}-installer-linux-x86_64.sh
       chmod +x bazel-installer.sh
@@ -86,3 +95,7 @@ jobs:
       $HOME/bin/bazel build --action_env=GOPATH=$GOPATH --action_env=PATH=$PATH --action_env=GPG_PASS=${SIGN_KEY_PASS} //release:all
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Build Binaries'
+  - script: |
+      cp ./src/v2ray.com/core/bazel-bin/release/*.zip ./release/
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Dump Binaries'
