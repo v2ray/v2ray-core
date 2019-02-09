@@ -9,12 +9,9 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/protocol/tls/cert"
 	. "v2ray.com/core/transport/internet/tls"
-	. "v2ray.com/ext/assert"
 )
 
 func TestCertificateIssuing(t *testing.T) {
-	assert := With(t)
-
 	certificate := ParseCertificate(cert.MustGenerate(nil, cert.Authority(true), cert.KeyUsage(x509.KeyUsageCertSign)))
 	certificate.Usage = Certificate_AUTHORITY_ISSUE
 
@@ -32,12 +29,12 @@ func TestCertificateIssuing(t *testing.T) {
 
 	x509Cert, err := x509.ParseCertificate(v2rayCert.Certificate[0])
 	common.Must(err)
-	assert(x509Cert.NotAfter.After(time.Now()), IsTrue)
+	if !x509Cert.NotAfter.After(time.Now()) {
+		t.Error("NotAfter: ", x509Cert.NotAfter)
+	}
 }
 
 func TestExpiredCertificate(t *testing.T) {
-	assert := With(t)
-
 	caCert := cert.MustGenerate(nil, cert.Authority(true), cert.KeyUsage(x509.KeyUsageCertSign))
 	expiredCert := cert.MustGenerate(caCert, cert.NotAfter(time.Now().Add(time.Minute*-2)), cert.CommonName("www.v2ray.com"), cert.DNSNames("www.v2ray.com"))
 
@@ -61,7 +58,9 @@ func TestExpiredCertificate(t *testing.T) {
 
 	x509Cert, err := x509.ParseCertificate(v2rayCert.Certificate[0])
 	common.Must(err)
-	assert(x509Cert.NotAfter.After(time.Now()), IsTrue)
+	if !x509Cert.NotAfter.After(time.Now()) {
+		t.Error("NotAfter: ", x509Cert.NotAfter)
+	}
 }
 
 func TestInsecureCertificates(t *testing.T) {

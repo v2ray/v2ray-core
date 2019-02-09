@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"v2ray.com/core/app/stats"
 	. "v2ray.com/core/app/stats/command"
 	"v2ray.com/core/common"
-	. "v2ray.com/ext/assert"
 )
 
 func TestGetStats(t *testing.T) {
-	assert := With(t)
-
 	m, err := stats.NewManager(context.Background(), &stats.Config{})
 	common.Must(err)
 
@@ -49,18 +49,19 @@ func TestGetStats(t *testing.T) {
 			Reset_: tc.reset,
 		})
 		if tc.err {
-			assert(err, IsNotNil)
+			if err == nil {
+				t.Error("nil error: ", tc.name)
+			}
 		} else {
 			common.Must(err)
-			assert(resp.Stat.Name, Equals, tc.name)
-			assert(resp.Stat.Value, Equals, tc.value)
+			if r := cmp.Diff(resp.Stat, &Stat{Name: tc.name, Value: tc.value}); r != "" {
+				t.Error(r)
+			}
 		}
 	}
 }
 
 func TestQueryStats(t *testing.T) {
-	assert := With(t)
-
 	m, err := stats.NewManager(context.Background(), &stats.Config{})
 	common.Must(err)
 
@@ -81,23 +82,10 @@ func TestQueryStats(t *testing.T) {
 		Pattern: "counter_",
 	})
 	common.Must(err)
-	assert(len(resp.Stat), Equals, 2)
-
-	v2 := false
-	v3 := false
-	for _, sc := range resp.Stat {
-		switch sc.Name {
-		case "test_counter_2":
-			assert(sc.Value, Equals, int64(2))
-			v2 = true
-		case "test_counter_3":
-			assert(sc.Value, Equals, int64(3))
-			v3 = true
-		default:
-			t.Error("unexpected stat name: ", sc.Name)
-			t.Fail()
-		}
+	if r := cmp.Diff(resp.Stat, []*Stat{
+		{Name: "test_counter_2", Value: 2},
+		{Name: "test_counter_3", Value: 3},
+	}, cmpopts.SortSlices(func(s1, s2 *Stat) bool { return s1.Name < s2.Name })); r != "" {
+		t.Error(r)
 	}
-	assert(v2, IsTrue)
-	assert(v3, IsTrue)
 }

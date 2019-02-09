@@ -7,7 +7,6 @@ import (
 
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/uuid"
-	. "v2ray.com/ext/assert"
 )
 
 func TestParseBytes(t *testing.T) {
@@ -48,33 +47,36 @@ func TestParseString(t *testing.T) {
 }
 
 func TestNewUUID(t *testing.T) {
-	assert := With(t)
-
 	uuid := New()
 	uuid2, err := ParseString(uuid.String())
 
 	common.Must(err)
-	assert(uuid.String(), Equals, uuid2.String())
-	assert(uuid.Bytes(), Equals, uuid2.Bytes())
+	if uuid.String() != uuid2.String() {
+		t.Error("uuid string: ", uuid.String(), " != ", uuid2.String())
+	}
+	if r := cmp.Diff(uuid.Bytes(), uuid2.Bytes()); r != "" {
+		t.Error(r)
+	}
 }
 
 func TestRandom(t *testing.T) {
-	assert := With(t)
-
 	uuid := New()
 	uuid2 := New()
 
-	assert(uuid.String(), NotEquals, uuid2.String())
-	assert(uuid.Bytes(), NotEquals, uuid2.Bytes())
+	if uuid.String() == uuid2.String() {
+		t.Error("duplicated uuid")
+	}
 }
 
 func TestEquals(t *testing.T) {
-	assert := With(t)
-
 	var uuid *UUID
 	var uuid2 *UUID
-	assert(uuid.Equals(uuid2), IsTrue)
+	if !uuid.Equals(uuid2) {
+		t.Error("empty uuid should equal")
+	}
 
 	uuid3 := New()
-	assert(uuid.Equals(&uuid3), IsFalse)
+	if uuid.Equals(&uuid3) {
+		t.Error("nil uuid equals non-nil uuid")
+	}
 }

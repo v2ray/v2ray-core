@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
@@ -20,12 +22,9 @@ import (
 	v2http "v2ray.com/core/proxy/http"
 	v2httptest "v2ray.com/core/testing/servers/http"
 	"v2ray.com/core/testing/servers/tcp"
-	. "v2ray.com/ext/assert"
 )
 
 func TestHttpConformance(t *testing.T) {
-	assert := With(t)
-
 	httpServerPort := tcp.PickPort()
 	httpServer := &v2httptest.Server{
 		Port:        httpServerPort,
@@ -55,6 +54,7 @@ func TestHttpConformance(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
 	{
 		transport := &http.Transport{
@@ -69,20 +69,19 @@ func TestHttpConformance(t *testing.T) {
 
 		resp, err := client.Get("http://127.0.0.1:" + httpServerPort.String())
 		common.Must(err)
-		assert(resp.StatusCode, Equals, 200)
+		if resp.StatusCode != 200 {
+			t.Fatal("status: ", resp.StatusCode)
+		}
 
 		content, err := ioutil.ReadAll(resp.Body)
 		common.Must(err)
-		assert(string(content), Equals, "Home")
-
+		if string(content) != "Home" {
+			t.Fatal("body: ", string(content))
+		}
 	}
-
-	CloseAllServers(servers)
 }
 
 func TestHttpError(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: func(msg []byte) []byte {
 			return []byte{}
@@ -116,6 +115,7 @@ func TestHttpError(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
 	{
 		transport := &http.Transport{
@@ -130,15 +130,13 @@ func TestHttpError(t *testing.T) {
 
 		resp, err := client.Get("http://127.0.0.1:" + dest.Port.String())
 		common.Must(err)
-		assert(resp.StatusCode, Equals, 503)
+		if resp.StatusCode != 503 {
+			t.Error("status: ", resp.StatusCode)
+		}
 	}
-
-	CloseAllServers(servers)
 }
 
 func TestHttpConnectMethod(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
@@ -166,6 +164,7 @@ func TestHttpConnectMethod(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
 	{
 		transport := &http.Transport{
@@ -187,21 +186,19 @@ func TestHttpConnectMethod(t *testing.T) {
 
 		resp, err := client.Do(req)
 		common.Must(err)
-		assert(resp.StatusCode, Equals, 200)
+		if resp.StatusCode != 200 {
+			t.Fatal("status: ", resp.StatusCode)
+		}
 
 		content := make([]byte, len(payload))
 		common.Must2(io.ReadFull(resp.Body, content))
-		common.Must(err)
-		assert(content, Equals, xor(payload))
-
+		if r := cmp.Diff(content, xor(payload)); r != "" {
+			t.Fatal(r)
+		}
 	}
-
-	CloseAllServers(servers)
 }
 
 func TestHttpPost(t *testing.T) {
-	assert := With(t)
-
 	httpServerPort := tcp.PickPort()
 	httpServer := &v2httptest.Server{
 		Port: httpServerPort,
@@ -245,6 +242,7 @@ func TestHttpPost(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
 	{
 		transport := &http.Transport{
@@ -262,15 +260,16 @@ func TestHttpPost(t *testing.T) {
 
 		resp, err := client.Post("http://127.0.0.1:"+httpServerPort.String()+"/testpost", "application/x-www-form-urlencoded", bytes.NewReader(payload))
 		common.Must(err)
-		assert(resp.StatusCode, Equals, 200)
+		if resp.StatusCode != 200 {
+			t.Fatal("status: ", resp.StatusCode)
+		}
 
 		content, err := ioutil.ReadAll(resp.Body)
 		common.Must(err)
-		assert(content, Equals, xor(payload))
-
+		if r := cmp.Diff(content, xor(payload)); r != "" {
+			t.Fatal(r)
+		}
 	}
-
-	CloseAllServers(servers)
 }
 
 func setProxyBasicAuth(req *http.Request, user, pass string) {
@@ -280,8 +279,6 @@ func setProxyBasicAuth(req *http.Request, user, pass string) {
 }
 
 func TestHttpBasicAuth(t *testing.T) {
-	assert := With(t)
-
 	httpServerPort := tcp.PickPort()
 	httpServer := &v2httptest.Server{
 		Port:        httpServerPort,
@@ -315,6 +312,7 @@ func TestHttpBasicAuth(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig)
 	common.Must(err)
+	defer CloseAllServers(servers)
 
 	{
 		transport := &http.Transport{
@@ -330,7 +328,9 @@ func TestHttpBasicAuth(t *testing.T) {
 		{
 			resp, err := client.Get("http://127.0.0.1:" + httpServerPort.String())
 			common.Must(err)
-			assert(resp.StatusCode, Equals, 407)
+			if resp.StatusCode != 407 {
+				t.Fatal("status: ", resp.StatusCode)
+			}
 		}
 
 		{
@@ -340,7 +340,9 @@ func TestHttpBasicAuth(t *testing.T) {
 			setProxyBasicAuth(req, "a", "c")
 			resp, err := client.Do(req)
 			common.Must(err)
-			assert(resp.StatusCode, Equals, 407)
+			if resp.StatusCode != 407 {
+				t.Fatal("status: ", resp.StatusCode)
+			}
 		}
 
 		{
@@ -350,13 +352,15 @@ func TestHttpBasicAuth(t *testing.T) {
 			setProxyBasicAuth(req, "a", "b")
 			resp, err := client.Do(req)
 			common.Must(err)
-			assert(resp.StatusCode, Equals, 200)
+			if resp.StatusCode != 200 {
+				t.Fatal("status: ", resp.StatusCode)
+			}
 
 			content, err := ioutil.ReadAll(resp.Body)
 			common.Must(err)
-			assert(string(content), Equals, "Home")
+			if string(content) != "Home" {
+				t.Fatal("body: ", string(content))
+			}
 		}
 	}
-
-	CloseAllServers(servers)
 }

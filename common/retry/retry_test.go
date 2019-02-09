@@ -7,7 +7,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	. "v2ray.com/core/common/retry"
-	. "v2ray.com/ext/assert"
 )
 
 var (
@@ -15,8 +14,6 @@ var (
 )
 
 func TestNoRetry(t *testing.T) {
-	assert := With(t)
-
 	startTime := time.Now().Unix()
 	err := Timed(10, 100000).On(func() error {
 		return nil
@@ -24,12 +21,12 @@ func TestNoRetry(t *testing.T) {
 	endTime := time.Now().Unix()
 
 	common.Must(err)
-	assert(endTime-startTime, AtLeast, int64(0))
+	if endTime < startTime {
+		t.Error("endTime < startTime: ", startTime, " -> ", endTime)
+	}
 }
 
 func TestRetryOnce(t *testing.T) {
-	assert := With(t)
-
 	startTime := time.Now()
 	called := 0
 	err := Timed(10, 1000).On(func() error {
@@ -42,12 +39,12 @@ func TestRetryOnce(t *testing.T) {
 	duration := time.Since(startTime)
 
 	common.Must(err)
-	assert(int64(duration/time.Millisecond), AtLeast, int64(900))
+	if v := int64(duration / time.Millisecond); v < 900 {
+		t.Error("duration: ", v)
+	}
 }
 
 func TestRetryMultiple(t *testing.T) {
-	assert := With(t)
-
 	startTime := time.Now()
 	called := 0
 	err := Timed(10, 1000).On(func() error {
@@ -60,12 +57,12 @@ func TestRetryMultiple(t *testing.T) {
 	duration := time.Since(startTime)
 
 	common.Must(err)
-	assert(int64(duration/time.Millisecond), AtLeast, int64(4900))
+	if v := int64(duration / time.Millisecond); v < 4900 {
+		t.Error("duration: ", v)
+	}
 }
 
 func TestRetryExhausted(t *testing.T) {
-	assert := With(t)
-
 	startTime := time.Now()
 	called := 0
 	err := Timed(2, 1000).On(func() error {
@@ -74,13 +71,16 @@ func TestRetryExhausted(t *testing.T) {
 	})
 	duration := time.Since(startTime)
 
-	assert(errors.Cause(err), Equals, ErrRetryFailed)
-	assert(int64(duration/time.Millisecond), AtLeast, int64(1900))
+	if errors.Cause(err) != ErrRetryFailed {
+		t.Error("cause: ", err)
+	}
+
+	if v := int64(duration / time.Millisecond); v < 1900 {
+		t.Error("duration: ", v)
+	}
 }
 
 func TestExponentialBackoff(t *testing.T) {
-	assert := With(t)
-
 	startTime := time.Now()
 	called := 0
 	err := ExponentialBackoff(10, 100).On(func() error {
@@ -89,6 +89,10 @@ func TestExponentialBackoff(t *testing.T) {
 	})
 	duration := time.Since(startTime)
 
-	assert(errors.Cause(err), Equals, ErrRetryFailed)
-	assert(int64(duration/time.Millisecond), AtLeast, int64(4000))
+	if errors.Cause(err) != ErrRetryFailed {
+		t.Error("cause: ", err)
+	}
+	if v := int64(duration / time.Millisecond); v < 4000 {
+		t.Error("duration: ", v)
+	}
 }

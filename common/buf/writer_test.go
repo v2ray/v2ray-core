@@ -7,15 +7,14 @@ import (
 	"io"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/transport/pipe"
-	. "v2ray.com/ext/assert"
 )
 
 func TestWriter(t *testing.T) {
-	assert := With(t)
-
 	lb := New()
 	common.Must2(lb.ReadFrom(rand.Reader))
 
@@ -25,53 +24,57 @@ func TestWriter(t *testing.T) {
 
 	writer := NewBufferedWriter(NewWriter(writeBuffer))
 	writer.SetBuffered(false)
-	err := writer.WriteMultiBuffer(MultiBuffer{lb})
-	common.Must(err)
-	assert(writer.Flush(), IsNil)
-	assert(expectedBytes, Equals, writeBuffer.Bytes())
+	common.Must(writer.WriteMultiBuffer(MultiBuffer{lb}))
+	common.Must(writer.Flush())
+
+	if r := cmp.Diff(expectedBytes, writeBuffer.Bytes()); r != "" {
+		t.Error(r)
+	}
 }
 
 func TestBytesWriterReadFrom(t *testing.T) {
-	assert := With(t)
-
 	const size = 50000
 	pReader, pWriter := pipe.New(pipe.WithSizeLimit(size))
 	reader := bufio.NewReader(io.LimitReader(rand.Reader, size))
 	writer := NewBufferedWriter(pWriter)
 	writer.SetBuffered(false)
 	nBytes, err := reader.WriteTo(writer)
-	assert(nBytes, Equals, int64(size))
+	if nBytes != size {
+		t.Fatal("unexpected size of bytes written: ", nBytes)
+	}
 	if err != nil {
 		t.Fatal("expect success, but actually error: ", err.Error())
 	}
 
 	mb, err := pReader.ReadMultiBuffer()
 	common.Must(err)
-	assert(mb.Len(), Equals, int32(size))
+	if mb.Len() != size {
+		t.Fatal("unexpected size read: ", mb.Len())
+	}
 }
 
 func TestDiscardBytes(t *testing.T) {
-	assert := With(t)
-
 	b := New()
 	common.Must2(b.ReadFullFrom(rand.Reader, Size))
 
 	nBytes, err := io.Copy(DiscardBytes, b)
-	assert(nBytes, Equals, int64(Size))
 	common.Must(err)
+	if nBytes != Size {
+		t.Error("copy size: ", nBytes)
+	}
 }
 
 func TestDiscardBytesMultiBuffer(t *testing.T) {
-	assert := With(t)
-
 	const size = 10240*1024 + 1
 	buffer := bytes.NewBuffer(make([]byte, 0, size))
 	common.Must2(buffer.ReadFrom(io.LimitReader(rand.Reader, size)))
 
 	r := NewReader(buffer)
 	nBytes, err := io.Copy(DiscardBytes, &BufferedReader{Reader: r})
-	assert(nBytes, Equals, int64(size))
 	common.Must(err)
+	if nBytes != size {
+		t.Error("copy size: ", nBytes)
+	}
 }
 
 func TestWriterInterface(t *testing.T) {
