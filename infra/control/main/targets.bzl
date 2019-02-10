@@ -1,5 +1,5 @@
-load("//bazel:build.bzl", "foreign_go_binary")
-load("//bazel:gpg.bzl", "gpg_sign")
+load("//infra/bazel:build.bzl", "foreign_go_binary")
+load("//infra/bazel:gpg.bzl", "gpg_sign")
 
 def gen_targets(matrix):
   output = "v2ctl"
