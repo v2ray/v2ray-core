@@ -15,11 +15,19 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/platform"
+	"v2ray.com/core/common/platform/filesystem"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/session"
-	"v2ray.com/ext/sysio"
 )
+
+func init() {
+	wd, err := os.Getwd()
+	common.Must(err)
+
+	common.Must(filesystem.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(wd, "..", "..", "release", "config", "geoip.dat")))
+	common.Must(filesystem.CopyFile(platform.GetAssetLocation("geosite.dat"), filepath.Join(wd, "..", "..", "release", "config", "geosite.dat")))
+}
 
 func withOutbound(outbound *session.Outbound) context.Context {
 	return session.ContextWithOutbound(context.Background(), outbound)
@@ -246,7 +254,7 @@ func TestRoutingRule(t *testing.T) {
 }
 
 func loadGeoSite(country string) ([]*Domain, error) {
-	geositeBytes, err := sysio.ReadAsset("geosite.dat")
+	geositeBytes, err := filesystem.ReadAsset("geosite.dat")
 	if err != nil {
 		return nil, err
 	}
@@ -265,8 +273,6 @@ func loadGeoSite(country string) ([]*Domain, error) {
 }
 
 func TestChinaSites(t *testing.T) {
-	common.Must(sysio.CopyFile(platform.GetAssetLocation("geosite.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "release", "config", "geosite.dat")))
-
 	domains, err := loadGeoSite("CN")
 	common.Must(err)
 
@@ -309,8 +315,6 @@ func TestChinaSites(t *testing.T) {
 }
 
 func BenchmarkMultiGeoIPMatcher(b *testing.B) {
-	common.Must(sysio.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "release", "config", "geoip.dat")))
-
 	var geoips []*GeoIP
 
 	{
