@@ -17,7 +17,6 @@ jobs:
   - script: |
       go version
       go get -v -t -d v2ray.com/core/...
-      go get -v -t -d v2ray.com/ext/...
       go get -u github.com/jstemmer/go-junit-report
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Fetch sources'

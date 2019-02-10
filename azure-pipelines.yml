@@ -42,7 +42,6 @@ jobs:
   - script: |
       go version
       go get -v -t -d v2ray.com/core/...
-      go get -v -t -d v2ray.com/ext/...
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Fetch sources'
   - script: |
@@ -75,7 +74,6 @@ jobs:
   - script: |
       go version
       go get -v -t -d v2ray.com/core/...
-      go get -v -t -d v2ray.com/ext/...
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Fetch sources'
   - script: |
