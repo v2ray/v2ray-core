@@ -52,6 +52,7 @@ func (e readError) Inner() error {
 	return e.error
 }
 
+// IsReadError returns true if the error in Copy() comes from reading.
 func IsReadError(err error) bool {
 	_, ok := err.(readError)
 	return ok
@@ -69,6 +70,7 @@ func (e writeError) Inner() error {
 	return e.error
 }
 
+// IsWriteError returns true if the error in Copy() comes from writing.
 func IsWriteError(err error) bool {
 	_, ok := err.(writeError)
 	return ok
