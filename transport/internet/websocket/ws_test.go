@@ -1,7 +1,6 @@
 package websocket_test
 
 import (
-	"bytes"
 	"context"
 	"runtime"
 	"testing"
@@ -13,12 +12,9 @@ import (
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 	. "v2ray.com/core/transport/internet/websocket"
-	. "v2ray.com/ext/assert"
 )
 
 func Test_listenWSAndDial(t *testing.T) {
-	assert := With(t)
-
 	listen, err := ListenWS(context.Background(), net.LocalHostIP, 13146, &internet.MemoryStreamConfig{
 		ProtocolName: "websocket",
 		ProtocolSettings: &Config{
@@ -29,15 +25,12 @@ func Test_listenWSAndDial(t *testing.T) {
 			defer c.Close()
 
 			var b [1024]byte
-			n, err := c.Read(b[:])
-			//common.Must(err)
+			_, err := c.Read(b[:])
 			if err != nil {
 				return
 			}
-			assert(bytes.HasPrefix(b[:n], []byte("Test connection")), IsTrue)
 
-			_, err = c.Write([]byte("Response"))
-			common.Must(err)
+			common.Must2(c.Write([]byte("Response")))
 		}(conn)
 	})
 	common.Must(err)
@@ -56,9 +49,11 @@ func Test_listenWSAndDial(t *testing.T) {
 	var b [1024]byte
 	n, err := conn.Read(b[:])
 	common.Must(err)
-	assert(string(b[:n]), Equals, "Response")
+	if string(b[:n]) != "Response" {
+		t.Error("response: ", string(b[:n]))
+	}
 
-	assert(conn.Close(), IsNil)
+	common.Must(conn.Close())
 	<-time.After(time.Second * 5)
 	conn, err = Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146), streamSettings)
 	common.Must(err)
@@ -66,14 +61,15 @@ func Test_listenWSAndDial(t *testing.T) {
 	common.Must(err)
 	n, err = conn.Read(b[:])
 	common.Must(err)
-	assert(string(b[:n]), Equals, "Response")
-	assert(conn.Close(), IsNil)
+	if string(b[:n]) != "Response" {
+		t.Error("response: ", string(b[:n]))
+	}
+	common.Must(conn.Close())
 
-	assert(listen.Close(), IsNil)
+	common.Must(listen.Close())
 }
 
 func TestDialWithRemoteAddr(t *testing.T) {
-	assert := With(t)
 	listen, err := ListenWS(context.Background(), net.LocalHostIP, 13148, &internet.MemoryStreamConfig{
 		ProtocolName: "websocket",
 		ProtocolSettings: &Config{
@@ -83,15 +79,12 @@ func TestDialWithRemoteAddr(t *testing.T) {
 		go func(c internet.Connection) {
 			defer c.Close()
 
-			assert(c.RemoteAddr().String(), HasPrefix, "1.1.1.1")
-
 			var b [1024]byte
-			n, err := c.Read(b[:])
+			_, err := c.Read(b[:])
 			//common.Must(err)
 			if err != nil {
 				return
 			}
-			assert(bytes.HasPrefix(b[:n], []byte("Test connection")), IsTrue)
 
 			_, err = c.Write([]byte("Response"))
 			common.Must(err)
@@ -111,17 +104,17 @@ func TestDialWithRemoteAddr(t *testing.T) {
 	var b [1024]byte
 	n, err := conn.Read(b[:])
 	common.Must(err)
-	assert(string(b[:n]), Equals, "Response")
+	if string(b[:n]) != "Response" {
+		t.Error("response: ", string(b[:n]))
+	}
 
-	assert(listen.Close(), IsNil)
+	common.Must(listen.Close())
 }
 
 func Test_listenWSAndDial_TLS(t *testing.T) {
 	if runtime.GOARCH == "arm64" {
 		return
 	}
-
-	assert := With(t)
 
 	start := time.Now()
 
@@ -149,5 +142,7 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 	_ = conn.Close()
 
 	end := time.Now()
-	assert(end.Before(start.Add(time.Second*5)), IsTrue)
+	if !end.Before(start.Add(time.Second * 5)) {
+		t.Error("end: ", end, " start: ", start)
+	}
 }

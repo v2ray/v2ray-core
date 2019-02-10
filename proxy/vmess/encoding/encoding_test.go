@@ -3,6 +3,8 @@ package encoding_test
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -10,7 +12,6 @@ import (
 	"v2ray.com/core/common/uuid"
 	"v2ray.com/core/proxy/vmess"
 	. "v2ray.com/core/proxy/vmess/encoding"
-	. "v2ray.com/ext/assert"
 )
 
 func toAccount(a *vmess.Account) protocol.Account {
@@ -20,8 +21,6 @@ func toAccount(a *vmess.Account) protocol.Account {
 }
 
 func TestRequestSerialization(t *testing.T) {
-	assert := With(t)
-
 	user := &protocol.MemoryUser{
 		Level: 0,
 		Email: "test@v2ray.com",
@@ -60,21 +59,18 @@ func TestRequestSerialization(t *testing.T) {
 	actualRequest, err := server.DecodeRequestHeader(buffer)
 	common.Must(err)
 
-	assert(expectedRequest.Version, Equals, actualRequest.Version)
-	assert(byte(expectedRequest.Command), Equals, byte(actualRequest.Command))
-	assert(byte(expectedRequest.Option), Equals, byte(actualRequest.Option))
-	assert(expectedRequest.Address, Equals, actualRequest.Address)
-	assert(expectedRequest.Port, Equals, actualRequest.Port)
-	assert(byte(expectedRequest.Security), Equals, byte(actualRequest.Security))
+	if r := cmp.Diff(actualRequest, expectedRequest, cmp.AllowUnexported(protocol.ID{})); r != "" {
+		t.Error(r)
+	}
 
 	_, err = server.DecodeRequestHeader(buffer2)
 	// anti replay attack
-	assert(err, IsNotNil)
+	if err == nil {
+		t.Error("nil error")
+	}
 }
 
 func TestInvalidRequest(t *testing.T) {
-	assert := With(t)
-
 	user := &protocol.MemoryUser{
 		Level: 0,
 		Email: "test@v2ray.com",
@@ -111,12 +107,12 @@ func TestInvalidRequest(t *testing.T) {
 
 	server := NewServerSession(userValidator, sessionHistory)
 	_, err := server.DecodeRequestHeader(buffer)
-	assert(err, IsNotNil)
+	if err == nil {
+		t.Error("nil error")
+	}
 }
 
 func TestMuxRequest(t *testing.T) {
-	assert := With(t)
-
 	user := &protocol.MemoryUser{
 		Level: 0,
 		Email: "test@v2ray.com",
@@ -133,6 +129,7 @@ func TestMuxRequest(t *testing.T) {
 		User:     user,
 		Command:  protocol.RequestCommandMux,
 		Security: protocol.SecurityType_AES128_GCM,
+		Address:  net.DomainAddress("v1.mux.cool"),
 	}
 
 	buffer := buf.New()
@@ -153,8 +150,7 @@ func TestMuxRequest(t *testing.T) {
 	actualRequest, err := server.DecodeRequestHeader(buffer)
 	common.Must(err)
 
-	assert(expectedRequest.Version, Equals, actualRequest.Version)
-	assert(byte(expectedRequest.Command), Equals, byte(actualRequest.Command))
-	assert(byte(expectedRequest.Option), Equals, byte(actualRequest.Option))
-	assert(byte(expectedRequest.Security), Equals, byte(actualRequest.Security))
+	if r := cmp.Diff(actualRequest, expectedRequest, cmp.AllowUnexported(protocol.ID{})); r != "" {
+		t.Error(r)
+	}
 }

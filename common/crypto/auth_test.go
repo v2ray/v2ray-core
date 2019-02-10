@@ -8,16 +8,15 @@ import (
 	"io"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/protocol"
-	. "v2ray.com/ext/assert"
 )
 
 func TestAuthenticationReaderWriter(t *testing.T) {
-	assert := With(t)
-
 	key := make([]byte, 16)
 	rand.Read(key)
 	block, err := aes.NewCipher(key)
@@ -31,7 +30,9 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	rand.Read(rawPayload)
 
 	payload := buf.MergeBytes(nil, rawPayload)
-	assert(payload.Len(), Equals, int32(payloadSize))
+	if r := cmp.Diff(payload.Bytes(), rawPayload); r != "" {
+		t.Error(r)
+	}
 
 	cache := bytes.NewBuffer(nil)
 	iv := make([]byte, 12)
@@ -43,9 +44,11 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 		AdditionalDataGenerator: GenerateEmptyBytes(),
 	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream, nil)
 
-	assert(writer.WriteMultiBuffer(payload), IsNil)
-	assert(cache.Len(), Equals, int(82658))
-	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
+	common.Must(writer.WriteMultiBuffer(payload))
+	if cache.Len() <= 1024*80 {
+		t.Error("cache len: ", cache.Len())
+	}
+	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{}))
 
 	reader := NewAuthenticationReader(&AEADAuthenticator{
 		AEAD:                    aead,
@@ -62,19 +65,23 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 		mb, _ = buf.MergeMulti(mb, mb2)
 	}
 
-	assert(mb.Len(), Equals, int32(payloadSize))
+	if mb.Len() != payloadSize {
+		t.Error("mb len: ", mb.Len())
+	}
 
 	mbContent := make([]byte, payloadSize)
 	buf.SplitBytes(mb, mbContent)
-	assert(mbContent, Equals, rawPayload)
+	if r := cmp.Diff(mbContent, rawPayload); r != "" {
+		t.Error(r)
+	}
 
 	_, err = reader.ReadMultiBuffer()
-	assert(err, Equals, io.EOF)
+	if err != io.EOF {
+		t.Error("error: ", err)
+	}
 }
 
 func TestAuthenticationReaderWriterPacket(t *testing.T) {
-	assert := With(t)
-
 	key := make([]byte, 16)
 	common.Must2(rand.Read(key))
 	block, err := aes.NewCipher(key)
@@ -102,10 +109,12 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 	pb2.Write([]byte("efgh"))
 	payload = append(payload, pb2)
 
-	assert(writer.WriteMultiBuffer(payload), IsNil)
-	assert(cache.Len(), GreaterThan, int32(0))
-	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
-	common.Must(err)
+	common.Must(writer.WriteMultiBuffer(payload))
+	if cache.Len() == 0 {
+		t.Error("cache len: ", cache.Len())
+	}
+
+	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{}))
 
 	reader := NewAuthenticationReader(&AEADAuthenticator{
 		AEAD:                    aead,
@@ -117,13 +126,21 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 	common.Must(err)
 
 	mb, b1 := buf.SplitFirst(mb)
-	assert(b1.String(), Equals, "abcd")
+	if b1.String() != "abcd" {
+		t.Error("b1: ", b1.String())
+	}
 
 	mb, b2 := buf.SplitFirst(mb)
-	assert(b2.String(), Equals, "efgh")
+	if b2.String() != "efgh" {
+		t.Error("b2: ", b2.String())
+	}
 
-	assert(mb.IsEmpty(), IsTrue)
+	if !mb.IsEmpty() {
+		t.Error("not empty")
+	}
 
 	_, err = reader.ReadMultiBuffer()
-	assert(err, Equals, io.EOF)
+	if err != io.EOF {
+		t.Error("error: ", err)
+	}
 }
