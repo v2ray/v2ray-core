@@ -36,9 +36,9 @@ func TestNormalizeEnvName(t *testing.T) {
 }
 
 func TestEnvFlag(t *testing.T) {
-	if v := EnvFlag{
+	if v := (EnvFlag{
 		Name: "xxxxx.y",
-	}.GetValueAsInt(10); v != 10 {
+	}.GetValueAsInt(10)); v != 10 {
 		t.Error("env value: ", v)
 	}
 }

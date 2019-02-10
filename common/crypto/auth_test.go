@@ -30,9 +30,6 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	rand.Read(rawPayload)
 
 	payload := buf.MergeBytes(nil, rawPayload)
-	if r := cmp.Diff(payload.Bytes(), rawPayload); r != "" {
-		t.Error(r)
-	}
 
 	cache := bytes.NewBuffer(nil)
 	iv := make([]byte, 12)
