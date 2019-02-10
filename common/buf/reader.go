@@ -37,19 +37,8 @@ func ReadBuffer(r io.Reader) (*Buffer, error) {
 	if nBytes > 0 {
 		common.Must(b.WriteByte(firstByte[0]))
 	}
-	for i := 0; i < 64; i++ {
-		_, err := b.ReadFrom(r)
-		if !b.IsEmpty() {
-			return b, nil
-		}
-		if err != nil {
-			b.Release()
-			return nil, err
-		}
-	}
-
-	b.Release()
-	return nil, newError("Reader returns too many empty payloads.")
+	b.ReadFrom(r)
+	return b, nil
 }
 
 // BufferedReader is a Reader that keeps its internal buffer.
