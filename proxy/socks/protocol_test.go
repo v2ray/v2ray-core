@@ -9,7 +9,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
-	_ "v2ray.com/core/common/net/testing"
 	"v2ray.com/core/common/protocol"
 	. "v2ray.com/core/proxy/socks"
 )
