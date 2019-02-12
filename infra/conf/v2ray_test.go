@@ -221,7 +221,9 @@ func TestV2RayConfig(t *testing.T) {
 								},
 							},
 						}),
-						ProxySettings: serial.ToTypedMessage(&dns_proxy.Config{}),
+						ProxySettings: serial.ToTypedMessage(&dns_proxy.Config{
+							Server: &net.Endpoint{},
+						}),
 					},
 				},
 				Inbound: []*core.InboundHandlerConfig{

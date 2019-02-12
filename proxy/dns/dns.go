@@ -41,6 +41,7 @@ type Handler struct {
 	ipv4Lookup      dns.IPv4Lookup
 	ipv6Lookup      dns.IPv6Lookup
 	ownLinkVerifier ownLinkVerifier
+	server          net.Destination
 }
 
 func (h *Handler) Init(config *Config, dnsClient dns.Client) error {
@@ -58,6 +59,10 @@ func (h *Handler) Init(config *Config, dnsClient dns.Client) error {
 
 	if v, ok := dnsClient.(ownLinkVerifier); ok {
 		h.ownLinkVerifier = v
+	}
+
+	if config.Server != nil {
+		h.server = config.Server.AsDestination()
 	}
 	return nil
 }
@@ -97,7 +102,20 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, d internet.
 		return newError("invalid outbound")
 	}
 
+	srcNetwork := outbound.Target.Network
+
 	dest := outbound.Target
+	if h.server.Network != net.Network_Unknown {
+		dest.Network = h.server.Network
+	}
+	if h.server.Address != nil {
+		dest.Address = h.server.Address
+	}
+	if h.server.Port != 0 {
+		dest.Port = h.server.Port
+	}
+
+	newError("handling DNS traffic to ", dest).WriteToLog(session.ExportIDToError(ctx))
 
 	conn := &outboundConn{
 		dialer: func() (internet.Connection, error) {
@@ -108,7 +126,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, d internet.
 
 	var reader dns_proto.MessageReader
 	var writer dns_proto.MessageWriter
-	if dest.Network == net.Network_TCP {
+	if srcNetwork == net.Network_TCP {
 		reader = dns_proto.NewTCPReader(link.Reader)
 		writer = &dns_proto.TCPWriter{
 			Writer: link.Writer,

@@ -236,3 +236,93 @@ func TestTCPDNSTunnel(t *testing.T) {
 		t.Error(r)
 	}
 }
+
+func TestUDP2TCPDNSTunnel(t *testing.T) {
+	port := tcp.PickPort()
+
+	dnsServer := dns.Server{
+		Addr:    "127.0.0.1:" + port.String(),
+		Net:     "tcp",
+		Handler: &staticHandler{},
+	}
+	defer dnsServer.Shutdown()
+
+	go dnsServer.ListenAndServe()
+	time.Sleep(time.Second)
+
+	serverPort := tcp.PickPort()
+	config := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&dnsapp.Config{
+				NameServer: []*dnsapp.NameServer{
+					{
+						Address: &net.Endpoint{
+							Network: net.Network_UDP,
+							Address: &net.IPOrDomain{
+								Address: &net.IPOrDomain_Ip{
+									Ip: []byte{127, 0, 0, 1},
+								},
+							},
+							Port: uint32(port),
+						},
+					},
+				},
+			}),
+			serial.ToTypedMessage(&dispatcher.Config{}),
+			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
+			serial.ToTypedMessage(&proxyman.InboundConfig{}),
+			serial.ToTypedMessage(&policy.Config{}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address:  net.NewIPOrDomain(net.LocalHostIP),
+					Port:     uint32(port),
+					Networks: []net.Network{net.Network_TCP},
+				}),
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&dns_proxy.Config{
+					Server: &net.Endpoint{
+						Network: net.Network_TCP,
+					},
+				}),
+			},
+		},
+	}
+
+	v, err := core.New(config)
+	common.Must(err)
+	common.Must(v.Start())
+	defer v.Close()
+
+	m1 := new(dns.Msg)
+	m1.Id = dns.Id()
+	m1.RecursionDesired = true
+	m1.Question = make([]dns.Question, 1)
+	m1.Question[0] = dns.Question{"google.com.", dns.TypeA, dns.ClassINET}
+
+	c := &dns.Client{
+		Net: "tcp",
+	}
+	in, _, err := c.Exchange(m1, "127.0.0.1:"+serverPort.String())
+	common.Must(err)
+
+	if len(in.Answer) != 1 {
+		t.Fatal("len(answer): ", len(in.Answer))
+	}
+
+	rr, ok := in.Answer[0].(*dns.A)
+	if !ok {
+		t.Fatal("not A record")
+	}
+	if r := cmp.Diff(rr.A[:], net.IP{8, 8, 8, 8}); r != "" {
+		t.Error(r)
+	}
+}
