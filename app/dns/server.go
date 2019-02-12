@@ -206,6 +206,7 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 
 	ips := s.lookupStatic(domain, option, 0)
 	if ips != nil && ips[0].Family().IsIP() {
+		newError("returning ", len(ips), " IPs for domain ", domain).WriteToLog()
 		return toNetIP(ips), nil
 	}
 
@@ -220,6 +221,7 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 		idx := s.domainMatcher.Match(domain)
 		if idx > 0 {
 			ns := s.clients[s.domainIndexMap[idx]]
+			newError("querying domain ", domain, " at ", ns.Name()).WriteToLog()
 			ips, err := s.queryIPTimeout(ns, domain, option)
 			if len(ips) > 0 {
 				return ips, nil
