@@ -5,10 +5,6 @@ jobs:
   pool:
     vmImage: ${{ parameters.vmImage }}
 
-  variables:
-    GOPATH: '$(system.defaultWorkingDirectory)'
-    GOBIN:  '$(GOPATH)/bin'
-
   steps:
   - checkout: self
   - task: GoTool@0
