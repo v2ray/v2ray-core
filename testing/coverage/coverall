@@ -2,12 +2,12 @@
 
 FAIL=0
 
-V2RAY_OUT=${GOPATH}/out/v2ray
-V2RAY_COV=${V2RAY_OUT}/cov
+V2RAY_OUT=${PWD}/out/v2ray
+export V2RAY_COV=${V2RAY_OUT}/cov
 COVERAGE_FILE=${V2RAY_COV}/coverage.txt
 
 function test_package {
-  DIR="v2ray.com/core$1"
+  DIR=".$1"
   DEP=$(go list -f '{{ join .Deps "\n" }}' $DIR | grep v2ray | tr '\n' ',')
   DEP=${DEP}$DIR
   RND_NAME=$(openssl rand -hex 16)
