@@ -17,6 +17,7 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
 	http_proto "v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
@@ -84,6 +85,12 @@ type readerOnly struct {
 }
 
 func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher routing.Dispatcher) error {
+	if inbound := session.InboundFromContext(ctx); inbound != nil {
+		inbound.User = &protocol.MemoryUser{
+			Level: s.config.UserLevel,
+		}
+	}
+
 	reader := bufio.NewReaderSize(readerOnly{conn}, buf.Size)
 
 Start:

@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
@@ -97,6 +98,12 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	}
 	if !dest.IsValid() || dest.Address == nil {
 		return newError("unable to get destination")
+	}
+
+	if inbound := session.InboundFromContext(ctx); inbound != nil {
+		inbound.User = &protocol.MemoryUser{
+			Level: d.config.UserLevel,
+		}
 	}
 
 	plcy := d.policy()
