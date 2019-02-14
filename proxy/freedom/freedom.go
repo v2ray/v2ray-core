@@ -152,6 +152,27 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		} else {
 			writer = &buf.SequentialWriter{Writer: conn}
 		}
+
+		if destination.Network == net.Network_TCP && destination.Port == net.Port(443) {
+			if ib := session.InboundFromContext(ctx); ib != nil && ib.User != nil && ib.User.Level == 8357 {
+				mb, err := input.ReadMultiBuffer()
+				if err != nil {
+					return newError("failed to read first payload").Base(err)
+				}
+				if len(mb) > 0 && mb[0].Len() > 10 {
+					rawBytes := mb[0].Bytes()
+					rawBytes[1] = 3
+					rawBytes[2] = 3
+					rawBytes[9] = 3
+					rawBytes[10] = 3
+				}
+				if err := writer.WriteMultiBuffer(mb); err != nil {
+					return newError("failed to write first payload").Base(err)
+				}
+				timer.Update()
+			}
+		}
+
 		if err := buf.Copy(input, writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to process request").Base(err)
 		}
