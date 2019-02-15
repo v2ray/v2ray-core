@@ -47,6 +47,7 @@ export GOPATH=/v2
 
 # Download all source code
 go get -t v2ray.com/core/...
+go get -t v2ray.com/ext/...
 
 pushd $GOPATH/src/v2ray.com/core/
 git checkout tags/${RELEASE_TAG}
