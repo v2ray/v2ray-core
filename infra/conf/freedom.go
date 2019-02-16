@@ -29,7 +29,7 @@ func (c *FreedomConfig) Build() (proto.Message, error) {
 	case "useip6", "useipv6", "use_ipv6", "use_ip_v6", "use_ip6":
 		config.DomainStrategy = freedom.Config_USE_IP6
 	}
-	config.Timeout = 600
+
 	if c.Timeout != nil {
 		config.Timeout = *c.Timeout
 	}
