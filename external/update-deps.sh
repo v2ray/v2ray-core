@@ -31,6 +31,12 @@ rm "./github.com/gorilla/websocket/trace_17.go"
 rm "./github.com/gorilla/websocket/trace.go"
 rm "./github.com/gorilla/websocket/x_net_proxy.go"
 
+rsync -rv "$GOPATH/src/github.com/refraction-networking/utls/" "./github.com/refraction-networking/utls/"
+rm -rf ./github.com/refraction-networking/utls/\.*
+rm -rf ./github.com/refraction-networking/utls/examples
+rm -rf ./github.com/refraction-networking/utls/testdata
+rm -rf ./github.com/refraction-networking/utls/testenv
+
 find . -name "*_test.go" -delete
 find . -name "*.yml" -delete
 find . -name "*.go" -type f -print0 | LC_ALL=C xargs -0 sed -i '' 's#\"github\.com#\"v2ray\.com/core/external/github\.com#g'

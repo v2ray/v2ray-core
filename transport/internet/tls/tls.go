@@ -7,6 +7,8 @@ import (
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+
+	utls "v2ray.com/core/external/github.com/refraction-networking/utls"
 )
 
 //go:generate errorgen
@@ -41,6 +43,21 @@ func (c *conn) HandshakeAddress() net.Address {
 func Client(c net.Conn, config *tls.Config) net.Conn {
 	tlsConn := tls.Client(c, config)
 	return &conn{Conn: tlsConn}
+}
+
+func copyConfig(c *tls.Config) *utls.Config {
+	return &utls.Config{
+		NextProtos:         c.NextProtos,
+		ServerName:         c.ServerName,
+		InsecureSkipVerify: c.InsecureSkipVerify,
+		MinVersion:         utls.VersionTLS12,
+		MaxVersion:         utls.VersionTLS12,
+	}
+}
+
+func UClient(c net.Conn, config *tls.Config) net.Conn {
+	uConfig := copyConfig(config)
+	return utls.Client(c, uConfig)
 }
 
 // Server initiates a TLS server handshake on the given connection.

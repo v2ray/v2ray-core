@@ -141,6 +141,10 @@ func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.Cli
 	}
 }
 
+func (c *Config) IsExperiment8357() bool {
+	return c.ServerName == "experiment:8357"
+}
+
 // GetTLSConfig converts this Config into tls.Config.
 func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 	config := &tls.Config{
@@ -182,7 +186,7 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 		config.GetCertificate = getGetCertificateFunc(config, caCerts)
 	}
 
-	if len(c.ServerName) > 0 {
+	if len(c.ServerName) > 0 && c.ServerName != "experiment:8357" {
 		config.ServerName = c.ServerName
 	}
 	if len(c.NextProtocol) > 0 {
