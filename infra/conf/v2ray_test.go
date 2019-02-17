@@ -186,7 +186,6 @@ func TestV2RayConfig(t *testing.T) {
 						}),
 						ProxySettings: serial.ToTypedMessage(&freedom.Config{
 							DomainStrategy: freedom.Config_AS_IS,
-							Timeout:        600,
 							UserLevel:      0,
 						}),
 					},
