@@ -83,14 +83,17 @@
   "dns": {
     // Static hosts, similar to hosts file.
     "hosts": {
-      // Blacklist all Baidu domains, including all sub domains.
-      "domain:baidu.com": "127.0.0.1",
+      // Match v2ray.com to another domain on CloudFlare. This domain will be used when querying IPs for v2ray.com.
+      "domain:v2ray.com": "www.vicemc.net",
 
-      // Match v2ray.com to another domain on CloudFlare. This domain will be used
-      // when querying IPs for v2ray.com.
-      "domain:v2ray.com": "www.vicemc.net"
+      // The following settings help to eliminate DNS poisoning in mainland China.
+      // It is safe to comment these out if this is not the case for you.
+      "domain:github.io": "pages.github.com",
+      "domain:wikipedia.org": "www.wikimedia.org",
+      "domain:shadowsocks.org": "electronicsrealm.com"
     },
     "servers": [
+      "1.1.1.1",
       {
         "address": "114.114.114.114",
         "port": 53,
@@ -100,7 +103,6 @@
         ]
       },
       "8.8.8.8",
-      "1.1.1.1",
       "localhost"
     ]
   },
