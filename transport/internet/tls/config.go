@@ -5,6 +5,7 @@ package tls
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 var (
 	globalSessionCache = tls.NewLRUClientSessionCache(128)
 )
+
+const exp8357 = "experiment:8357"
 
 // ParseCertificate converts a cert.Certificate to Certificate.
 func ParseCertificate(c *cert.Certificate) *Certificate {
@@ -142,7 +145,15 @@ func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.Cli
 }
 
 func (c *Config) IsExperiment8357() bool {
-	return c.ServerName == "experiment:8357"
+	return strings.HasPrefix(c.ServerName, exp8357)
+}
+
+func (c *Config) parseServerName() string {
+	if c.IsExperiment8357() {
+		return c.ServerName[len(exp8357):]
+	}
+
+	return c.ServerName
 }
 
 // GetTLSConfig converts this Config into tls.Config.
@@ -186,9 +197,10 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 		config.GetCertificate = getGetCertificateFunc(config, caCerts)
 	}
 
-	if len(c.ServerName) > 0 && c.ServerName != "experiment:8357" {
-		config.ServerName = c.ServerName
+	if sn := c.parseServerName(); len(sn) > 0 {
+		config.ServerName = sn
 	}
+
 	if len(c.NextProtocol) > 0 {
 		config.NextProtos = c.NextProtocol
 	}
