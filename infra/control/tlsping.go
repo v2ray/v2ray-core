@@ -2,6 +2,7 @@ package control
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
 	"net"
@@ -19,6 +20,15 @@ func (c *TlsPingCommand) Description() Description {
 	return Description{
 		Short: "Ping the domain with TLS handshake",
 		Usage: []string{"v2ctl tlsping <domain> --ip <ip>"},
+	}
+}
+
+func printCertificates(certs []*x509.Certificate) {
+	for _, cert := range certs {
+		if len(cert.DNSNames) == 0 {
+			continue
+		}
+		fmt.Println("Allowed domains: ", cert.DNSNames)
 	}
 }
 
@@ -53,6 +63,7 @@ func (c *TlsPingCommand) Execute(args []string) error {
 	}
 	fmt.Println("Using IP: ", ip.String())
 
+	fmt.Println("-------------------")
 	fmt.Println("Pinging without SNI")
 	{
 		tcpConn, err := net.DialTCP("tcp", nil, &net.TCPAddr{IP: ip, Port: 443})
@@ -70,10 +81,12 @@ func (c *TlsPingCommand) Execute(args []string) error {
 			fmt.Println("Handshake failure: ", err)
 		} else {
 			fmt.Println("Handshake succeeded")
+			printCertificates(tlsConn.ConnectionState().PeerCertificates)
 		}
 		tlsConn.Close()
 	}
 
+	fmt.Println("-------------------")
 	fmt.Println("Pinging with SNI")
 	{
 		tcpConn, err := net.DialTCP("tcp", nil, &net.TCPAddr{IP: ip, Port: 443})
@@ -91,6 +104,7 @@ func (c *TlsPingCommand) Execute(args []string) error {
 			fmt.Println("handshake failure: ", err)
 		} else {
 			fmt.Println("handshake succeeded")
+			printCertificates(tlsConn.ConnectionState().PeerCertificates)
 		}
 		tlsConn.Close()
 	}
