@@ -80,6 +80,11 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 			return nil, newError("neither IP address nor proxied domain specified for domain: ", mapping.Domain).AtWarning()
 		}
 
+		// Special handling for localhost IPv6. This is a dirty workaround as JSON config supports only single IP mapping.
+		if len(ips) == 1 && ips[0] == net.LocalHostIP {
+			ips = append(ips, net.LocalHostIPv6)
+		}
+
 		sh.ips[id] = ips
 	}
 
