@@ -11,16 +11,16 @@ import (
 	. "v2ray.com/core/proxy/vmess"
 )
 
+func toAccount(a *Account) protocol.Account {
+	account, err := a.AsAccount()
+	common.Must(err)
+	return account
+}
+
 func TestUserValidator(t *testing.T) {
 	hasher := protocol.DefaultIDHash
 	v := NewTimedUserValidator(hasher)
 	defer common.Close(v)
-
-	toAccount := func(a *Account) protocol.Account {
-		account, err := a.AsAccount()
-		common.Must(err)
-		return account
-	}
 
 	id := uuid.New()
 	user := &protocol.MemoryUser{
@@ -86,5 +86,25 @@ func TestUserValidator(t *testing.T) {
 	}
 	if v := v.Remove(user.Email); v {
 		t.Error("remove user twice")
+	}
+}
+
+func BenchmarkUserValidator(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		hasher := protocol.DefaultIDHash
+		v := NewTimedUserValidator(hasher)
+
+		for j := 0; j < 1500; j++ {
+			id := uuid.New()
+			v.Add(&protocol.MemoryUser{
+				Email: "test",
+				Account: toAccount(&Account{
+					Id:      id.String(),
+					AlterId: 16,
+				}),
+			})
+		}
+
+		common.Close(v)
 	}
 }
