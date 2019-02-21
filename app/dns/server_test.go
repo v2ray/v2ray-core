@@ -60,6 +60,8 @@ func (*staticHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 			rr, err := dns.NewRR("ipv6.google.com. IN AAAA 2001:4860:4860::8888")
 			common.Must(err)
 			ans.Answer = append(ans.Answer, rr)
+		} else if q.Name == "notexist.google.com." && q.Qtype == dns.TypeAAAA {
+			ans.MsgHdr.Rcode = dns.RcodeNameError
 		}
 	}
 	w.WriteMsg(ans)
@@ -183,6 +185,27 @@ func TestUDPServer(t *testing.T) {
 
 		if r := cmp.Diff(ips, []net.IP{{9, 9, 9, 9}}); r != "" {
 			t.Fatal(r)
+		}
+	}
+
+	{
+		_, err := client.LookupIP("notexist.google.com")
+		if err == nil {
+			t.Fatal("nil error")
+		}
+		if r := feature_dns.RCodeFromError(err); r != uint16(dns.RcodeNameError) {
+			t.Fatal("expected NameError, but got ", r)
+		}
+	}
+
+	{
+		clientv6 := client.(feature_dns.IPv6Lookup)
+		ips, err := clientv6.LookupIPv6("ipv4only.google.com")
+		if err != feature_dns.ErrEmptyResponse {
+			t.Fatal("error: ", err)
+		}
+		if len(ips) != 0 {
+			t.Fatal("ips: ", ips)
 		}
 	}
 

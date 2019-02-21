@@ -32,6 +32,9 @@ func (*Client) LookupIP(host string) ([]net.IP, error) {
 			parsedIPs = append(parsedIPs, parsed.IP())
 		}
 	}
+	if len(parsedIPs) == 0 {
+		return nil, dns.ErrEmptyResponse
+	}
 	return parsedIPs, nil
 }
 
@@ -47,6 +50,9 @@ func (c *Client) LookupIPv4(host string) ([]net.IP, error) {
 			ipv4 = append(ipv4, ip)
 		}
 	}
+	if len(ipv4) == 0 {
+		return nil, dns.ErrEmptyResponse
+	}
 	return ipv4, nil
 }
 
@@ -61,6 +67,9 @@ func (c *Client) LookupIPv6(host string) ([]net.IP, error) {
 		if len(ip) == net.IPv6len {
 			ipv6 = append(ipv6, ip)
 		}
+	}
+	if len(ipv6) == 0 {
+		return nil, dns.ErrEmptyResponse
 	}
 	return ipv6, nil
 }

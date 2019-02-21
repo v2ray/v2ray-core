@@ -63,6 +63,8 @@ func (*staticHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 			rr, err := dns.NewRR("ipv6.google.com. IN AAAA 2001:4860:4860::8888")
 			common.Must(err)
 			ans.Answer = append(ans.Answer, rr)
+		} else if q.Name == "notexist.google.com." && q.Qtype == dns.TypeAAAA {
+			ans.MsgHdr.Rcode = dns.RcodeNameError
 		}
 	}
 	w.WriteMsg(ans)
@@ -128,26 +130,60 @@ func TestUDPDNSTunnel(t *testing.T) {
 	common.Must(v.Start())
 	defer v.Close()
 
-	m1 := new(dns.Msg)
-	m1.Id = dns.Id()
-	m1.RecursionDesired = true
-	m1.Question = make([]dns.Question, 1)
-	m1.Question[0] = dns.Question{"google.com.", dns.TypeA, dns.ClassINET}
+	{
+		m1 := new(dns.Msg)
+		m1.Id = dns.Id()
+		m1.RecursionDesired = true
+		m1.Question = make([]dns.Question, 1)
+		m1.Question[0] = dns.Question{"google.com.", dns.TypeA, dns.ClassINET}
 
-	c := new(dns.Client)
-	in, _, err := c.Exchange(m1, "127.0.0.1:"+strconv.Itoa(int(serverPort)))
-	common.Must(err)
+		c := new(dns.Client)
+		in, _, err := c.Exchange(m1, "127.0.0.1:"+strconv.Itoa(int(serverPort)))
+		common.Must(err)
 
-	if len(in.Answer) != 1 {
-		t.Fatal("len(answer): ", len(in.Answer))
+		if len(in.Answer) != 1 {
+			t.Fatal("len(answer): ", len(in.Answer))
+		}
+
+		rr, ok := in.Answer[0].(*dns.A)
+		if !ok {
+			t.Fatal("not A record")
+		}
+		if r := cmp.Diff(rr.A[:], net.IP{8, 8, 8, 8}); r != "" {
+			t.Error(r)
+		}
 	}
 
-	rr, ok := in.Answer[0].(*dns.A)
-	if !ok {
-		t.Fatal("not A record")
+	{
+		m1 := new(dns.Msg)
+		m1.Id = dns.Id()
+		m1.RecursionDesired = true
+		m1.Question = make([]dns.Question, 1)
+		m1.Question[0] = dns.Question{"ipv4only.google.com.", dns.TypeAAAA, dns.ClassINET}
+
+		c := new(dns.Client)
+		in, _, err := c.Exchange(m1, "127.0.0.1:"+strconv.Itoa(int(serverPort)))
+		common.Must(err)
+
+		if len(in.Answer) != 0 {
+			t.Fatal("len(answer): ", len(in.Answer))
+		}
 	}
-	if r := cmp.Diff(rr.A[:], net.IP{8, 8, 8, 8}); r != "" {
-		t.Error(r)
+
+	{
+		m1 := new(dns.Msg)
+		m1.Id = dns.Id()
+		m1.RecursionDesired = true
+		m1.Question = make([]dns.Question, 1)
+		m1.Question[0] = dns.Question{"notexist.google.com.", dns.TypeAAAA, dns.ClassINET}
+
+		c := new(dns.Client)
+		in, _, err := c.Exchange(m1, "127.0.0.1:"+strconv.Itoa(int(serverPort)))
+		common.Must(err)
+
+		if in.Rcode != dns.RcodeNameError {
+			t.Error("expected NameError, but got ", in.Rcode)
+		}
 	}
 }
 

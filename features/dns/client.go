@@ -1,7 +1,9 @@
 package dns
 
 import (
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/features"
 )
 
@@ -34,4 +36,24 @@ type IPv6Lookup interface {
 // v2ray:api:beta
 func ClientType() interface{} {
 	return (*Client)(nil)
+}
+
+// ErrEmptyResponse indicates that DNS query succeeded but no answer was returned.
+var ErrEmptyResponse = errors.New("empty response")
+
+type RCodeError uint16
+
+func (e RCodeError) Error() string {
+	return serial.Concat("rcode: ", uint16(e))
+}
+
+func RCodeFromError(err error) uint16 {
+	if err == nil {
+		return 0
+	}
+	cause := errors.Cause(err)
+	if r, ok := cause.(RCodeError); ok {
+		return uint16(r)
+	}
+	return 0
 }
