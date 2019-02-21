@@ -5,7 +5,6 @@ package dns
 import (
 	"context"
 	"encoding/binary"
-	fmt "fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -163,6 +162,7 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, packet *udp_prot
 		Expire: now.Add(time.Second * 600),
 	}
 
+L:
 	for {
 		header, err := parser.AnswerHeader()
 		if err != nil {
@@ -181,6 +181,10 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, packet *udp_prot
 		}
 
 		if header.Type != recType {
+			if err := parser.SkipAnswer(); err != nil {
+				newError("failed to skip answer").Base(err).WriteToLog()
+				break L
+			}
 			continue
 		}
 
@@ -189,19 +193,20 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, packet *udp_prot
 			ans, err := parser.AResource()
 			if err != nil {
 				newError("failed to parse A record for domain: ", domain).Base(err).WriteToLog()
-				break
+				break L
 			}
 			ipRecord.IP = append(ipRecord.IP, net.IPAddress(ans.A[:]))
 		case dnsmessage.TypeAAAA:
 			ans, err := parser.AAAAResource()
 			if err != nil {
 				newError("failed to parse A record for domain: ", domain).Base(err).WriteToLog()
-				break
+				break L
 			}
 			ipRecord.IP = append(ipRecord.IP, net.IPAddress(ans.AAAA[:]))
 		default:
 			if err := parser.SkipAnswer(); err != nil {
 				newError("failed to skip answer").Base(err).WriteToLog()
+				break L
 			}
 		}
 	}
@@ -398,8 +403,6 @@ func (s *ClassicNameServer) findIPsForDomain(domain string, option IPOption) ([]
 		}
 		ips = append(ips, aaaa...)
 	}
-
-	fmt.Println("IPs for ", domain, ": ", ips)
 
 	if len(ips) > 0 {
 		return toNetIP(ips), nil
