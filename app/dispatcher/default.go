@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"v2ray.com/core"
-	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -196,8 +195,13 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	ctx = session.ContextWithOutbound(ctx, ob)
 
 	inbound, outbound := d.getLink(ctx)
-	sniffingConfig := proxyman.SniffingConfigFromContext(ctx)
-	if destination.Network != net.Network_TCP || sniffingConfig == nil || !sniffingConfig.Enabled {
+	content := session.ContentFromContext(ctx)
+	if content == nil {
+		content = new(session.Content)
+		ctx = session.ContextWithContent(ctx, content)
+	}
+	sniffingRequest := content.SniffingRequest
+	if destination.Network != net.Network_TCP || !sniffingRequest.Enabled {
 		go d.routedDispatch(ctx, outbound, destination)
 	} else {
 		go func() {
@@ -207,14 +211,9 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			outbound.Reader = cReader
 			result, err := sniffer(ctx, cReader)
 			if err == nil {
-				content := session.ContentFromContext(ctx)
-				if content == nil {
-					content = new(session.Content)
-				}
 				content.Protocol = result.Protocol()
-				ctx = session.ContextWithContent(ctx, content)
 			}
-			if err == nil && shouldOverride(result, sniffingConfig.DestinationOverride) {
+			if err == nil && shouldOverride(result, sniffingRequest.OverrideDestinationForProtocol) {
 				domain := result.Domain()
 				newError("sniffed domain: ", domain).WriteToLog(session.ExportIDToError(ctx))
 				destination.Address = net.ParseAddress(domain)

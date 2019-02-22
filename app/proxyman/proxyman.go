@@ -3,21 +3,19 @@ package proxyman
 
 import (
 	"context"
+
+	"v2ray.com/core/common/session"
 )
 
-type key int
-
-const (
-	sniffing key = iota
-)
-
+// ContextWithSniffingConfig is a wrapper of session.ContextWithContent.
+// Deprecated. Use session.ContextWithContent directly.
 func ContextWithSniffingConfig(ctx context.Context, c *SniffingConfig) context.Context {
-	return context.WithValue(ctx, sniffing, c)
-}
-
-func SniffingConfigFromContext(ctx context.Context) *SniffingConfig {
-	if c, ok := ctx.Value(sniffing).(*SniffingConfig); ok {
-		return c
+	content := session.ContentFromContext(ctx)
+	if content == nil {
+		content = new(session.Content)
+		ctx = session.ContextWithContent(ctx, content)
 	}
-	return nil
+	content.SniffingRequest.Enabled = c.Enabled
+	content.SniffingRequest.OverrideDestinationForProtocol = c.DestinationOverride
+	return ctx
 }

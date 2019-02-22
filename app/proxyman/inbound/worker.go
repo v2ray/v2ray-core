@@ -81,9 +81,12 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 		Gateway: net.TCPDestination(w.address, w.port),
 		Tag:     w.tag,
 	})
+	content := new(session.Content)
 	if w.sniffingConfig != nil {
-		ctx = proxyman.ContextWithSniffingConfig(ctx, w.sniffingConfig)
+		content.SniffingRequest.Enabled = w.sniffingConfig.Enabled
+		content.SniffingRequest.OverrideDestinationForProtocol = w.sniffingConfig.DestinationOverride
 	}
+	ctx = session.ContextWithContent(ctx, content)
 	if w.uplinkCounter != nil || w.downlinkCounter != nil {
 		conn = &internet.StatCouterConnection{
 			Connection: conn,
