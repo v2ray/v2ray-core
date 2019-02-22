@@ -8,6 +8,7 @@ import (
 	"v2ray.com/core/common/net"
 )
 
+// ParseXForwardedFor parses X-Forwarded-For header in http headers, and return the IP list in it.
 func ParseXForwardedFor(header http.Header) []net.Address {
 	xff := header.Get("X-Forwarded-For")
 	if len(xff) == 0 {
@@ -21,6 +22,7 @@ func ParseXForwardedFor(header http.Header) []net.Address {
 	return addrs
 }
 
+// RemoveHopByHopHeaders remove hop by hop headers in http header list.
 func RemoveHopByHopHeaders(header http.Header) {
 	// Strip hop-by-hop header based on RFC:
 	// http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1
