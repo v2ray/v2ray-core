@@ -6,7 +6,6 @@ import (
 	"context"
 	"strings"
 
-	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/strmatcher"
@@ -298,13 +297,13 @@ func NewProtocolMatcher(protocols []string) *ProtocolMatcher {
 }
 
 func (m *ProtocolMatcher) Apply(ctx context.Context) bool {
-	result := dispatcher.SniffingResultFromContext(ctx)
+	content := session.ContentFromContext(ctx)
 
-	if result == nil {
+	if content == nil {
 		return false
 	}
 
-	protocol := result.Protocol()
+	protocol := content.Protocol
 	for _, p := range m.protocols {
 		if strings.HasPrefix(protocol, p) {
 			return true

@@ -9,7 +9,6 @@ import (
 
 	proto "github.com/golang/protobuf/proto"
 
-	"v2ray.com/core/app/dispatcher"
 	. "v2ray.com/core/app/router"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
@@ -218,7 +217,7 @@ func TestRoutingRule(t *testing.T) {
 			},
 			test: []ruleTest{
 				{
-					input:  dispatcher.ContextWithSniffingResult(context.Background(), &http.SniffHeader{}),
+					input:  session.ContextWithContent(context.Background(), &session.Content{Protocol: (&http.SniffHeader{}).Protocol()}),
 					output: true,
 				},
 			},

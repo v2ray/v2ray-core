@@ -373,6 +373,9 @@ func (s *ClassicNameServer) sendQuery(ctx context.Context, domain string, option
 		if inbound := session.InboundFromContext(ctx); inbound != nil {
 			udpCtx = session.ContextWithInbound(udpCtx, inbound)
 		}
+		udpCtx = session.ContextWithContent(udpCtx, &session.Content{
+			Protocol: "dns",
+		})
 		s.udpServer.Dispatch(udpCtx, s.address, b)
 	}
 }

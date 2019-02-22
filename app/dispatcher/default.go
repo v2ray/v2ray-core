@@ -207,7 +207,12 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			outbound.Reader = cReader
 			result, err := sniffer(ctx, cReader)
 			if err == nil {
-				ctx = ContextWithSniffingResult(ctx, result)
+				content := session.ContentFromContext(ctx)
+				if content == nil {
+					content = new(session.Content)
+				}
+				content.Protocol = result.Protocol()
+				ctx = session.ContextWithContent(ctx, content)
 			}
 			if err == nil && shouldOverride(result, sniffingConfig.DestinationOverride) {
 				domain := result.Domain()
