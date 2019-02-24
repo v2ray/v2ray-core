@@ -13,3 +13,8 @@ message PortRange {
   // The port that this range ends with (inclusive).
   uint32 To = 2;
 }
+
+// PortList is a list of ports.
+message PortList {
+  repeated PortRange range = 1;
+}

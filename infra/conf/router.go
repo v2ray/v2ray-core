@@ -354,7 +354,7 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 		RouterRule
 		Domain     *StringList  `json:"domain"`
 		IP         *StringList  `json:"ip"`
-		Port       *PortRange   `json:"port"`
+		Port       *PortList    `json:"port"`
 		Network    *NetworkList `json:"network"`
 		SourceIP   *StringList  `json:"source"`
 		User       *StringList  `json:"user"`
@@ -399,7 +399,7 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 	}
 
 	if rawFieldRule.Port != nil {
-		rule.PortRange = rawFieldRule.Port.Build()
+		rule.PortList = rawFieldRule.Port.Build()
 	}
 
 	if rawFieldRule.Network != nil {

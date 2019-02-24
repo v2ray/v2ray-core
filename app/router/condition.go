@@ -177,12 +177,12 @@ func (m *MultiGeoIPMatcher) Apply(ctx context.Context) bool {
 }
 
 type PortMatcher struct {
-	port net.PortRange
+	port net.MemoryPortList
 }
 
-func NewPortMatcher(portRange net.PortRange) *PortMatcher {
+func NewPortMatcher(list *net.PortList) *PortMatcher {
 	return &PortMatcher{
-		port: portRange,
+		port: net.PortListFromProto(list),
 	}
 }
 

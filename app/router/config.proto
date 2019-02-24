@@ -83,7 +83,7 @@ message RoutingRule {
   repeated Domain domain = 2;
 
   // List of CIDRs for target IP address matching.
-  // The list must be sorted beforehand.
+  // Deprecated. Use geoip below.
   repeated CIDR cidr = 3 [deprecated = true];
   
   // List of GeoIPs for target IP address matching. If this entry exists, the cidr above will have no effect.
@@ -91,7 +91,12 @@ message RoutingRule {
   // For customized GeoIPs, please leave country code empty.
   repeated GeoIP geoip = 10;
 
-  v2ray.core.common.net.PortRange port_range = 4;
+  // A range of port [from, to]. If the destination port is in this range, this rule takes effect.
+  // Deprecated. Use port_list.
+  v2ray.core.common.net.PortRange port_range = 4 [deprecated = true];
+
+  // List of ports.
+  v2ray.core.common.net.PortList port_list = 14;
 
   // List of networks. Deprecated. Use networks.
   v2ray.core.common.net.NetworkList network_list = 5 [deprecated = true];

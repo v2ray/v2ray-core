@@ -237,6 +237,34 @@ func TestRoutingRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			rule: &RoutingRule{
+				PortList: &net.PortList{
+					Range: []*net.PortRange{
+						{From: 443, To: 443},
+						{From: 1000, To: 1100},
+					},
+				},
+			},
+			test: []ruleTest{
+				{
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.LocalHostIP, 443)}),
+					output: true,
+				},
+				{
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.LocalHostIP, 1100)}),
+					output: true,
+				},
+				{
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.LocalHostIP, 1005)}),
+					output: true,
+				},
+				{
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.LocalHostIP, 53)}),
+					output: false,
+				},
+			},
+		},
 	}
 
 	for _, test := range cases {

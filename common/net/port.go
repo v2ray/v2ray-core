@@ -65,3 +65,31 @@ func SinglePortRange(p Port) *PortRange {
 		To:   uint32(p),
 	}
 }
+
+type MemoryPortRange struct {
+	From Port
+	To   Port
+}
+
+func (r MemoryPortRange) Contains(port Port) bool {
+	return r.From <= port && port <= r.To
+}
+
+type MemoryPortList []MemoryPortRange
+
+func PortListFromProto(l *PortList) MemoryPortList {
+	mpl := make(MemoryPortList, 0, len(l.Range))
+	for _, r := range l.Range {
+		mpl = append(mpl, MemoryPortRange{From: Port(r.From), To: Port(r.To)})
+	}
+	return mpl
+}
+
+func (mpl MemoryPortList) Contains(port Port) bool {
+	for _, pr := range mpl {
+		if pr.Contains(port) {
+			return true
+		}
+	}
+	return false
+}

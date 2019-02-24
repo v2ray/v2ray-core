@@ -7,6 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"v2ray.com/core/app/router"
+	"v2ray.com/core/common/net"
 	. "v2ray.com/core/infra/conf"
 )
 
@@ -42,6 +43,10 @@ func TestRouterConfig(t *testing.T) {
 								"10.0.0.0/8",
 								"::1/128"
 							],
+							"outboundTag": "test"
+						},{
+							"type": "field",
+							"port": "53, 443, 1000-2000",
 							"outboundTag": "test"
 						}
 					]
@@ -91,6 +96,18 @@ func TestRouterConfig(t *testing.T) {
 										Prefix: 128,
 									},
 								},
+							},
+						},
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "test",
+						},
+					},
+					{
+						PortList: &net.PortList{
+							Range: []*net.PortRange{
+								{From: 53, To: 53},
+								{From: 443, To: 443},
+								{From: 1000, To: 2000},
 							},
 						},
 						TargetTag: &router.RoutingRule_Tag{

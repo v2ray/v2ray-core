@@ -111,12 +111,7 @@ func parseIntPort(data []byte) (net.Port, error) {
 	return net.PortFromInt(intPort)
 }
 
-func parseStringPort(data []byte) (net.Port, net.Port, error) {
-	var s string
-	err := json.Unmarshal(data, &s)
-	if err != nil {
-		return net.Port(0), net.Port(0), err
-	}
+func parseStringPort(s string) (net.Port, net.Port, error) {
 	if strings.HasPrefix(s, "env:") {
 		s = s[4:]
 		s = os.Getenv(s)
@@ -124,7 +119,7 @@ func parseStringPort(data []byte) (net.Port, net.Port, error) {
 
 	pair := strings.SplitN(s, "-", 2)
 	if len(pair) == 0 {
-		return net.Port(0), net.Port(0), newError("Config: Invalid port range: ", s)
+		return net.Port(0), net.Port(0), newError("invalid port range: ", s)
 	}
 	if len(pair) == 1 {
 		port, err := net.PortFromString(pair[0])
@@ -140,6 +135,15 @@ func parseStringPort(data []byte) (net.Port, net.Port, error) {
 		return net.Port(0), net.Port(0), err
 	}
 	return fromPort, toPort, nil
+}
+
+func parseJSONStringPort(data []byte) (net.Port, net.Port, error) {
+	var s string
+	err := json.Unmarshal(data, &s)
+	if err != nil {
+		return net.Port(0), net.Port(0), err
+	}
+	return parseStringPort(s)
 }
 
 type PortRange struct {
@@ -163,7 +167,7 @@ func (v *PortRange) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	from, to, err := parseStringPort(data)
+	from, to, err := parseJSONStringPort(data)
 	if err == nil {
 		v.From = uint32(from)
 		v.To = uint32(to)
@@ -174,6 +178,46 @@ func (v *PortRange) UnmarshalJSON(data []byte) error {
 	}
 
 	return newError("invalid port range: ", string(data))
+}
+
+type PortList struct {
+	Range []PortRange
+}
+
+func (list *PortList) Build() *net.PortList {
+	portList := new(net.PortList)
+	for _, r := range list.Range {
+		portList.Range = append(portList.Range, r.Build())
+	}
+	return portList
+}
+
+// UnmarshalJSON implements encoding/json.Unmarshaler.UnmarshalJSON
+func (list *PortList) UnmarshalJSON(data []byte) error {
+	var listStr string
+	if err := json.Unmarshal(data, &listStr); err != nil {
+		return newError("invalid port list: ", string(data)).Base(err)
+	}
+	rangelist := strings.Split(listStr, ",")
+	for _, rangeStr := range rangelist {
+		trimmed := strings.TrimSpace(rangeStr)
+		if len(trimmed) > 0 {
+			if strings.Contains(trimmed, "-") {
+				from, to, err := parseStringPort(trimmed)
+				if err != nil {
+					return newError("invalid port range: ", trimmed).Base(err)
+				}
+				list.Range = append(list.Range, PortRange{From: uint32(from), To: uint32(to)})
+			} else {
+				port, err := parseIntPort([]byte(trimmed))
+				if err != nil {
+					return newError("invalid port: ", trimmed).Base(err)
+				}
+				list.Range = append(list.Range, PortRange{From: uint32(port), To: uint32(port)})
+			}
+		}
+	}
+	return nil
 }
 
 type User struct {

@@ -5,6 +5,7 @@ package router
 import (
 	"context"
 
+	net "v2ray.com/core/common/net"
 	"v2ray.com/core/features/outbound"
 )
 
@@ -83,8 +84,10 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 		conds.Add(NewInboundTagMatcher(rr.InboundTag))
 	}
 
-	if rr.PortRange != nil {
-		conds.Add(NewPortMatcher(*rr.PortRange))
+	if rr.PortList != nil {
+		conds.Add(NewPortMatcher(rr.PortList))
+	} else if rr.PortRange != nil {
+		conds.Add(NewPortMatcher(&net.PortList{Range: []*net.PortRange{rr.PortRange}}))
 	}
 
 	if len(rr.Networks) > 0 {
