@@ -160,6 +160,18 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 
 					mappings = append(mappings, mapping)
 				}
+			} else if strings.HasPrefix(domain, "regexp:") {
+				mapping := getHostMapping(addr)
+				mapping.Type = dns.DomainMatchingType_Regex
+				mapping.Domain = domain[7:]
+
+				mappings = append(mappings, mapping)
+			} else if strings.HasPrefix(domain, "keyword:") {
+				mapping := getHostMapping(addr)
+				mapping.Type = dns.DomainMatchingType_Keyword
+				mapping.Domain = domain[8:]
+
+				mappings = append(mappings, mapping)
 			} else {
 				mapping := getHostMapping(addr)
 				mapping.Type = dns.DomainMatchingType_Full

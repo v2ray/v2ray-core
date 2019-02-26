@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core/app/dns"
+	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/platform"
@@ -20,7 +21,26 @@ func init() {
 	common.Must(err)
 
 	common.Must(filesystem.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(wd, "..", "..", "release", "config", "geoip.dat")))
-	common.Must(filesystem.CopyFile(platform.GetAssetLocation("geosite.dat"), filepath.Join(wd, "..", "..", "release", "config", "geosite.dat")))
+
+	geositeFilePath := platform.GetAssetLocation("geosite.dat")
+	geositeFile, err := os.OpenFile(geositeFilePath, os.O_CREATE|os.O_WRONLY, 0600)
+	common.Must(err)
+	defer geositeFile.Close()
+
+	list := &router.GeoSiteList{
+		Entry: []*router.GeoSite{
+			{
+				CountryCode: "TEST",
+				Domain: []*router.Domain{
+					{Type: router.Domain_Full, Value: "example.com"},
+				},
+			},
+		},
+	}
+
+	listBytes, err := proto.Marshal(list)
+	common.Must(err)
+	common.Must2(geositeFile.Write(listBytes))
 }
 func TestDnsConfigParsing(t *testing.T) {
 	geositePath := platform.GetAssetLocation("geosite.dat")
@@ -48,7 +68,10 @@ func TestDnsConfigParsing(t *testing.T) {
 				}],
 				"hosts": {
 					"v2ray.com": "127.0.0.1",
-					"domain:example.com": "google.com"
+					"domain:example.com": "google.com",
+					"geosite:test": "10.0.0.1",
+					"keyword:google": "8.8.8.8",
+					"regexp:.*\\.com": "8.8.4.4"
 				},
 				"clientIp": "10.0.0.1"
 			}`,
@@ -78,6 +101,21 @@ func TestDnsConfigParsing(t *testing.T) {
 						Type:          dns.DomainMatchingType_Subdomain,
 						Domain:        "example.com",
 						ProxiedDomain: "google.com",
+					},
+					{
+						Type:   dns.DomainMatchingType_Full,
+						Domain: "example.com",
+						Ip:     [][]byte{{10, 0, 0, 1}},
+					},
+					{
+						Type:   dns.DomainMatchingType_Keyword,
+						Domain: "google",
+						Ip:     [][]byte{{8, 8, 8, 8}},
+					},
+					{
+						Type:   dns.DomainMatchingType_Regex,
+						Domain: ".*\\.com",
+						Ip:     [][]byte{{8, 8, 4, 4}},
 					},
 					{
 						Type:   dns.DomainMatchingType_Full,
