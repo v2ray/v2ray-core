@@ -274,7 +274,7 @@ type TLSConfig struct {
 	Certs            []*TLSCertConfig `json:"certificates"`
 	ServerName       string           `json:"serverName"`
 	ALPN             *StringList      `json:"alpn"`
-	DiableSystemRoot bool             `json:disableSystemRoot`
+	DiableSystemRoot bool             `json:"disableSystemRoot"`
 }
 
 // Build implements Buildable.
