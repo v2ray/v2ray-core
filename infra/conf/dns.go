@@ -172,6 +172,12 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 				mapping.Domain = domain[8:]
 
 				mappings = append(mappings, mapping)
+			} else if strings.HasPrefix(domain, "full:") {
+				mapping := getHostMapping(addr)
+				mapping.Type = dns.DomainMatchingType_Full
+				mapping.Domain = domain[5:]
+
+				mappings = append(mappings, mapping)
 			} else {
 				mapping := getHostMapping(addr)
 				mapping.Type = dns.DomainMatchingType_Full

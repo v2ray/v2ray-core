@@ -286,6 +286,9 @@ func parseDomainRule(domain string) ([]*router.Domain, error) {
 	case strings.HasPrefix(domain, "full:"):
 		domainRule.Type = router.Domain_Full
 		domainRule.Value = domain[5:]
+	case strings.HasPrefix(domain, "keyword:"):
+		domainRule.Type = router.Domain_Plain
+		domainRule.Value = domain[8:]
 	default:
 		domainRule.Type = router.Domain_Plain
 		domainRule.Value = domain
