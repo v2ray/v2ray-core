@@ -28,7 +28,8 @@ def _go_command(ctx):
     "CGO_ENABLED=0",
     "GOOS="+ctx.attr.os,
     "GOARCH="+ctx.attr.arch,
-    "GOROOT_FINAL=/go"
+    "GOROOT_FINAL=/go",
+    "GOCACHE=@D",
   ]
   
   if ctx.attr.mips: # https://github.com/golang/go/issues/27260
