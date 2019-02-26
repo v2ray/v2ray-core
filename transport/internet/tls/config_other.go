@@ -4,60 +4,50 @@
 package tls
 
 import (
-	"bytes"
 	"crypto/x509"
 	"sync"
 )
 
-type certPoolCache struct {
+type rootCertsCache struct {
 	sync.Mutex
-	once       sync.Once
-	pool       *x509.CertPool
-	extraCerts [][]byte
+	pool *x509.CertPool
 }
 
-func (c *certPoolCache) hasCert(cert []byte) bool {
-	for _, xCert := range c.extraCerts {
-		if bytes.Equal(xCert, cert) {
-			return true
-		}
-	}
-	return false
-}
-
-func (c *certPoolCache) get(extraCerts []*Certificate) *x509.CertPool {
-	c.once.Do(func() {
-		pool, err := x509.SystemCertPool()
-		if err != nil {
-			newError("failed to get system cert pool.").Base(err).WriteToLog()
-			return
-		}
-		c.pool = pool
-	})
-
-	if c.pool == nil {
-		return nil
-	}
-
-	if len(extraCerts) == 0 {
-		return c.pool
-	}
-
+func (c *rootCertsCache) load() (*x509.CertPool, error) {
 	c.Lock()
 	defer c.Unlock()
 
-	for _, cert := range extraCerts {
-		if !c.hasCert(cert.Certificate) {
-			c.pool.AppendCertsFromPEM(cert.Certificate)
-			c.extraCerts = append(c.extraCerts, cert.Certificate)
-		}
+	if c.pool != nil {
+		return c.pool, nil
 	}
 
-	return c.pool
+	pool, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, err
+	}
+	c.pool = pool
+	return pool, nil
 }
 
-var combineCertPool certPoolCache
+var rootCerts rootCertsCache
 
-func (c *Config) getCertPool() *x509.CertPool {
-	return combineCertPool.get(c.Certificate)
+func (c *Config) getCertPool() (*x509.CertPool, error) {
+	if c.DisableSystemRoot {
+		return c.loadSelfCertPool()
+	}
+
+	if len(c.Certificate) == 0 {
+		return rootCerts.load()
+	}
+
+	pool, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, newError("system root").AtWarning().Base(err)
+	}
+	for _, cert := range c.Certificate {
+		if !pool.AppendCertsFromPEM(cert.Certificate) {
+			return nil, newError("append cert to root").AtWarning().Base(err)
+		}
+	}
+	return pool, err
 }

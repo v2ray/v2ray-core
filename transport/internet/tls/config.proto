@@ -40,4 +40,7 @@ message Config {
 
   // Whether or not to disable session (ticket) resumption.
   bool disable_session_resumption = 6;
+
+  // If true, root certificates on the system will not be loaded for verification.
+  bool disable_system_root = 7;
 }

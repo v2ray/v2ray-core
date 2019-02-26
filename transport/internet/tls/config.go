@@ -29,6 +29,16 @@ func ParseCertificate(c *cert.Certificate) *Certificate {
 	}
 }
 
+func (c *Config) loadSelfCertPool() (*x509.CertPool, error) {
+	root := x509.NewCertPool()
+	for _, cert := range c.Certificate {
+		if !root.AppendCertsFromPEM(cert.Certificate) {
+			return nil, newError("failed to append cert").AtWarning()
+		}
+	}
+	return root, nil
+}
+
 // BuildCertificates builds a list of TLS certificates from proto definition.
 func (c *Config) BuildCertificates() []tls.Certificate {
 	certs := make([]tls.Certificate, 0, len(c.Certificate))
@@ -158,9 +168,14 @@ func (c *Config) parseServerName() string {
 
 // GetTLSConfig converts this Config into tls.Config.
 func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
+	root, err := c.getCertPool()
+	if err != nil {
+		newError("failed to load system root certificate").AtError().Base(err).WriteToLog()
+	}
+
 	config := &tls.Config{
 		ClientSessionCache:     globalSessionCache,
-		RootCAs:                c.getCertPool(),
+		RootCAs:                root,
 		SessionTicketsDisabled: c.DisableSessionResumption,
 	}
 	if c == nil {
