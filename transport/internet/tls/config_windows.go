@@ -10,5 +10,5 @@ func (c *Config) getCertPool() (*x509.CertPool, error) {
 		return c.loadSelfCertPool()
 	}
 
-	return nil
+	return nil, nil
 }
