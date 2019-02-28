@@ -243,7 +243,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 		Protocol: "http/1.1",
 	}
 
-	content.SetAttribute(":method", request.Method)
+	content.SetAttribute(":method", strings.ToUpper(request.Method))
 	content.SetAttribute(":path", request.URL.Path)
 	for key := range request.Header {
 		value := request.Header.Get(key)
