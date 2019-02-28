@@ -11,8 +11,37 @@ import (
 	"v2ray.com/core/common"
 )
 
-const (
-	pubkey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+var pubkey = []string{`-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQENBFx4NlQBCADJyVwRUO/LzcnoHLWKppFQY4aTS+fH8k4Pf5nB3VR41v/3QZm1
+jBkuO1522KmBkPPuuYDAdOrE8Y8UVLfir5RxnZXF9Ke8SPq0zB+ruOHfv0xJUz8q
+bcArsdXpDRxtrEbi7J81YOB/yITuY5kSYUA9v1TZWf7eSS6GIw/YF0Eo/gsbbpwQ
+yon/Ue3xxxbZnWvfsluhPADomNwbJ5iTFeRClJqdACb/YqIEo2M2ttLE3QF2qrrL
+SbzdTUtr3qjADIEWHoABcQ+Amx0sGnyiTJUGiL+4QwdIOLsh4RLq1MWgN+niw9Cl
+cUQBPojZmHPPqIjNXr823TpZvkZOxuE9RSDjABEBAAG0I1YyUmF5IE9mZmljaWFs
+IDxvZmZpY2lhbEB2MnJheS5jb20+iQFUBBMBCAA+FiEErWNIgUDlPuCCHb89lRmC
+s2m2F+UFAlx4NlQCGwMFCQPCZwAFCwkIBwIGFQgJCgsCBBYCAwECHgECF4AACgkQ
+lRmCs2m2F+Xvlgf8CenlUIj+abvtISSkHLi1qKPTIt8tzPxcYX1yUC3nkqaXW7eh
++VTjZXU7y5rfelUBQchnEqqIfH4liH5t+yFoMeTntyo3bTgcj7BhjBwwB4lQspnb
+AjiuLV95L6QbJoPVyJ1KlAC3X88QRlUDYy5ft0wTro1A4oLdgtbzWhiXKIAcedBt
+zMjvX/qETtQvs15sF+HgF3/MHPjGH0I3gumIRMiIEE7vtaQvOZHknXlg552W+gmN
+BVFr9uuLMPCD/+LB2uhGhjuEA8Jj3mqKtkyWSEkOd9losBbBrEo0wupEz1/Ahxga
+h2X1Zd1etdDRsjl7JRt4Hf+vXV+kg/GfM6Gw5LkBDQRceDZUAQgArB8vjN/lwKte
+vLjWEw7DaVbMC9R7RMYLSrdPTaQpBnFuQON3GOiIikRuwowl+K0HiZzojJwVq4yF
+cGB8cBx9fT+zmAhPxLIDvY/mRb2BzsnpGgMlwydJZYLTTrPzbCXep9uzNXtBbcwd
+aXLXWfTEoWmEVO1ZGuqI7X96cJvdhjzQAvkCpk+lgdJ9vo67aTBRu2d1YL6nd9lK
+Oh4x43Cd2GNNpPOSdLxhISozImIGMFlrXn6riHXRVVcj+yVR/b9afsAm1MicDPtL
+dWxCF7kZ/4u3rcLHAjCz5T/zoBn2S4MtISWzkPXkswz6fa9fHWCgblbl4uzUq7fl
+3I8JvdGRfwARAQABiQE8BBgBCAAmFiEErWNIgUDlPuCCHb89lRmCs2m2F+UFAlx4
+NlQCGwwFCQPCZwAACgkQlRmCs2m2F+Vh1wf/TMCke/T18e//8KFmgKAeiLECpMxE
+h6jZvfIMh5lN0YxmgKkw7T2UgYyqYJ4Wxm24iiNw2KUV/saltzsc5PoWMlcdpI8c
+t7VNWbzHTgr2+UvigLgFpGG6G5GSlKVinXSZcgADN4F+7VMD+urycFPEmLYSTmlE
+DKz+NrHmeKh08palwJEZnuK4vBg6WREHLcrborGgyZUxLu/ehbGc3QqMBbvupr3m
+QiRC90xqxDa1u+q6cbFdiOdaKMzvibT9OnC7RanZ3uk+D0Jgs7yKuwHSNwNX6C3C
+NTaV4BNont/v+X9ycP3NhqlMN8yONnSl66O19RBbdbP6M+UCr96mRiu0YA==
+=T8XU
+-----END PGP PUBLIC KEY BLOCK-----
+`, `-----BEGIN PGP PUBLIC KEY BLOCK-----
 Comment: GPGTools - https://gpgtools.org
 
 mQINBFiuFLcBEACtu5pycj7nHINq9gdkWtQhOdQPMRmbWPbCfxBRceIyB9IHUKay
@@ -64,8 +93,7 @@ fkXkose778mzGzk5rBr0jGtKAxV2159CaI2KzR+uN7JwzoHrRRhVu/OWcaL/5MKq
 OUUihc22Z9/8GnKH1gscBhoIF+cqqOfzTIA6KrJHIC2u5Vpjvac=
 =xv/V
 -----END PGP PUBLIC KEY BLOCK-----
-`
-)
+`}
 
 func firstIdentity(m map[string]*openpgp.Identity) string {
 	for k := range m {
@@ -118,18 +146,23 @@ func (c *VerifyCommand) Execute(args []string) error {
 		return newError("failed to open file ", *sigFile).Base(err)
 	}
 
-	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubkey))
-	if err != nil {
-		return newError("failed to create keyring").Base(err)
+	for _, key := range pubkey {
+		keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(key))
+		if err != nil {
+			return newError("failed to create keyring").Base(err)
+		}
+
+		entity, err := openpgp.CheckDetachedSignature(keyring, targetReader, sigReader)
+		if err != nil {
+			fmt.Println("failed to verify, try another key: ", err)
+			continue
+		}
+
+		fmt.Println("Signed by:", firstIdentity(entity.Identities))
+		return nil
 	}
 
-	entity, err := openpgp.CheckDetachedSignature(keyring, targetReader, sigReader)
-	if err != nil {
-		return newError("failed to verify signature").Base(err)
-	}
-
-	fmt.Println("Signed by:", firstIdentity(entity.Identities))
-	return nil
+	return newError("file is not officially signed by V2Ray")
 }
 
 func init() {
