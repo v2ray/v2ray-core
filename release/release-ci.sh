@@ -26,7 +26,7 @@ VUSER=$(getattr "b_user" "project")
 mkdir -p /v2/build
 
 pushd /v2/build
-BAZEL_VER=0.17.2
+BAZEL_VER=0.23.0
 curl -L -O https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VER}/bazel-${BAZEL_VER}-installer-linux-x86_64.sh
 chmod +x bazel-${BAZEL_VER}-installer-linux-x86_64.sh
 ./bazel-${BAZEL_VER}-installer-linux-x86_64.sh

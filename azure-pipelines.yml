@@ -53,7 +53,7 @@ jobs:
   
   variables:
     GOPATH: '$(system.defaultWorkingDirectory)'
-    BAZEL_VER: '0.22.0'
+    BAZEL_VER: '0.23.0'
 
   steps:
   - checkout: none
