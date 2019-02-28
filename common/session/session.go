@@ -67,19 +67,19 @@ type Content struct {
 
 	SniffingRequest SniffingRequest
 
-	attr map[string]interface{}
+	Attributes map[string]interface{}
 }
 
 func (c *Content) SetAttribute(name string, value interface{}) {
-	if c.attr == nil {
-		c.attr = make(map[string]interface{})
+	if c.Attributes == nil {
+		c.Attributes = make(map[string]interface{})
 	}
-	c.attr[name] = value
+	c.Attributes[name] = value
 }
 
 func (c *Content) Attribute(name string) interface{} {
-	if c.attr == nil {
+	if c.Attributes == nil {
 		return nil
 	}
-	return c.attr[name]
+	return c.Attributes[name]
 }
