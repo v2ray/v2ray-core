@@ -363,6 +363,7 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 		User       *StringList  `json:"user"`
 		InboundTag *StringList  `json:"inboundTag"`
 		Protocols  *StringList  `json:"protocol"`
+		Attributes string       `json:"attrs"`
 	}
 	rawFieldRule := new(RawFieldRule)
 	err := json.Unmarshal(msg, rawFieldRule)
@@ -433,6 +434,10 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 		for _, s := range *rawFieldRule.Protocols {
 			rule.Protocol = append(rule.Protocol, s)
 		}
+	}
+
+	if len(rawFieldRule.Attributes) > 0 {
+		rule.Attributes = rawFieldRule.Attributes
 	}
 
 	return rule, nil

@@ -5,6 +5,9 @@ package router
 import (
 	"strings"
 
+	"go.starlark.net/starlark"
+	"go.starlark.net/syntax"
+
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/strmatcher"
 )
@@ -279,4 +282,61 @@ func (m *ProtocolMatcher) Apply(ctx *Context) bool {
 	}
 
 	return false
+}
+
+type AttributeMatcher struct {
+	program *starlark.Program
+}
+
+func NewAttributeMatcher(code string) (*AttributeMatcher, error) {
+	starFile, err := syntax.Parse("attr.star", "satisfied=("+code+")", 0)
+	if err != nil {
+		return nil, newError("attr rule").Base(err)
+	}
+	p, err := starlark.FileProgram(starFile, func(name string) bool {
+		if name == "attrs" {
+			return true
+		}
+		return false
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &AttributeMatcher{
+		program: p,
+	}, nil
+}
+
+func (m *AttributeMatcher) Match(attrs map[string]interface{}) bool {
+	attrsDict := new(starlark.Dict)
+	for key, value := range attrs {
+		var starValue starlark.Value
+		switch value := value.(type) {
+		case string:
+			starValue = starlark.String(value)
+		}
+		if starValue != nil {
+			attrsDict.SetKey(starlark.String(key), starValue)
+		}
+	}
+
+	predefined := make(starlark.StringDict)
+	predefined["attrs"] = attrsDict
+
+	thread := &starlark.Thread{
+		Name: "matcher",
+	}
+	results, err := m.program.Init(thread, predefined)
+	if err != nil {
+		newError("attr matcher").Base(err).WriteToLog()
+	}
+	satisfied := results["satisfied"]
+	return satisfied != nil && bool(satisfied.Truth())
+}
+
+func (m *AttributeMatcher) Apply(ctx *Context) bool {
+	if ctx.Content == nil {
+		return false
+	}
+	return m.Match(ctx.Content.Attributes)
 }

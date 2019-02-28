@@ -126,6 +126,14 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 		conds.Add(NewProtocolMatcher(rr.Protocol))
 	}
 
+	if len(rr.Attributes) > 0 {
+		cond, err := NewAttributeMatcher(rr.Attributes)
+		if err != nil {
+			return nil, err
+		}
+		conds.Add(cond)
+	}
+
 	if conds.Len() == 0 {
 		return nil, newError("this rule has no effective fields").AtWarning()
 	}

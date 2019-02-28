@@ -264,6 +264,18 @@ func TestRoutingRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			rule: &RoutingRule{
+				Protocol:   []string{"http"},
+				Attributes: "attrs[':path'].startswith('/test')",
+			},
+			test: []ruleTest{
+				{
+					input:  &Context{Content: &session.Content{Protocol: "http/1.1", Attributes: map[string]interface{}{":path": "/test/1"}}},
+					output: true,
+				},
+			},
+		},
 	}
 
 	for _, test := range cases {

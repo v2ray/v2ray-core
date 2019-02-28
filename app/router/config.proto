@@ -113,6 +113,8 @@ message RoutingRule {
   repeated string user_email = 7;
   repeated string inbound_tag = 8;
   repeated string protocol = 9;
+
+  string attributes = 15;
 }
 
 message BalancingRule {
