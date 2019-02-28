@@ -3,9 +3,7 @@
 package router
 
 import (
-	"context"
-
-	net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/features/outbound"
 )
 
@@ -61,7 +59,7 @@ func (r *Rule) GetTag() (string, error) {
 	return r.Tag, nil
 }
 
-func (r *Rule) Apply(ctx context.Context) bool {
+func (r *Rule) Apply(ctx *Context) bool {
 	return r.Condition.Apply(ctx)
 }
 

@@ -9,6 +9,7 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/features/dns"
 	"v2ray.com/core/features/outbound"
@@ -85,44 +86,33 @@ func isDomainOutbound(outbound *session.Outbound) bool {
 	return outbound != nil && outbound.Target.IsValid() && outbound.Target.Address.Family().IsDomain()
 }
 
-func (r *Router) resolveIP(outbound *session.Outbound) error {
-	domain := outbound.Target.Address.Domain()
-	ips, err := r.dns.LookupIP(domain)
-	if err != nil {
-		return err
-	}
-
-	outbound.ResolvedIPs = ips
-	return nil
-}
-
 // PickRoute implements routing.Router.
 func (r *Router) pickRouteInternal(ctx context.Context) (*Rule, error) {
-	outbound := session.OutboundFromContext(ctx)
-	if r.domainStrategy == Config_IpOnDemand && isDomainOutbound(outbound) {
-		if err := r.resolveIP(outbound); err != nil {
-			newError("failed to resolve IP for domain").Base(err).WriteToLog(session.ExportIDToError(ctx))
-		}
+	sessionContext := &Context{
+		Inbound:  session.InboundFromContext(ctx),
+		Outbound: session.OutboundFromContext(ctx),
+		Content:  session.ContentFromContext(ctx),
+	}
+
+	if r.domainStrategy == Config_IpOnDemand {
+		sessionContext.dnsClient = r.dns
 	}
 
 	for _, rule := range r.rules {
-		if rule.Apply(ctx) {
+		if rule.Apply(sessionContext) {
 			return rule, nil
 		}
 	}
 
-	if r.domainStrategy != Config_IpIfNonMatch || !isDomainOutbound(outbound) {
+	if r.domainStrategy != Config_IpIfNonMatch || !isDomainOutbound(sessionContext.Outbound) {
 		return nil, common.ErrNoClue
 	}
 
-	if err := r.resolveIP(outbound); err != nil {
-		newError("failed to resolve IP for domain").Base(err).WriteToLog(session.ExportIDToError(ctx))
-		return nil, common.ErrNoClue
-	}
+	sessionContext.dnsClient = r.dns
 
 	// Try applying rules again if we have IPs.
 	for _, rule := range r.rules {
-		if rule.Apply(ctx) {
+		if rule.Apply(sessionContext) {
 			return rule, nil
 		}
 	}
@@ -143,4 +133,38 @@ func (*Router) Close() error {
 // Type implement common.HasType.
 func (*Router) Type() interface{} {
 	return routing.RouterType()
+}
+
+type Context struct {
+	Inbound  *session.Inbound
+	Outbound *session.Outbound
+	Content  *session.Content
+
+	dnsClient dns.Client
+}
+
+func (c *Context) GetTargetIPs() []net.IP {
+	if c.Outbound == nil || !c.Outbound.Target.IsValid() {
+		return nil
+	}
+
+	if c.Outbound.Target.Address.Family().IsIP() {
+		return []net.IP{c.Outbound.Target.Address.IP()}
+	}
+
+	if len(c.Outbound.ResolvedIPs) > 0 {
+		return c.Outbound.ResolvedIPs
+	}
+
+	if c.dnsClient != nil {
+		domain := c.Outbound.Target.Address.Domain()
+		ips, err := c.dnsClient.LookupIP(domain)
+		if err == nil {
+			c.Outbound.ResolvedIPs = ips
+			return ips
+		}
+		newError("resolve ip for ", domain).Base(err).WriteToLog()
+	}
+
+	return nil
 }

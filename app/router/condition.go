@@ -3,16 +3,14 @@
 package router
 
 import (
-	"context"
 	"strings"
 
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/strmatcher"
 )
 
 type Condition interface {
-	Apply(ctx context.Context) bool
+	Apply(ctx *Context) bool
 }
 
 type ConditionChan []Condition
@@ -27,7 +25,7 @@ func (v *ConditionChan) Add(cond Condition) *ConditionChan {
 	return v
 }
 
-func (v *ConditionChan) Apply(ctx context.Context) bool {
+func (v *ConditionChan) Apply(ctx *Context) bool {
 	for _, cond := range *v {
 		if !cond.Apply(ctx) {
 			return false
@@ -84,46 +82,36 @@ func (m *DomainMatcher) ApplyDomain(domain string) bool {
 	return m.matchers.Match(domain) > 0
 }
 
-func (m *DomainMatcher) Apply(ctx context.Context) bool {
-	outbound := session.OutboundFromContext(ctx)
-	if outbound == nil || !outbound.Target.IsValid() {
+func (m *DomainMatcher) Apply(ctx *Context) bool {
+	if ctx.Outbound == nil || !ctx.Outbound.Target.IsValid() {
 		return false
 	}
-	dest := outbound.Target
+	dest := ctx.Outbound.Target
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
 	return m.ApplyDomain(dest.Address.Domain())
 }
 
-func sourceFromContext(ctx context.Context) net.Destination {
-	inbound := session.InboundFromContext(ctx)
-	if inbound == nil {
-		return net.Destination{}
-	}
-	return inbound.Source
-}
-
-func targetFromContent(ctx context.Context) net.Destination {
-	outbound := session.OutboundFromContext(ctx)
-	if outbound == nil {
-		return net.Destination{}
-	}
-	return outbound.Target
-}
-
-func resolvedIPFromContext(ctx context.Context) []net.IP {
-	outbound := session.OutboundFromContext(ctx)
-	if outbound == nil {
+func getIPsFromSource(ctx *Context) []net.IP {
+	if ctx.Inbound == nil || !ctx.Inbound.Source.IsValid() {
 		return nil
 	}
-	return outbound.ResolvedIPs
+	dest := ctx.Inbound.Source
+	if dest.Address.Family().IsDomain() {
+		return nil
+	}
+
+	return []net.IP{dest.Address.IP()}
+}
+
+func getIPsFromTarget(ctx *Context) []net.IP {
+	return ctx.GetTargetIPs()
 }
 
 type MultiGeoIPMatcher struct {
-	matchers       []*GeoIPMatcher
-	destFunc       func(context.Context) net.Destination
-	resolvedIPFunc func(context.Context) []net.IP
+	matchers []*GeoIPMatcher
+	ipFunc   func(*Context) []net.IP
 }
 
 func NewMultiGeoIPMatcher(geoips []*GeoIP, onSource bool) (*MultiGeoIPMatcher, error) {
@@ -141,30 +129,16 @@ func NewMultiGeoIPMatcher(geoips []*GeoIP, onSource bool) (*MultiGeoIPMatcher, e
 	}
 
 	if onSource {
-		matcher.destFunc = sourceFromContext
+		matcher.ipFunc = getIPsFromSource
 	} else {
-		matcher.destFunc = targetFromContent
-		matcher.resolvedIPFunc = resolvedIPFromContext
+		matcher.ipFunc = getIPsFromTarget
 	}
 
 	return matcher, nil
 }
 
-func (m *MultiGeoIPMatcher) Apply(ctx context.Context) bool {
-	ips := make([]net.IP, 0, 4)
-
-	dest := m.destFunc(ctx)
-
-	if dest.IsValid() && dest.Address.Family().IsIP() {
-		ips = append(ips, dest.Address.IP())
-	}
-
-	if m.resolvedIPFunc != nil {
-		rips := m.resolvedIPFunc(ctx)
-		if len(rips) > 0 {
-			ips = append(ips, rips...)
-		}
-	}
+func (m *MultiGeoIPMatcher) Apply(ctx *Context) bool {
+	ips := m.ipFunc(ctx)
 
 	for _, ip := range ips {
 		for _, matcher := range m.matchers {
@@ -186,12 +160,11 @@ func NewPortMatcher(list *net.PortList) *PortMatcher {
 	}
 }
 
-func (v *PortMatcher) Apply(ctx context.Context) bool {
-	outbound := session.OutboundFromContext(ctx)
-	if outbound == nil || !outbound.Target.IsValid() {
+func (v *PortMatcher) Apply(ctx *Context) bool {
+	if ctx.Outbound == nil || !ctx.Outbound.Target.IsValid() {
 		return false
 	}
-	return v.port.Contains(outbound.Target.Port)
+	return v.port.Contains(ctx.Outbound.Target.Port)
 }
 
 type NetworkMatcher struct {
@@ -206,12 +179,11 @@ func NewNetworkMatcher(network []net.Network) NetworkMatcher {
 	return matcher
 }
 
-func (v NetworkMatcher) Apply(ctx context.Context) bool {
-	outbound := session.OutboundFromContext(ctx)
-	if outbound == nil || !outbound.Target.IsValid() {
+func (v NetworkMatcher) Apply(ctx *Context) bool {
+	if ctx.Outbound == nil || !ctx.Outbound.Target.IsValid() {
 		return false
 	}
-	return v.list[int(outbound.Target.Network)]
+	return v.list[int(ctx.Outbound.Target.Network)]
 }
 
 type UserMatcher struct {
@@ -230,13 +202,12 @@ func NewUserMatcher(users []string) *UserMatcher {
 	}
 }
 
-func (v *UserMatcher) Apply(ctx context.Context) bool {
-	inbound := session.InboundFromContext(ctx)
-	if inbound == nil {
+func (v *UserMatcher) Apply(ctx *Context) bool {
+	if ctx.Inbound == nil {
 		return false
 	}
 
-	user := inbound.User
+	user := ctx.Inbound.User
 	if user == nil {
 		return false
 	}
@@ -264,12 +235,11 @@ func NewInboundTagMatcher(tags []string) *InboundTagMatcher {
 	}
 }
 
-func (v *InboundTagMatcher) Apply(ctx context.Context) bool {
-	inbound := session.InboundFromContext(ctx)
-	if inbound == nil || len(inbound.Tag) == 0 {
+func (v *InboundTagMatcher) Apply(ctx *Context) bool {
+	if ctx.Inbound == nil || len(ctx.Inbound.Tag) == 0 {
 		return false
 	}
-	tag := inbound.Tag
+	tag := ctx.Inbound.Tag
 	for _, t := range v.tags {
 		if t == tag {
 			return true
@@ -296,14 +266,12 @@ func NewProtocolMatcher(protocols []string) *ProtocolMatcher {
 	}
 }
 
-func (m *ProtocolMatcher) Apply(ctx context.Context) bool {
-	content := session.ContentFromContext(ctx)
-
-	if content == nil {
+func (m *ProtocolMatcher) Apply(ctx *Context) bool {
+	if ctx.Content == nil {
 		return false
 	}
 
-	protocol := content.Protocol
+	protocol := ctx.Content.Protocol
 	for _, p := range m.protocols {
 		if strings.HasPrefix(protocol, p) {
 			return true
