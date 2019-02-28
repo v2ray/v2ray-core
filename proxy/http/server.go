@@ -239,6 +239,10 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 		request.Header.Set("User-Agent", "")
 	}
 
+	ctx = session.ContextWithContent(ctx, &session.Content{
+		Protocol: "http/1.1",
+	})
+
 	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
