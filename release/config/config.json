@@ -35,7 +35,7 @@
 
     // Enable sniffing on TCP connection.
     "sniffing": {
-      "enable": true,
+      "enabled": true,
       // Target domain will be overriden to the one carried by the connection, if the connection is HTTP or HTTPS.
       "destOverride": ["http", "tls"]
     }
