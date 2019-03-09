@@ -1,18 +1,22 @@
+// +build !confonly
+
 package shadowsocks
 
 import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
+	"encoding/binary"
 	"io"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/common/serial"
-	"github.com/v2ray/v2ray-core/transport"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/bytespool"
+	"v2ray.com/core/common/serial"
 )
 
 const (
+	// AuthSize is the number of extra bytes for Shadowsocks OTA.
 	AuthSize = 10
 )
 
@@ -28,11 +32,11 @@ func NewAuthenticator(keygen KeyGenerator) *Authenticator {
 	}
 }
 
-func (this *Authenticator) Authenticate(auth []byte, data []byte) []byte {
-	hasher := hmac.New(sha1.New, this.key())
-	hasher.Write(data)
+func (v *Authenticator) Authenticate(data []byte, dest []byte) {
+	hasher := hmac.New(sha1.New, v.key())
+	common.Must2(hasher.Write(data))
 	res := hasher.Sum(nil)
-	return append(auth, res[:AuthSize]...)
+	copy(dest, res[:AuthSize])
 }
 
 func HeaderKeyGenerator(key []byte, iv []byte) func() []byte {
@@ -45,12 +49,12 @@ func HeaderKeyGenerator(key []byte, iv []byte) func() []byte {
 }
 
 func ChunkKeyGenerator(iv []byte) func() []byte {
-	chunkId := 0
+	chunkID := uint32(0)
 	return func() []byte {
-		newKey := make([]byte, 0, len(iv)+4)
-		newKey = append(newKey, iv...)
-		newKey = serial.IntToBytes(chunkId, newKey)
-		chunkId++
+		newKey := make([]byte, len(iv)+4)
+		copy(newKey, iv)
+		binary.BigEndian.PutUint32(newKey[len(iv):], chunkID)
+		chunkID++
 		return newKey
 	}
 }
@@ -67,36 +71,62 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 	}
 }
 
-func (this *ChunkReader) Release() {
-	this.reader = nil
-	this.auth = nil
+func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
+	size, err := serial.ReadUint16(v.reader)
+	if err != nil {
+		return nil, newError("failed to read size").Base(err)
+	}
+	size += AuthSize
+
+	buffer := bytespool.Alloc(int32(size))
+	defer bytespool.Free(buffer)
+
+	if _, err := io.ReadFull(v.reader, buffer[:size]); err != nil {
+		return nil, err
+	}
+
+	authBytes := buffer[:AuthSize]
+	payload := buffer[AuthSize:size]
+
+	actualAuthBytes := make([]byte, AuthSize)
+	v.auth.Authenticate(payload, actualAuthBytes)
+	if !bytes.Equal(authBytes, actualAuthBytes) {
+		return nil, newError("invalid auth")
+	}
+
+	mb := buf.MergeBytes(nil, payload)
+
+	return mb, nil
 }
 
-func (this *ChunkReader) Read() (*alloc.Buffer, error) {
-	buffer := alloc.NewLargeBuffer()
-	if _, err := io.ReadFull(this.reader, buffer.Value[:2]); err != nil {
-		buffer.Release()
-		return nil, err
-	}
-	// There is a potential buffer overflow here. Large buffer is 64K bytes,
-	// while uin16 + 10 will be more than that
-	length := serial.BytesToUint16(buffer.Value[:2]) + AuthSize
-	if _, err := io.ReadFull(this.reader, buffer.Value[:length]); err != nil {
-		buffer.Release()
-		return nil, err
-	}
-	buffer.Slice(0, int(length))
+type ChunkWriter struct {
+	writer io.Writer
+	auth   *Authenticator
+	buffer []byte
+}
 
-	authBytes := buffer.Value[:AuthSize]
-	payload := buffer.Value[AuthSize:]
-
-	actualAuthBytes := this.auth.Authenticate(nil, payload)
-	if !bytes.Equal(authBytes, actualAuthBytes) {
-		buffer.Release()
-		log.Debug("AuthenticationReader: Unexpected auth: ", authBytes)
-		return nil, transport.ErrCorruptedPacket
+func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
+	return &ChunkWriter{
+		writer: writer,
+		auth:   auth,
+		buffer: make([]byte, 32*1024),
 	}
-	buffer.SliceFrom(AuthSize)
+}
 
-	return buffer, nil
+// WriteMultiBuffer implements buf.Writer.
+func (w *ChunkWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
+	defer buf.ReleaseMulti(mb)
+
+	for {
+		mb, payloadLen := buf.SplitBytes(mb, w.buffer[2+AuthSize:])
+		binary.BigEndian.PutUint16(w.buffer, uint16(payloadLen))
+		w.auth.Authenticate(w.buffer[2+AuthSize:2+AuthSize+payloadLen], w.buffer[2:])
+		if err := buf.WriteAllBytes(w.writer, w.buffer[:2+AuthSize+payloadLen]); err != nil {
+			return err
+		}
+		if mb.IsEmpty() {
+			break
+		}
+	}
+	return nil
 }

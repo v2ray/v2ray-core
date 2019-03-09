@@ -1,85 +1,133 @@
+// +build !confonly
+
 package freedom
 
-import (
-	"io"
+//go:generate errorgen
 
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/app/dns"
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/dice"
-	v2io "github.com/v2ray/v2ray-core/common/io"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/retry"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/registry"
-	"github.com/v2ray/v2ray-core/transport/internet"
-	"github.com/v2ray/v2ray-core/transport/internet/tcp"
-	"github.com/v2ray/v2ray-core/transport/ray"
+import (
+	"context"
+	"time"
+
+	"v2ray.com/core"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/session"
+	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/dns"
+	"v2ray.com/core/features/policy"
+	"v2ray.com/core/transport"
+	"v2ray.com/core/transport/internet"
 )
 
-type FreedomConnection struct {
-	domainStrategy DomainStrategy
-	timeout        uint32
-	dns            dns.Server
-	meta           *proxy.OutboundHandlerMeta
-}
-
-func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundHandlerMeta) *FreedomConnection {
-	f := &FreedomConnection{
-		domainStrategy: config.DomainStrategy,
-		timeout:        config.Timeout,
-		meta:           meta,
-	}
-	space.InitializeApplication(func() error {
-		if config.DomainStrategy == DomainStrategyUseIP {
-			if !space.HasApp(dns.APP_ID) {
-				log.Error("Freedom: DNS server is not found in the space.")
-				return app.ErrMissingApplication
-			}
-			f.dns = space.GetApp(dns.APP_ID).(dns.Server)
+func init() {
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		h := new(Handler)
+		if err := core.RequireFeatures(ctx, func(pm policy.Manager, d dns.Client) error {
+			return h.Init(config.(*Config), pm, d)
+		}); err != nil {
+			return nil, err
 		}
-		return nil
-	})
-	return f
+		return h, nil
+	}))
 }
 
-// @Private
-func (this *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Destination {
-	if !destination.Address().Family().IsDomain() {
-		return destination
+// Handler handles Freedom connections.
+type Handler struct {
+	policyManager policy.Manager
+	dns           dns.Client
+	config        Config
+}
+
+// Init initializes the Handler with necessary parameters.
+func (h *Handler) Init(config *Config, pm policy.Manager, d dns.Client) error {
+	h.config = *config
+	h.policyManager = pm
+	h.dns = d
+
+	return nil
+}
+
+func (h *Handler) policy() policy.Session {
+	p := h.policyManager.ForLevel(h.config.UserLevel)
+	if h.config.Timeout > 0 && h.config.UserLevel == 0 {
+		p.Timeouts.ConnectionIdle = time.Duration(h.config.Timeout) * time.Second
+	}
+	return p
+}
+
+func (h *Handler) resolveIP(ctx context.Context, domain string, localAddr net.Address) net.Address {
+	var lookupFunc func(string) ([]net.IP, error) = h.dns.LookupIP
+
+	if h.config.DomainStrategy == Config_USE_IP4 || (localAddr != nil && localAddr.Family().IsIPv4()) {
+		if lookupIPv4, ok := h.dns.(dns.IPv4Lookup); ok {
+			lookupFunc = lookupIPv4.LookupIPv4
+		}
+	} else if h.config.DomainStrategy == Config_USE_IP6 || (localAddr != nil && localAddr.Family().IsIPv6()) {
+		if lookupIPv6, ok := h.dns.(dns.IPv6Lookup); ok {
+			lookupFunc = lookupIPv6.LookupIPv6
+		}
 	}
 
-	ips := this.dns.Get(destination.Address().Domain())
+	ips, err := lookupFunc(domain)
+	if err != nil {
+		newError("failed to get IP address for domain ", domain).Base(err).WriteToLog(session.ExportIDToError(ctx))
+	}
 	if len(ips) == 0 {
-		log.Info("Freedom: DNS returns nil answer. Keep domain as is.")
-		return destination
+		return nil
 	}
-
-	ip := ips[dice.Roll(len(ips))]
-	var newDest v2net.Destination
-	if destination.IsTCP() {
-		newDest = v2net.TCPDestination(v2net.IPAddress(ip), destination.Port())
-	} else {
-		newDest = v2net.UDPDestination(v2net.IPAddress(ip), destination.Port())
-	}
-	log.Info("Freedom: Changing destination from ", destination, " to ", newDest)
-	return newDest
+	return net.IPAddress(ips[dice.Roll(len(ips))])
 }
 
-func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
-	log.Info("Freedom: Opening connection to ", destination)
+func isValidAddress(addr *net.IPOrDomain) bool {
+	if addr == nil {
+		return false
+	}
 
-	defer payload.Release()
-	defer ray.OutboundInput().Release()
-	defer ray.OutboundOutput().Close()
+	a := addr.AsAddress()
+	return a != net.AnyIP
+}
+
+// Process implements proxy.Outbound.
+func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil || !outbound.Target.IsValid() {
+		return newError("target not specified.")
+	}
+	destination := outbound.Target
+	if h.config.DestinationOverride != nil {
+		server := h.config.DestinationOverride.Server
+		if isValidAddress(server.Address) {
+			destination.Address = server.Address.AsAddress()
+		}
+		if server.Port != 0 {
+			destination.Port = net.Port(server.Port)
+		}
+	}
+	newError("opening connection to ", destination).WriteToLog(session.ExportIDToError(ctx))
+
+	input := link.Reader
+	output := link.Writer
 
 	var conn internet.Connection
-	if this.domainStrategy == DomainStrategyUseIP && destination.Address().Family().IsDomain() {
-		destination = this.ResolveIP(destination)
-	}
-	err := retry.Timed(5, 100).On(func() error {
-		rawConn, err := internet.Dial(this.meta.Address, destination, this.meta.StreamSettings)
+	err := retry.ExponentialBackoff(5, 100).On(func() error {
+		dialDest := destination
+		if h.config.useIP() && dialDest.Address.Family().IsDomain() {
+			ip := h.resolveIP(ctx, dialDest.Address.Domain(), dialer.Address())
+			if ip != nil {
+				dialDest = net.Destination{
+					Network: dialDest.Network,
+					Address: ip,
+					Port:    dialDest.Port,
+				}
+				newError("dialing to to ", dialDest).WriteToLog(session.ExportIDToError(ctx))
+			}
+		}
+
+		rawConn, err := dialer.Dial(ctx, dialDest)
 		if err != nil {
 			return err
 		}
@@ -87,56 +135,50 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 		return nil
 	})
 	if err != nil {
-		log.Warning("Freedom: Failed to open connection to ", destination, ": ", err)
-		return err
+		return newError("failed to open connection to ", destination).Base(err)
 	}
-	defer conn.Close()
+	defer conn.Close() // nolint: errcheck
 
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
+	plcy := h.policy()
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, plcy.Timeouts.ConnectionIdle)
 
-	if !payload.IsEmpty() {
-		conn.Write(payload.Value)
-	}
+	requestDone := func() error {
+		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 
-	go func() {
-		v2writer := v2io.NewAdaptiveWriter(conn)
-		defer v2writer.Release()
-
-		v2io.Pipe(input, v2writer)
-		if tcpConn, ok := conn.(*tcp.RawConnection); ok {
-			tcpConn.CloseWrite()
+		var writer buf.Writer
+		if destination.Network == net.Network_TCP {
+			writer = buf.NewWriter(conn)
+		} else {
+			writer = &buf.SequentialWriter{Writer: conn}
 		}
-	}()
 
-	var reader io.Reader = conn
+		if err := buf.Copy(input, writer, buf.UpdateActivity(timer)); err != nil {
+			return newError("failed to process request").Base(err)
+		}
 
-	timeout := this.timeout
-	if destination.IsUDP() {
-		timeout = 16
-	}
-	if timeout > 0 {
-		reader = v2net.NewTimeOutReader(int(timeout) /* seconds */, conn)
+		return nil
 	}
 
-	v2reader := v2io.NewAdaptiveReader(reader)
-	v2io.Pipe(v2reader, output)
-	v2reader.Release()
-	ray.OutboundOutput().Close()
+	responseDone := func() error {
+		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
+
+		var reader buf.Reader
+		if destination.Network == net.Network_TCP {
+			reader = buf.NewReader(conn)
+		} else {
+			reader = buf.NewPacketReader(conn)
+		}
+		if err := buf.Copy(reader, output, buf.UpdateActivity(timer)); err != nil {
+			return newError("failed to process response").Base(err)
+		}
+
+		return nil
+	}
+
+	if err := task.Run(ctx, requestDone, task.OnSuccess(responseDone, task.Close(output))); err != nil {
+		return newError("connection ends").Base(err)
+	}
 
 	return nil
-}
-
-type FreedomFactory struct{}
-
-func (this *FreedomFactory) StreamCapability() internet.StreamConnectionType {
-	return internet.StreamConnectionTypeRawTCP
-}
-
-func (this *FreedomFactory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-	return NewFreedomConnection(config.(*Config), space, meta), nil
-}
-
-func init() {
-	registry.MustRegisterOutboundHandlerCreator("freedom", new(FreedomFactory))
 }

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package v2ray.core.transport.internet.websocket;
+option csharp_namespace = "V2Ray.Core.Transport.Internet.Websocket";
+option go_package = "websocket";
+option java_package = "com.v2ray.core.transport.internet.websocket";
+option java_multiple_files = true;
+
+message Header {
+  string key = 1;
+  string value = 2;
+}
+
+message Config {
+  reserved 1;
+
+  // URL path to the WebSocket service. Empty value means root(/).
+  string path = 2;
+
+  repeated Header header = 3;
+}

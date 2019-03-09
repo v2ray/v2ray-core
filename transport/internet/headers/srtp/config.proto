@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package v2ray.core.transport.internet.headers.srtp;
+option csharp_namespace = "V2Ray.Core.Transport.Internet.Headers.Srtp";
+option go_package = "srtp";
+option java_package = "com.v2ray.core.transport.internet.headers.srtp";
+option java_multiple_files = true;
+
+message Config {
+  uint32 version = 1;
+	bool padding = 2;
+	bool extension   = 3;
+	uint32 csrc_count = 4;
+	bool marker     = 5;
+	uint32 payload_type = 6;
+}

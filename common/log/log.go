@@ -1,97 +1,66 @@
-package log
+package log // import "v2ray.com/core/common/log"
 
 import (
-	"github.com/v2ray/v2ray-core/common/log/internal"
+	"sync"
+
+	"v2ray.com/core/common/serial"
 )
 
-type LogLevel int
+// Message is the interface for all log messages.
+type Message interface {
+	String() string
+}
 
-const (
-	DebugLevel   = LogLevel(0)
-	InfoLevel    = LogLevel(1)
-	WarningLevel = LogLevel(2)
-	ErrorLevel   = LogLevel(3)
-	NoneLevel    = LogLevel(999)
-)
+// Handler is the interface for log handler.
+type Handler interface {
+	Handle(msg Message)
+}
+
+// GeneralMessage is a general log message that can contain all kind of content.
+type GeneralMessage struct {
+	Severity Severity
+	Content  interface{}
+}
+
+// String implements Message.
+func (m *GeneralMessage) String() string {
+	return serial.Concat("[", m.Severity, "] ", m.Content)
+}
+
+// Record writes a message into log stream.
+func Record(msg Message) {
+	logHandler.Handle(msg)
+}
 
 var (
-	streamLoggerInstance internal.LogWriter = internal.NewStdOutLogWriter()
-
-	debugLogger   internal.LogWriter = streamLoggerInstance
-	infoLogger    internal.LogWriter = streamLoggerInstance
-	warningLogger internal.LogWriter = streamLoggerInstance
-	errorLogger   internal.LogWriter = streamLoggerInstance
+	logHandler syncHandler
 )
 
-func SetLogLevel(level LogLevel) {
-	debugLogger = new(internal.NoOpLogWriter)
-	if level <= DebugLevel {
-		debugLogger = streamLoggerInstance
+// RegisterHandler register a new handler as current log handler. Previous registered handler will be discarded.
+func RegisterHandler(handler Handler) {
+	if handler == nil {
+		panic("Log handler is nil")
 	}
+	logHandler.Set(handler)
+}
 
-	infoLogger = new(internal.NoOpLogWriter)
-	if level <= InfoLevel {
-		infoLogger = streamLoggerInstance
-	}
+type syncHandler struct {
+	sync.RWMutex
+	Handler
+}
 
-	warningLogger = new(internal.NoOpLogWriter)
-	if level <= WarningLevel {
-		warningLogger = streamLoggerInstance
-	}
+func (h *syncHandler) Handle(msg Message) {
+	h.RLock()
+	defer h.RUnlock()
 
-	errorLogger = new(internal.NoOpLogWriter)
-	if level <= ErrorLevel {
-		errorLogger = streamLoggerInstance
-	}
-
-	if level == NoneLevel {
-		accessLoggerInstance = new(internal.NoOpLogWriter)
+	if h.Handler != nil {
+		h.Handler.Handle(msg)
 	}
 }
 
-func InitErrorLogger(file string) error {
-	logger, err := internal.NewFileLogWriter(file)
-	if err != nil {
-		Error("Failed to create error logger on file (", file, "): ", err)
-		return err
-	}
-	streamLoggerInstance = logger
-	return nil
-}
+func (h *syncHandler) Set(handler Handler) {
+	h.Lock()
+	defer h.Unlock()
 
-// Debug outputs a debug log with given format and optional arguments.
-func Debug(v ...interface{}) {
-	debugLogger.Log(&internal.ErrorLog{
-		Prefix: "[Debug]",
-		Values: v,
-	})
-}
-
-// Info outputs an info log with given format and optional arguments.
-func Info(v ...interface{}) {
-	infoLogger.Log(&internal.ErrorLog{
-		Prefix: "[Info]",
-		Values: v,
-	})
-}
-
-// Warning outputs a warning log with given format and optional arguments.
-func Warning(v ...interface{}) {
-	warningLogger.Log(&internal.ErrorLog{
-		Prefix: "[Warning]",
-		Values: v,
-	})
-}
-
-// Error outputs an error log with given format and optional arguments.
-func Error(v ...interface{}) {
-	errorLogger.Log(&internal.ErrorLog{
-		Prefix: "[Error]",
-		Values: v,
-	})
-}
-
-func Close() {
-	streamLoggerInstance.Close()
-	accessLoggerInstance.Close()
+	h.Handler = handler
 }

@@ -1,110 +1,133 @@
 package udp
 
 import (
-	"net"
-	"sync"
+	"context"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/transport/internet/internal"
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol/udp"
+	"v2ray.com/core/transport/internet"
 )
 
-type UDPPayloadHandler func(*alloc.Buffer, *proxy.SessionInfo)
+type HubOption func(h *Hub)
 
-type UDPHub struct {
-	sync.RWMutex
-	conn      *net.UDPConn
-	option    ListenOption
-	accepting bool
+func HubCapacity(capacity int) HubOption {
+	return func(h *Hub) {
+		h.capacity = capacity
+	}
 }
 
-type ListenOption struct {
-	Callback            UDPPayloadHandler
-	ReceiveOriginalDest bool
+func HubReceiveOriginalDestination(r bool) HubOption {
+	return func(h *Hub) {
+		h.recvOrigDest = r
+	}
 }
 
-func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*UDPHub, error) {
-	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{
+type Hub struct {
+	conn         *net.UDPConn
+	cache        chan *udp.Packet
+	capacity     int
+	recvOrigDest bool
+}
+
+func ListenUDP(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, options ...HubOption) (*Hub, error) {
+	hub := &Hub{
+		capacity:     256,
+		recvOrigDest: false,
+	}
+	for _, opt := range options {
+		opt(hub)
+	}
+
+	var sockopt *internet.SocketConfig
+	if streamSettings != nil {
+		sockopt = streamSettings.SocketSettings
+	}
+	if sockopt != nil && sockopt.ReceiveOriginalDestAddress {
+		hub.recvOrigDest = true
+	}
+
+	udpConn, err := internet.ListenSystemPacket(ctx, &net.UDPAddr{
 		IP:   address.IP(),
 		Port: int(port),
-	})
+	}, sockopt)
 	if err != nil {
 		return nil, err
 	}
-	if option.ReceiveOriginalDest {
-		fd, err := internal.GetSysFd(udpConn)
-		if err != nil {
-			log.Warning("UDP|Listener: Failed to get fd: ", err)
-			return nil, err
-		}
-		err = SetOriginalDestOptions(fd)
-		if err != nil {
-			log.Warning("UDP|Listener: Failed to set socket options: ", err)
-			return nil, err
-		}
-	}
-	hub := &UDPHub{
-		conn:   udpConn,
-		option: option,
-	}
+	newError("listening UDP on ", address, ":", port).WriteToLog()
+	hub.conn = udpConn.(*net.UDPConn)
+	hub.cache = make(chan *udp.Packet, hub.capacity)
+
 	go hub.start()
 	return hub, nil
 }
 
-func (this *UDPHub) Close() {
-	this.Lock()
-	defer this.Unlock()
-
-	this.accepting = false
-	this.conn.Close()
+// Close implements net.Listener.
+func (h *Hub) Close() error {
+	h.conn.Close()
+	return nil
 }
 
-func (this *UDPHub) WriteTo(payload []byte, dest v2net.Destination) (int, error) {
-	return this.conn.WriteToUDP(payload, &net.UDPAddr{
-		IP:   dest.Address().IP(),
-		Port: int(dest.Port()),
+func (h *Hub) WriteTo(payload []byte, dest net.Destination) (int, error) {
+	return h.conn.WriteToUDP(payload, &net.UDPAddr{
+		IP:   dest.Address.IP(),
+		Port: int(dest.Port),
 	})
 }
 
-func (this *UDPHub) start() {
-	this.Lock()
-	this.accepting = true
-	this.Unlock()
+func (h *Hub) start() {
+	c := h.cache
+	defer close(c)
 
 	oobBytes := make([]byte, 256)
-	for this.Running() {
-		buffer := alloc.NewBuffer()
-		nBytes, noob, _, addr, err := this.conn.ReadMsgUDP(buffer.Value, oobBytes)
+
+	for {
+		buffer := buf.New()
+		var noob int
+		var addr *net.UDPAddr
+		rawBytes := buffer.Extend(buf.Size)
+
+		n, noob, _, addr, err := ReadUDPMsg(h.conn, rawBytes, oobBytes)
 		if err != nil {
+			newError("failed to read UDP msg").Base(err).WriteToLog()
+			buffer.Release()
+			break
+		}
+		buffer.Resize(0, int32(n))
+
+		if buffer.IsEmpty() {
 			buffer.Release()
 			continue
 		}
-		buffer.Slice(0, nBytes)
 
-		session := new(proxy.SessionInfo)
-		session.Source = v2net.UDPDestination(v2net.IPAddress(addr.IP), v2net.Port(addr.Port))
-		if this.option.ReceiveOriginalDest && noob > 0 {
-			session.Destination = RetrieveOriginalDest(oobBytes[:noob])
+		payload := &udp.Packet{
+			Payload: buffer,
+			Source:  net.UDPDestination(net.IPAddress(addr.IP), net.Port(addr.Port)),
 		}
-		go this.option.Callback(buffer, session)
+		if h.recvOrigDest && noob > 0 {
+			payload.Target = RetrieveOriginalDest(oobBytes[:noob])
+			if payload.Target.IsValid() {
+				newError("UDP original destination: ", payload.Target).AtDebug().WriteToLog()
+			} else {
+				newError("failed to read UDP original destination").WriteToLog()
+			}
+		}
+
+		select {
+		case c <- payload:
+		default:
+			buffer.Release()
+			payload.Payload = nil
+		}
+
 	}
 }
 
-func (this *UDPHub) Running() bool {
-	this.RLock()
-	defer this.RUnlock()
-
-	return this.accepting
+// Addr implements net.Listener.
+func (h *Hub) Addr() net.Addr {
+	return h.conn.LocalAddr()
 }
 
-// Connection return the net.Conn underneath this hub.
-// Private: Visible for testing only
-func (this *UDPHub) Connection() net.Conn {
-	return this.conn
-}
-
-func (this *UDPHub) Addr() net.Addr {
-	return this.conn.LocalAddr()
+func (h *Hub) Receive() <-chan *udp.Packet {
+	return h.cache
 }

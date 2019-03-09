@@ -1,21 +1,21 @@
 package encoding
 
 import (
-	"errors"
+	"encoding/binary"
 	"io"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/common/serial"
-	"github.com/v2ray/v2ray-core/common/uuid"
-	"github.com/v2ray/v2ray-core/transport"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/uuid"
 )
 
 var (
-	ErrCommandTypeMismatch = errors.New("Command type mismatch.")
-	ErrUnknownCommand      = errors.New("Unknown command.")
-	ErrCommandTooLarge     = errors.New("Command too large.")
+	ErrCommandTypeMismatch = newError("Command type mismatch.")
+	ErrUnknownCommand      = newError("Unknown command.")
+	ErrCommandTooLarge     = newError("Command too large.")
 )
 
 func MarshalCommand(command interface{}, writer io.Writer) error {
@@ -23,17 +23,17 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 		return ErrUnknownCommand
 	}
 
-	var cmdId byte
+	var cmdID byte
 	var factory CommandFactory
 	switch command.(type) {
 	case *protocol.CommandSwitchAccount:
 		factory = new(CommandSwitchAccountFactory)
-		cmdId = 1
+		cmdID = 1
 	default:
 		return ErrUnknownCommand
 	}
 
-	buffer := alloc.NewLocalBuffer(512).Clear()
+	buffer := buf.New()
 	defer buffer.Release()
 
 	err := factory.Marshal(command, buffer)
@@ -41,29 +41,29 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 		return err
 	}
 
-	auth := Authenticate(buffer.Value)
-	len := buffer.Len() + 4
-	if len > 255 {
+	auth := Authenticate(buffer.Bytes())
+	length := buffer.Len() + 4
+	if length > 255 {
 		return ErrCommandTooLarge
 	}
 
-	writer.Write([]byte{cmdId, byte(len), byte(auth >> 24), byte(auth >> 16), byte(auth >> 8), byte(auth)})
-	writer.Write(buffer.Value)
+	common.Must2(writer.Write([]byte{cmdID, byte(length), byte(auth >> 24), byte(auth >> 16), byte(auth >> 8), byte(auth)}))
+	common.Must2(writer.Write(buffer.Bytes()))
 	return nil
 }
 
-func UnmarshalCommand(cmdId byte, data []byte) (protocol.ResponseCommand, error) {
+func UnmarshalCommand(cmdID byte, data []byte) (protocol.ResponseCommand, error) {
 	if len(data) <= 4 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, newError("insufficient length")
 	}
 	expectedAuth := Authenticate(data[4:])
-	actualAuth := serial.BytesToUint32(data[:4])
+	actualAuth := binary.BigEndian.Uint32(data[:4])
 	if expectedAuth != actualAuth {
-		return nil, transport.ErrCorruptedPacket
+		return nil, newError("invalid auth")
 	}
 
 	var factory CommandFactory
-	switch cmdId {
+	switch cmdID {
 	case 1:
 		factory = new(CommandSwitchAccountFactory)
 	default:
@@ -80,7 +80,7 @@ type CommandFactory interface {
 type CommandSwitchAccountFactory struct {
 }
 
-func (this *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.Writer) error {
+func (f *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.Writer) error {
 	cmd, ok := command.(*protocol.CommandSwitchAccount)
 	if !ok {
 		return ErrCommandTypeMismatch
@@ -90,59 +90,58 @@ func (this *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.
 	if cmd.Host != nil {
 		hostStr = cmd.Host.String()
 	}
-	writer.Write([]byte{byte(len(hostStr))})
+	common.Must2(writer.Write([]byte{byte(len(hostStr))}))
 
 	if len(hostStr) > 0 {
-		writer.Write([]byte(hostStr))
+		common.Must2(writer.Write([]byte(hostStr)))
 	}
 
-	writer.Write(cmd.Port.Bytes(nil))
+	common.Must2(serial.WriteUint16(writer, cmd.Port.Value()))
 
 	idBytes := cmd.ID.Bytes()
-	writer.Write(idBytes)
+	common.Must2(writer.Write(idBytes))
+	common.Must2(serial.WriteUint16(writer, cmd.AlterIds))
+	common.Must2(writer.Write([]byte{byte(cmd.Level)}))
 
-	writer.Write(serial.Uint16ToBytes(cmd.AlterIds, nil))
-	writer.Write([]byte{byte(cmd.Level)})
-
-	writer.Write([]byte{cmd.ValidMin})
+	common.Must2(writer.Write([]byte{cmd.ValidMin}))
 	return nil
 }
 
-func (this *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error) {
+func (f *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error) {
 	cmd := new(protocol.CommandSwitchAccount)
 	if len(data) == 0 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, newError("insufficient length.")
 	}
 	lenHost := int(data[0])
 	if len(data) < lenHost+1 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, newError("insufficient length.")
 	}
 	if lenHost > 0 {
-		cmd.Host = v2net.ParseAddress(string(data[1 : 1+lenHost]))
+		cmd.Host = net.ParseAddress(string(data[1 : 1+lenHost]))
 	}
 	portStart := 1 + lenHost
 	if len(data) < portStart+2 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, newError("insufficient length.")
 	}
-	cmd.Port = v2net.PortFromBytes(data[portStart : portStart+2])
+	cmd.Port = net.PortFromBytes(data[portStart : portStart+2])
 	idStart := portStart + 2
 	if len(data) < idStart+16 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, newError("insufficient length.")
 	}
 	cmd.ID, _ = uuid.ParseBytes(data[idStart : idStart+16])
-	alterIdStart := idStart + 16
-	if len(data) < alterIdStart+2 {
-		return nil, transport.ErrCorruptedPacket
+	alterIDStart := idStart + 16
+	if len(data) < alterIDStart+2 {
+		return nil, newError("insufficient length.")
 	}
-	cmd.AlterIds = serial.BytesToUint16(data[alterIdStart : alterIdStart+2])
-	levelStart := alterIdStart + 2
+	cmd.AlterIds = binary.BigEndian.Uint16(data[alterIDStart : alterIDStart+2])
+	levelStart := alterIDStart + 2
 	if len(data) < levelStart+1 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, newError("insufficient length.")
 	}
-	cmd.Level = protocol.UserLevel(data[levelStart])
+	cmd.Level = uint32(data[levelStart])
 	timeStart := levelStart + 1
 	if len(data) < timeStart {
-		return nil, transport.ErrCorruptedPacket
+		return nil, newError("insufficient length.")
 	}
 	cmd.ValidMin = data[timeStart]
 	return cmd, nil

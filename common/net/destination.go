@@ -2,130 +2,107 @@ package net
 
 import (
 	"net"
+	"strings"
 )
 
 // Destination represents a network destination including address and protocol (tcp / udp).
-type Destination interface {
-	Network() Network // Protocol of communication (tcp / udp)
-	Address() Address // Address of destination
-	Port() Port
-	String() string // String representation of the destination
-	NetAddr() string
-	Equals(Destination) bool
-
-	IsTCP() bool // True if destination is reachable via TCP
-	IsUDP() bool // True if destination is reachable via UDP
+type Destination struct {
+	Address Address
+	Port    Port
+	Network Network
 }
 
+// DestinationFromAddr generates a Destination from a net address.
 func DestinationFromAddr(addr net.Addr) Destination {
 	switch addr := addr.(type) {
 	case *net.TCPAddr:
 		return TCPDestination(IPAddress(addr.IP), Port(addr.Port))
 	case *net.UDPAddr:
 		return UDPDestination(IPAddress(addr.IP), Port(addr.Port))
+	case *net.UnixAddr:
+		// TODO: deal with Unix domain socket
+		return TCPDestination(LocalHostIP, Port(9))
 	default:
-		panic("Unknown address type.")
+		panic("Net: Unknown address type.")
 	}
+}
+
+// ParseDestination converts a destination from its string presentation.
+func ParseDestination(dest string) (Destination, error) {
+	d := Destination{
+		Address: AnyIP,
+		Port:    Port(0),
+	}
+	if strings.HasPrefix(dest, "tcp:") {
+		d.Network = Network_TCP
+		dest = dest[4:]
+	} else if strings.HasPrefix(dest, "udp:") {
+		d.Network = Network_UDP
+		dest = dest[4:]
+	}
+
+	hstr, pstr, err := SplitHostPort(dest)
+	if err != nil {
+		return d, err
+	}
+	if len(hstr) > 0 {
+		d.Address = ParseAddress(hstr)
+	}
+	if len(pstr) > 0 {
+		port, err := PortFromString(pstr)
+		if err != nil {
+			return d, err
+		}
+		d.Port = port
+	}
+	return d, nil
 }
 
 // TCPDestination creates a TCP destination with given address
 func TCPDestination(address Address, port Port) Destination {
-	return &tcpDestination{address: address, port: port}
+	return Destination{
+		Network: Network_TCP,
+		Address: address,
+		Port:    port,
+	}
 }
 
 // UDPDestination creates a UDP destination with given address
 func UDPDestination(address Address, port Port) Destination {
-	return &udpDestination{address: address, port: port}
-}
-
-type tcpDestination struct {
-	address Address
-	port    Port
-}
-
-func (dest *tcpDestination) Network() Network {
-	return TCPNetwork
-}
-
-func (dest *tcpDestination) Address() Address {
-	return dest.address
-}
-
-func (dest *tcpDestination) NetAddr() string {
-	return dest.address.String() + ":" + dest.port.String()
-}
-
-func (dest *tcpDestination) String() string {
-	return "tcp:" + dest.NetAddr()
-}
-
-func (dest *tcpDestination) IsTCP() bool {
-	return true
-}
-
-func (dest *tcpDestination) IsUDP() bool {
-	return false
-}
-
-func (dest *tcpDestination) Port() Port {
-	return dest.port
-}
-
-func (dest *tcpDestination) Equals(another Destination) bool {
-	if dest == nil && another == nil {
-		return true
+	return Destination{
+		Network: Network_UDP,
+		Address: address,
+		Port:    port,
 	}
-	if dest == nil || another == nil {
-		return false
+}
+
+// NetAddr returns the network address in this Destination in string form.
+func (d Destination) NetAddr() string {
+	return d.Address.String() + ":" + d.Port.String()
+}
+
+// String returns the strings form of this Destination.
+func (d Destination) String() string {
+	prefix := "unknown:"
+	switch d.Network {
+	case Network_TCP:
+		prefix = "tcp:"
+	case Network_UDP:
+		prefix = "udp:"
 	}
-	if !another.IsTCP() {
-		return false
+	return prefix + d.NetAddr()
+}
+
+// IsValid returns true if this Destination is valid.
+func (d Destination) IsValid() bool {
+	return d.Network != Network_Unknown
+}
+
+// AsDestination converts current Endpoint into Destination.
+func (p *Endpoint) AsDestination() Destination {
+	return Destination{
+		Network: p.Network,
+		Address: p.Address.AsAddress(),
+		Port:    Port(p.Port),
 	}
-	return dest.Port() == another.Port() && dest.Address().Equals(another.Address())
-}
-
-type udpDestination struct {
-	address Address
-	port    Port
-}
-
-func (dest *udpDestination) Network() Network {
-	return UDPNetwork
-}
-
-func (dest *udpDestination) Address() Address {
-	return dest.address
-}
-
-func (dest *udpDestination) NetAddr() string {
-	return dest.address.String() + ":" + dest.port.String()
-}
-
-func (dest *udpDestination) String() string {
-	return "udp:" + dest.NetAddr()
-}
-
-func (dest *udpDestination) IsTCP() bool {
-	return false
-}
-
-func (dest *udpDestination) IsUDP() bool {
-	return true
-}
-
-func (dest *udpDestination) Port() Port {
-	return dest.port
-}
-
-func (dest *udpDestination) Equals(another Destination) bool {
-	if dest == nil && another == nil {
-		return true
-	}
-	if dest == nil || another == nil {
-		return false
-	}
-	if !another.IsUDP() {
-		return false
-	}
-	return dest.Port() == another.Port() && dest.Address().Equals(another.Address())
 }

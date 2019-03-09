@@ -1,40 +1,66 @@
+// +build !confonly
+
 package outbound
 
-import (
-	"io"
-	"sync"
+//go:generate errorgen
 
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/common/retry"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/registry"
-	"github.com/v2ray/v2ray-core/proxy/vmess/encoding"
-	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
-	"github.com/v2ray/v2ray-core/transport/internet"
-	"github.com/v2ray/v2ray-core/transport/ray"
+import (
+	"context"
+	"time"
+
+	"v2ray.com/core"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/platform"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/session"
+	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/policy"
+	"v2ray.com/core/proxy/vmess"
+	"v2ray.com/core/proxy/vmess/encoding"
+	"v2ray.com/core/transport"
+	"v2ray.com/core/transport/internet"
 )
 
-type VMessOutboundHandler struct {
-	serverList   *protocol.ServerList
-	serverPicker protocol.ServerPicker
-	meta         *proxy.OutboundHandlerMeta
+// Handler is an outbound connection handler for VMess protocol.
+type Handler struct {
+	serverList    *protocol.ServerList
+	serverPicker  protocol.ServerPicker
+	policyManager policy.Manager
 }
 
-func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
-	defer ray.OutboundInput().Release()
-	defer ray.OutboundOutput().Close()
+// New creates a new VMess outbound handler.
+func New(ctx context.Context, config *Config) (*Handler, error) {
+	serverList := protocol.NewServerList()
+	for _, rec := range config.Receiver {
+		s, err := protocol.NewServerSpecFromPB(*rec)
+		if err != nil {
+			return nil, newError("failed to parse server spec").Base(err)
+		}
+		serverList.AddServer(s)
+	}
 
+	v := core.MustFromContext(ctx)
+	handler := &Handler{
+		serverList:    serverList,
+		serverPicker:  protocol.NewRoundRobinServerPicker(serverList),
+		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
+	}
+
+	return handler, nil
+}
+
+// Process implements proxy.Outbound.Process().
+func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
-	err := retry.Timed(5, 100).On(func() error {
-		rec = this.serverPicker.PickServer()
-		rawConn, err := internet.Dial(this.meta.Address, rec.Destination(), this.meta.StreamSettings)
+	err := retry.ExponentialBackoff(5, 200).On(func() error {
+		rec = v.serverPicker.PickServer()
+		rawConn, err := dialer.Dial(ctx, rec.Destination())
 		if err != nil {
 			return err
 		}
@@ -43,142 +69,124 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 		return nil
 	})
 	if err != nil {
-		log.Error("VMess|Outbound: Failed to find an available destination:", err)
-		return err
+		return newError("failed to find an available destination").Base(err).AtWarning()
 	}
-	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination())
+	defer conn.Close() //nolint: errcheck
+
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil || !outbound.Target.IsValid() {
+		return newError("target not specified").AtError()
+	}
+
+	target := outbound.Target
+	newError("tunneling request to ", target, " via ", rec.Destination()).WriteToLog(session.ExportIDToError(ctx))
 
 	command := protocol.RequestCommandTCP
-	if target.IsUDP() {
+	if target.Network == net.Network_UDP {
 		command = protocol.RequestCommandUDP
 	}
+	if target.Address.Family().IsDomain() && target.Address.Domain() == "v1.mux.cool" {
+		command = protocol.RequestCommandMux
+	}
+
 	request := &protocol.RequestHeader{
 		Version: encoding.Version,
 		User:    rec.PickUser(),
 		Command: command,
-		Address: target.Address(),
-		Port:    target.Port(),
+		Address: target.Address,
+		Port:    target.Port,
 		Option:  protocol.RequestOptionChunkStream,
 	}
 
-	defer conn.Close()
+	account := request.User.Account.(*vmess.MemoryAccount)
+	request.Security = account.Security
 
-	conn.SetReusable(true)
-	if conn.Reusable() { // Conn reuse may be disabled on transportation layer
-		request.Option.Set(protocol.RequestOptionConnectionReuse)
+	if request.Security == protocol.SecurityType_AES128_GCM || request.Security == protocol.SecurityType_NONE || request.Security == protocol.SecurityType_CHACHA20_POLY1305 {
+		request.Option.Set(protocol.RequestOptionChunkMasking)
 	}
 
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
+	if shouldEnablePadding(request.Security) && request.Option.Has(protocol.RequestOptionChunkMasking) {
+		request.Option.Set(protocol.RequestOptionGlobalPadding)
+	}
 
-	var requestFinish, responseFinish sync.Mutex
-	requestFinish.Lock()
-	responseFinish.Lock()
+	input := link.Reader
+	output := link.Writer
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
+	sessionPolicy := v.policyManager.ForLevel(request.User.Level)
 
-	go this.handleRequest(session, conn, request, payload, input, &requestFinish)
-	go this.handleResponse(session, conn, request, rec.Destination(), output, &responseFinish)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 
-	requestFinish.Lock()
-	responseFinish.Lock()
+	requestDone := func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
+
+		writer := buf.NewBufferedWriter(buf.NewWriter(conn))
+		if err := session.EncodeRequestHeader(request, writer); err != nil {
+			return newError("failed to encode request").Base(err).AtWarning()
+		}
+
+		bodyWriter := session.EncodeRequestBody(request, writer)
+		if err := buf.CopyOnceTimeout(input, bodyWriter, time.Millisecond*100); err != nil && err != buf.ErrNotTimeoutReader && err != buf.ErrReadTimeout {
+			return newError("failed to write first payload").Base(err)
+		}
+
+		if err := writer.SetBuffered(false); err != nil {
+			return err
+		}
+
+		if err := buf.Copy(input, bodyWriter, buf.UpdateActivity(timer)); err != nil {
+			return err
+		}
+
+		if request.Option.Has(protocol.RequestOptionChunkStream) {
+			if err := bodyWriter.WriteMultiBuffer(buf.MultiBuffer{}); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	responseDone := func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
+
+		reader := &buf.BufferedReader{Reader: buf.NewReader(conn)}
+		header, err := session.DecodeResponseHeader(reader)
+		if err != nil {
+			return newError("failed to read header").Base(err)
+		}
+		v.handleCommand(rec.Destination(), header.Command)
+
+		bodyReader := session.DecodeResponseBody(request, reader)
+
+		return buf.Copy(bodyReader, output, buf.UpdateActivity(timer))
+	}
+
+	var responseDonePost = task.OnSuccess(responseDone, task.Close(output))
+	if err := task.Run(ctx, requestDone, responseDonePost); err != nil {
+		return newError("connection ends").Base(err)
+	}
+
 	return nil
 }
 
-func (this *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
-	defer finish.Unlock()
+var (
+	enablePadding = false
+)
 
-	writer := v2io.NewBufferedWriter(conn)
-	defer writer.Release()
-	session.EncodeRequestHeader(request, writer)
-
-	bodyWriter := session.EncodeRequestBody(writer)
-	var streamWriter v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
-	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
-	}
-	if !payload.IsEmpty() {
-		if err := streamWriter.Write(payload); err != nil {
-			conn.SetReusable(false)
-		}
-	}
-	writer.SetCached(false)
-
-	err := v2io.Pipe(input, streamWriter)
-	if err != io.EOF {
-		conn.SetReusable(false)
-	}
-
-	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		err := streamWriter.Write(alloc.NewLocalBuffer(32).Clear())
-		if err != nil {
-			conn.SetReusable(false)
-		}
-	}
-	streamWriter.Release()
-	return
-}
-
-func (this *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
-	defer finish.Unlock()
-
-	reader := v2io.NewBufferedReader(conn)
-	defer reader.Release()
-
-	header, err := session.DecodeResponseHeader(reader)
-	if err != nil {
-		conn.SetReusable(false)
-		log.Warning("VMess|Outbound: Failed to read response from ", request.Destination(), ": ", err)
-		return
-	}
-	go this.handleCommand(dest, header.Command)
-
-	if !header.Option.Has(protocol.ResponseOptionConnectionReuse) {
-		conn.SetReusable(false)
-	}
-
-	reader.SetCached(false)
-	decryptReader := session.DecodeResponseBody(reader)
-
-	var bodyReader v2io.Reader
-	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		bodyReader = vmessio.NewAuthChunkReader(decryptReader)
-	} else {
-		bodyReader = v2io.NewAdaptiveReader(decryptReader)
-	}
-
-	err = v2io.Pipe(bodyReader, output)
-	if err != io.EOF {
-		conn.SetReusable(false)
-	}
-
-	bodyReader.Release()
-
-	return
-}
-
-type Factory struct{}
-
-func (this *Factory) StreamCapability() internet.StreamConnectionType {
-	return internet.StreamConnectionTypeRawTCP | internet.StreamConnectionTypeTCP | internet.StreamConnectionTypeKCP | internet.StreamConnectionTypeWebSocket
-}
-
-func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-	vOutConfig := rawConfig.(*Config)
-
-	serverList := protocol.NewServerList()
-	for _, rec := range vOutConfig.Receivers {
-		serverList.AddServer(rec)
-	}
-	handler := &VMessOutboundHandler{
-		serverList:   serverList,
-		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		meta:         meta,
-	}
-
-	return handler, nil
+func shouldEnablePadding(s protocol.SecurityType) bool {
+	return enablePadding || s == protocol.SecurityType_AES128_GCM || s == protocol.SecurityType_CHACHA20_POLY1305 || s == protocol.SecurityType_AUTO
 }
 
 func init() {
-	registry.MustRegisterOutboundHandlerCreator("vmess", new(Factory))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return New(ctx, config.(*Config))
+	}))
+
+	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+	paddingValue := platform.NewEnvFlag("v2ray.vmess.padding").GetValue(func() string { return defaultFlagValue })
+	if paddingValue != defaultFlagValue {
+		enablePadding = true
+	}
 }

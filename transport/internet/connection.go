@@ -1,69 +1,34 @@
 package internet
 
 import (
-	"crypto/tls"
 	"net"
+
+	"v2ray.com/core/features/stats"
 )
-
-type ConnectionHandler func(Connection)
-
-type Reusable interface {
-	Reusable() bool
-	SetReusable(reuse bool)
-}
-
-type StreamConnectionType int
-
-const (
-	StreamConnectionTypeRawTCP    StreamConnectionType = 1
-	StreamConnectionTypeTCP       StreamConnectionType = 2
-	StreamConnectionTypeKCP       StreamConnectionType = 4
-	StreamConnectionTypeWebSocket StreamConnectionType = 8
-)
-
-type StreamSecurityType int
-
-const (
-	StreamSecurityTypeNone StreamSecurityType = 0
-	StreamSecurityTypeTLS  StreamSecurityType = 1
-)
-
-var (
-	globalSessionCache = tls.NewLRUClientSessionCache(128)
-)
-
-type TLSSettings struct {
-	AllowInsecure bool
-	Certs         []tls.Certificate
-}
-
-func (this *TLSSettings) GetTLSConfig() *tls.Config {
-	config := &tls.Config{
-		InsecureSkipVerify: this.AllowInsecure,
-		ClientSessionCache: globalSessionCache,
-	}
-
-	config.Certificates = this.Certs
-	config.BuildNameToCertificate()
-
-	return config
-}
-
-type StreamSettings struct {
-	Type        StreamConnectionType
-	Security    StreamSecurityType
-	TLSSettings *TLSSettings
-}
-
-func (this *StreamSettings) IsCapableOf(streamType StreamConnectionType) bool {
-	return (this.Type & streamType) == streamType
-}
 
 type Connection interface {
 	net.Conn
-	Reusable
 }
 
-type SysFd interface {
-	SysFd() (int, error)
+type StatCouterConnection struct {
+	Connection
+	Uplink   stats.Counter
+	Downlink stats.Counter
+}
+
+func (c *StatCouterConnection) Read(b []byte) (int, error) {
+	nBytes, err := c.Connection.Read(b)
+	if c.Uplink != nil {
+		c.Uplink.Add(int64(nBytes))
+	}
+
+	return nBytes, err
+}
+
+func (c *StatCouterConnection) Write(b []byte) (int, error) {
+	nBytes, err := c.Connection.Write(b)
+	if c.Downlink != nil {
+		c.Downlink.Add(int64(nBytes))
+	}
+	return nBytes, err
 }

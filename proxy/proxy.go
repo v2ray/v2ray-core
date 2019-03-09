@@ -1,53 +1,48 @@
 // Package proxy contains all proxies used by V2Ray.
-package proxy // import "github.com/v2ray/v2ray-core/proxy"
+//
+// To implement an inbound or outbound proxy, one needs to do the following:
+// 1. Implement the interface(s) below.
+// 2. Register a config creator through common.RegisterConfig.
+package proxy
 
 import (
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/transport/internet"
-	"github.com/v2ray/v2ray-core/transport/ray"
+	"context"
+
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/features/routing"
+	"v2ray.com/core/transport"
+	"v2ray.com/core/transport/internet"
 )
 
-type HandlerState int
+// An Inbound processes inbound connections.
+type Inbound interface {
+	// Network returns a list of networks that this inbound supports. Connections with not-supported networks will not be passed into Process().
+	Network() []net.Network
 
-const (
-	HandlerStateStopped = HandlerState(0)
-	HandlerStateRunning = HandlerState(1)
-)
-
-type SessionInfo struct {
-	Source      v2net.Destination
-	Destination v2net.Destination
-	User        *protocol.User
+	// Process processes a connection of given network. If necessary, the Inbound can dispatch the connection to an Outbound.
+	Process(context.Context, net.Network, internet.Connection, routing.Dispatcher) error
 }
 
-type InboundHandlerMeta struct {
-	Tag                    string
-	Address                v2net.Address
-	Port                   v2net.Port
-	AllowPassiveConnection bool
-	StreamSettings         *internet.StreamSettings
+// An Outbound process outbound connections.
+type Outbound interface {
+	// Process processes the given connection. The given dialer may be used to dial a system outbound connection.
+	Process(context.Context, *transport.Link, internet.Dialer) error
 }
 
-type OutboundHandlerMeta struct {
-	Tag            string
-	Address        v2net.Address
-	StreamSettings *internet.StreamSettings
+// UserManager is the interface for Inbounds and Outbounds that can manage their users.
+type UserManager interface {
+	// AddUser adds a new user.
+	AddUser(context.Context, *protocol.MemoryUser) error
+
+	// RemoveUser removes a user by email.
+	RemoveUser(context.Context, string) error
 }
 
-// An InboundHandler handles inbound network connections to V2Ray.
-type InboundHandler interface {
-	// Listen starts a InboundHandler.
-	Start() error
-	// Close stops the handler to accepting anymore inbound connections.
-	Close()
-	// Port returns the port that the handler is listening on.
-	Port() v2net.Port
+type GetInbound interface {
+	GetInbound() Inbound
 }
 
-// An OutboundHandler handles outbound network connection for V2Ray.
-type OutboundHandler interface {
-	// Dispatch sends one or more Packets to its destination.
-	Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error
+type GetOutbound interface {
+	GetOutbound() Outbound
 }

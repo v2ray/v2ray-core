@@ -1,280 +1,356 @@
+// +build !confonly
+
 package inbound
 
-import (
-	"io"
-	"sync"
+//go:generate errorgen
 
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/app/dispatcher"
-	"github.com/v2ray/v2ray-core/app/proxyman"
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/common/uuid"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/registry"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
-	"github.com/v2ray/v2ray-core/proxy/vmess/encoding"
-	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
-	"github.com/v2ray/v2ray-core/transport/internet"
+import (
+	"context"
+	"io"
+	"strings"
+	"sync"
+	"time"
+
+	"v2ray.com/core"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/session"
+	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
+	"v2ray.com/core/common/uuid"
+	feature_inbound "v2ray.com/core/features/inbound"
+	"v2ray.com/core/features/policy"
+	"v2ray.com/core/features/routing"
+	"v2ray.com/core/proxy/vmess"
+	"v2ray.com/core/proxy/vmess/encoding"
+	"v2ray.com/core/transport/internet"
 )
 
 type userByEmail struct {
-	sync.RWMutex
-	cache           map[string]*protocol.User
-	defaultLevel    protocol.UserLevel
+	sync.Mutex
+	cache           map[string]*protocol.MemoryUser
+	defaultLevel    uint32
 	defaultAlterIDs uint16
 }
 
-func NewUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail {
-	cache := make(map[string]*protocol.User)
-	for _, user := range users {
-		cache[user.Email] = user
-	}
+func newUserByEmail(config *DefaultConfig) *userByEmail {
 	return &userByEmail{
-		cache:           cache,
+		cache:           make(map[string]*protocol.MemoryUser),
 		defaultLevel:    config.Level,
-		defaultAlterIDs: config.AlterIDs,
+		defaultAlterIDs: uint16(config.AlterId),
 	}
 }
 
-func (this *userByEmail) Get(email string) (*protocol.User, bool) {
-	var user *protocol.User
-	var found bool
-	this.RLock()
-	user, found = this.cache[email]
-	this.RUnlock()
+func (v *userByEmail) addNoLock(u *protocol.MemoryUser) bool {
+	email := strings.ToLower(u.Email)
+	user, found := v.cache[email]
+	if found {
+		return false
+	}
+	v.cache[email] = user
+	return true
+}
+
+func (v *userByEmail) Add(u *protocol.MemoryUser) bool {
+	v.Lock()
+	defer v.Unlock()
+
+	return v.addNoLock(u)
+}
+
+func (v *userByEmail) Get(email string) (*protocol.MemoryUser, bool) {
+	email = strings.ToLower(email)
+
+	v.Lock()
+	defer v.Unlock()
+
+	user, found := v.cache[email]
 	if !found {
-		this.Lock()
-		user, found = this.cache[email]
-		if !found {
-			id := protocol.NewID(uuid.New())
-			alterIDs := protocol.NewAlterIDs(id, this.defaultAlterIDs)
-			account := &vmess.Account{
-				ID:       id,
-				AlterIDs: alterIDs,
-			}
-			user = protocol.NewUser(this.defaultLevel, email)
-			user.Account = account
-			this.cache[email] = user
+		id := uuid.New()
+		rawAccount := &vmess.Account{
+			Id:      id.String(),
+			AlterId: uint32(v.defaultAlterIDs),
 		}
-		this.Unlock()
+		account, err := rawAccount.AsAccount()
+		common.Must(err)
+		user = &protocol.MemoryUser{
+			Level:   v.defaultLevel,
+			Email:   email,
+			Account: account,
+		}
+		v.cache[email] = user
 	}
 	return user, found
 }
 
-// Inbound connection handler that handles messages in VMess format.
-type VMessInboundHandler struct {
-	sync.RWMutex
-	packetDispatcher      dispatcher.PacketDispatcher
-	inboundHandlerManager proxyman.InboundHandlerManager
-	clients               protocol.UserValidator
+func (v *userByEmail) Remove(email string) bool {
+	email = strings.ToLower(email)
+
+	v.Lock()
+	defer v.Unlock()
+
+	if _, found := v.cache[email]; !found {
+		return false
+	}
+	delete(v.cache, email)
+	return true
+}
+
+// Handler is an inbound connection handler that handles messages in VMess protocol.
+type Handler struct {
+	policyManager         policy.Manager
+	inboundHandlerManager feature_inbound.Manager
+	clients               *vmess.TimedUserValidator
 	usersByEmail          *userByEmail
-	accepting             bool
-	listener              *internet.TCPHub
 	detours               *DetourConfig
-	meta                  *proxy.InboundHandlerMeta
+	sessionHistory        *encoding.SessionHistory
+	secure                bool
 }
 
-func (this *VMessInboundHandler) Port() v2net.Port {
-	return this.meta.Port
-}
-
-func (this *VMessInboundHandler) Close() {
-	this.accepting = false
-	if this.listener != nil {
-		this.Lock()
-		this.listener.Close()
-		this.listener = nil
-		this.clients.Release()
-		this.clients = nil
-		this.Unlock()
-	}
-}
-
-func (this *VMessInboundHandler) GetUser(email string) *protocol.User {
-	this.RLock()
-	defer this.RUnlock()
-
-	if !this.accepting {
-		return nil
+// New creates a new VMess inbound handler.
+func New(ctx context.Context, config *Config) (*Handler, error) {
+	v := core.MustFromContext(ctx)
+	handler := &Handler{
+		policyManager:         v.GetFeature(policy.ManagerType()).(policy.Manager),
+		inboundHandlerManager: v.GetFeature(feature_inbound.ManagerType()).(feature_inbound.Manager),
+		clients:               vmess.NewTimedUserValidator(protocol.DefaultIDHash),
+		detours:               config.Detour,
+		usersByEmail:          newUserByEmail(config.GetDefaultValue()),
+		sessionHistory:        encoding.NewSessionHistory(),
+		secure:                config.SecureEncryptionOnly,
 	}
 
-	user, existing := this.usersByEmail.Get(email)
-	if !existing {
-		this.clients.Add(user)
-	}
-	return user
-}
-
-func (this *VMessInboundHandler) Start() error {
-	if this.accepting {
-		return nil
-	}
-
-	tcpListener, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.HandleConnection, this.meta.StreamSettings)
-	if err != nil {
-		log.Error("VMess|Inbound: Unable to listen tcp ", this.meta.Address, ":", this.meta.Port, ": ", err)
-		return err
-	}
-	this.accepting = true
-	this.Lock()
-	this.listener = tcpListener
-	this.Unlock()
-	return nil
-}
-
-func (this *VMessInboundHandler) HandleConnection(connection internet.Connection) {
-	defer connection.Close()
-
-	if !this.accepting {
-		return
-	}
-
-	connReader := v2net.NewTimeOutReader(8, connection)
-	defer connReader.Release()
-
-	reader := v2io.NewBufferedReader(connReader)
-	defer reader.Release()
-
-	this.RLock()
-	if !this.accepting {
-		this.RUnlock()
-		return
-	}
-	session := encoding.NewServerSession(this.clients)
-	defer session.Release()
-
-	request, err := session.DecodeRequestHeader(reader)
-	this.RUnlock()
-
-	if err != nil {
-		if err != io.EOF {
-			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
-			log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
-		}
-		connection.SetReusable(false)
-		return
-	}
-	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
-	log.Info("VMessIn: Received request for ", request.Destination())
-
-	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
-
-	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
-		Source:      v2net.DestinationFromAddr(connection.RemoteAddr()),
-		Destination: request.Destination(),
-	})
-	input := ray.InboundInput()
-	output := ray.InboundOutput()
-	defer input.Close()
-	defer output.Release()
-
-	var readFinish sync.Mutex
-	readFinish.Lock()
-
-	userSettings := protocol.GetUserSettings(request.User.Level)
-	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
-	reader.SetCached(false)
-
-	go func() {
-		bodyReader := session.DecodeRequestBody(reader)
-		var requestReader v2io.Reader
-		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			requestReader = vmessio.NewAuthChunkReader(bodyReader)
-		} else {
-			requestReader = v2io.NewAdaptiveReader(bodyReader)
-		}
-		err := v2io.Pipe(requestReader, input)
-		if err != io.EOF {
-			connection.SetReusable(false)
+	for _, user := range config.User {
+		mUser, err := user.ToMemoryUser()
+		if err != nil {
+			return nil, newError("failed to get VMess user").Base(err)
 		}
 
-		requestReader.Release()
-		input.Close()
-		readFinish.Unlock()
-	}()
-
-	writer := v2io.NewBufferedWriter(connection)
-	defer writer.Release()
-
-	response := &protocol.ResponseHeader{
-		Command: this.generateCommand(request),
-	}
-
-	if connection.Reusable() {
-		response.Option.Set(protocol.ResponseOptionConnectionReuse)
-	}
-
-	session.EncodeResponseHeader(response, writer)
-
-	bodyWriter := session.EncodeResponseBody(writer)
-	var v2writer v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
-	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		v2writer = vmessio.NewAuthChunkWriter(v2writer)
-	}
-
-	// Optimize for small response packet
-	if data, err := output.Read(); err == nil {
-		if err := v2writer.Write(data); err != nil {
-			connection.SetReusable(false)
+		if err := handler.AddUser(ctx, mUser); err != nil {
+			return nil, newError("failed to initiate user").Base(err)
 		}
-
-		writer.SetCached(false)
-
-		err = v2io.Pipe(output, v2writer)
-		if err != io.EOF {
-			connection.SetReusable(false)
-		}
-
-	}
-	output.Release()
-	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		if err := v2writer.Write(alloc.NewLocalBuffer(32).Clear()); err != nil {
-			connection.SetReusable(false)
-		}
-	}
-	writer.Flush()
-	v2writer.Release()
-
-	readFinish.Lock()
-}
-
-type Factory struct{}
-
-func (this *Factory) StreamCapability() internet.StreamConnectionType {
-	return internet.StreamConnectionTypeRawTCP | internet.StreamConnectionTypeTCP | internet.StreamConnectionTypeKCP | internet.StreamConnectionTypeWebSocket
-}
-
-func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, common.ErrBadConfiguration
-	}
-	config := rawConfig.(*Config)
-
-	allowedClients := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
-	for _, user := range config.AllowedUsers {
-		allowedClients.Add(user)
-	}
-
-	handler := &VMessInboundHandler{
-		packetDispatcher: space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-		clients:          allowedClients,
-		detours:          config.DetourConfig,
-		usersByEmail:     NewUserByEmail(config.AllowedUsers, config.Defaults),
-		meta:             meta,
-	}
-
-	if space.HasApp(proxyman.APP_ID_INBOUND_MANAGER) {
-		handler.inboundHandlerManager = space.GetApp(proxyman.APP_ID_INBOUND_MANAGER).(proxyman.InboundHandlerManager)
 	}
 
 	return handler, nil
 }
 
+// Close implements common.Closable.
+func (h *Handler) Close() error {
+	return errors.Combine(
+		h.clients.Close(),
+		h.sessionHistory.Close(),
+		common.Close(h.usersByEmail))
+}
+
+// Network implements proxy.Inbound.Network().
+func (*Handler) Network() []net.Network {
+	return []net.Network{net.Network_TCP}
+}
+
+func (h *Handler) GetUser(email string) *protocol.MemoryUser {
+	user, existing := h.usersByEmail.Get(email)
+	if !existing {
+		h.clients.Add(user)
+	}
+	return user
+}
+
+func (h *Handler) AddUser(ctx context.Context, user *protocol.MemoryUser) error {
+	if len(user.Email) > 0 && !h.usersByEmail.Add(user) {
+		return newError("User ", user.Email, " already exists.")
+	}
+	return h.clients.Add(user)
+}
+
+func (h *Handler) RemoveUser(ctx context.Context, email string) error {
+	if len(email) == 0 {
+		return newError("Email must not be empty.")
+	}
+	if !h.usersByEmail.Remove(email) {
+		return newError("User ", email, " not found.")
+	}
+	h.clients.Remove(email)
+	return nil
+}
+
+func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSession, request *protocol.RequestHeader, response *protocol.ResponseHeader, input buf.Reader, output *buf.BufferedWriter) error {
+	session.EncodeResponseHeader(response, output)
+
+	bodyWriter := session.EncodeResponseBody(request, output)
+
+	{
+		// Optimize for small response packet
+		data, err := input.ReadMultiBuffer()
+		if err != nil {
+			return err
+		}
+
+		if err := bodyWriter.WriteMultiBuffer(data); err != nil {
+			return err
+		}
+	}
+
+	if err := output.SetBuffered(false); err != nil {
+		return err
+	}
+
+	if err := buf.Copy(input, bodyWriter, buf.UpdateActivity(timer)); err != nil {
+		return err
+	}
+
+	if request.Option.Has(protocol.RequestOptionChunkStream) {
+		if err := bodyWriter.WriteMultiBuffer(buf.MultiBuffer{}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func isInsecureEncryption(s protocol.SecurityType) bool {
+	return s == protocol.SecurityType_NONE || s == protocol.SecurityType_LEGACY || s == protocol.SecurityType_UNKNOWN
+}
+
+// Process implements proxy.Inbound.Process().
+func (h *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher routing.Dispatcher) error {
+	sessionPolicy := h.policyManager.ForLevel(0)
+	if err := connection.SetReadDeadline(time.Now().Add(sessionPolicy.Timeouts.Handshake)); err != nil {
+		return newError("unable to set read deadline").Base(err).AtWarning()
+	}
+
+	reader := &buf.BufferedReader{Reader: buf.NewReader(connection)}
+	svrSession := encoding.NewServerSession(h.clients, h.sessionHistory)
+	request, err := svrSession.DecodeRequestHeader(reader)
+
+	if err != nil {
+		if errors.Cause(err) != io.EOF {
+			log.Record(&log.AccessMessage{
+				From:   connection.RemoteAddr(),
+				To:     "",
+				Status: log.AccessRejected,
+				Reason: err,
+			})
+			err = newError("invalid request from ", connection.RemoteAddr()).Base(err).AtInfo()
+		}
+		return err
+	}
+
+	if h.secure && isInsecureEncryption(request.Security) {
+		log.Record(&log.AccessMessage{
+			From:   connection.RemoteAddr(),
+			To:     "",
+			Status: log.AccessRejected,
+			Reason: "Insecure encryption",
+		})
+		return newError("client is using insecure encryption: ", request.Security)
+	}
+
+	if request.Command != protocol.RequestCommandMux {
+		log.Record(&log.AccessMessage{
+			From:   connection.RemoteAddr(),
+			To:     request.Destination(),
+			Status: log.AccessAccepted,
+			Reason: "",
+		})
+	}
+
+	newError("received request for ", request.Destination()).WriteToLog(session.ExportIDToError(ctx))
+
+	if err := connection.SetReadDeadline(time.Time{}); err != nil {
+		newError("unable to set back read deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
+	}
+
+	inbound := session.InboundFromContext(ctx)
+	if inbound == nil {
+		panic("no inbound metadata")
+	}
+	inbound.User = request.User
+
+	sessionPolicy = h.policyManager.ForLevel(request.User.Level)
+
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
+
+	ctx = policy.ContextWithBufferPolicy(ctx, sessionPolicy.Buffer)
+	link, err := dispatcher.Dispatch(ctx, request.Destination())
+	if err != nil {
+		return newError("failed to dispatch request to ", request.Destination()).Base(err)
+	}
+
+	requestDone := func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
+
+		bodyReader := svrSession.DecodeRequestBody(request, reader)
+		if err := buf.Copy(bodyReader, link.Writer, buf.UpdateActivity(timer)); err != nil {
+			return newError("failed to transfer request").Base(err)
+		}
+		return nil
+	}
+
+	responseDone := func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
+
+		writer := buf.NewBufferedWriter(buf.NewWriter(connection))
+		defer writer.Flush()
+
+		response := &protocol.ResponseHeader{
+			Command: h.generateCommand(ctx, request),
+		}
+		return transferResponse(timer, svrSession, request, response, link.Reader, writer)
+	}
+
+	var requestDonePost = task.OnSuccess(requestDone, task.Close(link.Writer))
+	if err := task.Run(ctx, requestDonePost, responseDone); err != nil {
+		common.Interrupt(link.Reader)
+		common.Interrupt(link.Writer)
+		return newError("connection ends").Base(err)
+	}
+
+	return nil
+}
+
+func (h *Handler) generateCommand(ctx context.Context, request *protocol.RequestHeader) protocol.ResponseCommand {
+	if h.detours != nil {
+		tag := h.detours.To
+		if h.inboundHandlerManager != nil {
+			handler, err := h.inboundHandlerManager.GetHandler(ctx, tag)
+			if err != nil {
+				newError("failed to get detour handler: ", tag).Base(err).AtWarning().WriteToLog(session.ExportIDToError(ctx))
+				return nil
+			}
+			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
+			inboundHandler, ok := proxyHandler.(*Handler)
+			if ok && inboundHandler != nil {
+				if availableMin > 255 {
+					availableMin = 255
+				}
+
+				newError("pick detour handler for port ", port, " for ", availableMin, " minutes.").AtDebug().WriteToLog(session.ExportIDToError(ctx))
+				user := inboundHandler.GetUser(request.User.Email)
+				if user == nil {
+					return nil
+				}
+				account := user.Account.(*vmess.MemoryAccount)
+				return &protocol.CommandSwitchAccount{
+					Port:     port,
+					ID:       account.ID.UUID(),
+					AlterIds: uint16(len(account.AlterIDs)),
+					Level:    user.Level,
+					ValidMin: byte(availableMin),
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func init() {
-	registry.MustRegisterInboundHandlerCreator("vmess", new(Factory))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return New(ctx, config.(*Config))
+	}))
 }

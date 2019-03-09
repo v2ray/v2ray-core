@@ -4,119 +4,191 @@ import (
 	"net"
 	"testing"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"github.com/google/go-cmp/cmp"
+
+	. "v2ray.com/core/common/net"
 )
 
-func TestIPv4Address(t *testing.T) {
-	assert := assert.On(t)
-
-	ip := []byte{byte(1), byte(2), byte(3), byte(4)}
-	addr := v2net.IPAddress(ip)
-
-	assert.Address(addr).IsIPv4()
-	assert.Address(addr).IsNotIPv6()
-	assert.Address(addr).IsNotDomain()
-	assert.Bytes(addr.IP()).Equals(ip)
-	assert.Address(addr).EqualsString("1.2.3.4")
-}
-
-func TestIPv6Address(t *testing.T) {
-	assert := assert.On(t)
-
-	ip := []byte{
-		byte(1), byte(2), byte(3), byte(4),
-		byte(1), byte(2), byte(3), byte(4),
-		byte(1), byte(2), byte(3), byte(4),
-		byte(1), byte(2), byte(3), byte(4),
+func TestAddressProperty(t *testing.T) {
+	type addrProprty struct {
+		IP     []byte
+		Domain string
+		Family AddressFamily
+		String string
 	}
-	addr := v2net.IPAddress(ip)
 
-	assert.Address(addr).IsIPv6()
-	assert.Address(addr).IsNotIPv4()
-	assert.Address(addr).IsNotDomain()
-	assert.IP(addr.IP()).Equals(net.IP(ip))
-	assert.Address(addr).EqualsString("[102:304:102:304:102:304:102:304]")
-}
-
-func TestIPv4Asv6(t *testing.T) {
-	assert := assert.On(t)
-	ip := []byte{
-		byte(0), byte(0), byte(0), byte(0),
-		byte(0), byte(0), byte(0), byte(0),
-		byte(0), byte(0), byte(255), byte(255),
-		byte(1), byte(2), byte(3), byte(4),
+	testCases := []struct {
+		Input  Address
+		Output addrProprty
+	}{
+		{
+			Input: IPAddress([]byte{byte(1), byte(2), byte(3), byte(4)}),
+			Output: addrProprty{
+				IP:     []byte{byte(1), byte(2), byte(3), byte(4)},
+				Family: AddressFamilyIPv4,
+				String: "1.2.3.4",
+			},
+		},
+		{
+			Input: IPAddress([]byte{
+				byte(1), byte(2), byte(3), byte(4),
+				byte(1), byte(2), byte(3), byte(4),
+				byte(1), byte(2), byte(3), byte(4),
+				byte(1), byte(2), byte(3), byte(4),
+			}),
+			Output: addrProprty{
+				IP: []byte{
+					byte(1), byte(2), byte(3), byte(4),
+					byte(1), byte(2), byte(3), byte(4),
+					byte(1), byte(2), byte(3), byte(4),
+					byte(1), byte(2), byte(3), byte(4),
+				},
+				Family: AddressFamilyIPv6,
+				String: "[102:304:102:304:102:304:102:304]",
+			},
+		},
+		{
+			Input: IPAddress([]byte{
+				byte(0), byte(0), byte(0), byte(0),
+				byte(0), byte(0), byte(0), byte(0),
+				byte(0), byte(0), byte(255), byte(255),
+				byte(1), byte(2), byte(3), byte(4),
+			}),
+			Output: addrProprty{
+				IP:     []byte{byte(1), byte(2), byte(3), byte(4)},
+				Family: AddressFamilyIPv4,
+				String: "1.2.3.4",
+			},
+		},
+		{
+			Input: DomainAddress("v2ray.com"),
+			Output: addrProprty{
+				Domain: "v2ray.com",
+				Family: AddressFamilyDomain,
+				String: "v2ray.com",
+			},
+		},
+		{
+			Input: IPAddress(net.IPv4(1, 2, 3, 4)),
+			Output: addrProprty{
+				IP:     []byte{byte(1), byte(2), byte(3), byte(4)},
+				Family: AddressFamilyIPv4,
+				String: "1.2.3.4",
+			},
+		},
+		{
+			Input: ParseAddress("[2001:4860:0:2001::68]"),
+			Output: addrProprty{
+				IP:     []byte{0x20, 0x01, 0x48, 0x60, 0x00, 0x00, 0x20, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68},
+				Family: AddressFamilyIPv6,
+				String: "[2001:4860:0:2001::68]",
+			},
+		},
+		{
+			Input: ParseAddress("::0"),
+			Output: addrProprty{
+				IP:     AnyIPv6.IP(),
+				Family: AddressFamilyIPv6,
+				String: "[::]",
+			},
+		},
+		{
+			Input: ParseAddress("[::ffff:123.151.71.143]"),
+			Output: addrProprty{
+				IP:     []byte{123, 151, 71, 143},
+				Family: AddressFamilyIPv4,
+				String: "123.151.71.143",
+			},
+		},
+		{
+			Input: NewIPOrDomain(ParseAddress("v2ray.com")).AsAddress(),
+			Output: addrProprty{
+				Domain: "v2ray.com",
+				Family: AddressFamilyDomain,
+				String: "v2ray.com",
+			},
+		},
+		{
+			Input: NewIPOrDomain(ParseAddress("8.8.8.8")).AsAddress(),
+			Output: addrProprty{
+				IP:     []byte{8, 8, 8, 8},
+				Family: AddressFamilyIPv4,
+				String: "8.8.8.8",
+			},
+		},
+		{
+			Input: NewIPOrDomain(ParseAddress("[2001:4860:0:2001::68]")).AsAddress(),
+			Output: addrProprty{
+				IP:     []byte{0x20, 0x01, 0x48, 0x60, 0x00, 0x00, 0x20, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68},
+				Family: AddressFamilyIPv6,
+				String: "[2001:4860:0:2001::68]",
+			},
+		},
 	}
-	addr := v2net.IPAddress(ip)
-	assert.Address(addr).EqualsString("1.2.3.4")
+
+	for _, testCase := range testCases {
+		actual := addrProprty{
+			Family: testCase.Input.Family(),
+			String: testCase.Input.String(),
+		}
+		if testCase.Input.Family().IsIP() {
+			actual.IP = testCase.Input.IP()
+		} else {
+			actual.Domain = testCase.Input.Domain()
+		}
+
+		if r := cmp.Diff(actual, testCase.Output); r != "" {
+			t.Error("for input: ", testCase.Input, ":", r)
+		}
+	}
 }
 
-func TestDomainAddress(t *testing.T) {
-	assert := assert.On(t)
+func TestInvalidAddressConvertion(t *testing.T) {
+	panics := func(f func()) (ret bool) {
+		defer func() {
+			if r := recover(); r != nil {
+				ret = true
+			}
+		}()
+		f()
+		return false
+	}
 
-	domain := "v2ray.com"
-	addr := v2net.DomainAddress(domain)
-
-	assert.Address(addr).IsDomain()
-	assert.Address(addr).IsNotIPv6()
-	assert.Address(addr).IsNotIPv4()
-	assert.String(addr.Domain()).Equals(domain)
-	assert.Address(addr).EqualsString("v2ray.com")
+	testCases := []func(){
+		func() { ParseAddress("8.8.8.8").Domain() },
+		func() { ParseAddress("2001:4860:0:2001::68").Domain() },
+		func() { ParseAddress("v2ray.com").IP() },
+	}
+	for idx, testCase := range testCases {
+		if !panics(testCase) {
+			t.Error("case ", idx, " failed")
+		}
+	}
 }
 
-func TestNetIPv4Address(t *testing.T) {
-	assert := assert.On(t)
-
-	ip := net.IPv4(1, 2, 3, 4)
-	addr := v2net.IPAddress(ip)
-	assert.Address(addr).IsIPv4()
-	assert.Address(addr).EqualsString("1.2.3.4")
+func BenchmarkParseAddressIPv4(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		addr := ParseAddress("8.8.8.8")
+		if addr.Family() != AddressFamilyIPv4 {
+			panic("not ipv4")
+		}
+	}
 }
 
-func TestIPv4AddressEquals(t *testing.T) {
-	assert := assert.On(t)
-
-	addr := v2net.IPAddress([]byte{1, 2, 3, 4})
-	assert.Address(addr).NotEquals(nil)
-
-	addr2 := v2net.IPAddress([]byte{1, 2, 3, 4})
-	assert.Address(addr).Equals(addr2)
-
-	addr3 := v2net.IPAddress([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6})
-	assert.Address(addr).NotEquals(addr3)
-
-	addr4 := v2net.IPAddress([]byte{1, 2, 3, 5})
-	assert.Address(addr).NotEquals(addr4)
+func BenchmarkParseAddressIPv6(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		addr := ParseAddress("2001:4860:0:2001::68")
+		if addr.Family() != AddressFamilyIPv6 {
+			panic("not ipv6")
+		}
+	}
 }
 
-func TestIPv6AddressEquals(t *testing.T) {
-	assert := assert.On(t)
-
-	addr := v2net.IPAddress([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6})
-	assert.Bool(addr.Equals(nil)).IsFalse()
-
-	addr2 := v2net.IPAddress([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6})
-	assert.Bool(addr.Equals(addr2)).IsTrue()
-
-	addr3 := v2net.IPAddress([]byte{1, 2, 3, 4})
-	assert.Bool(addr.Equals(addr3)).IsFalse()
-
-	addr4 := v2net.IPAddress([]byte{1, 3, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6})
-	assert.Bool(addr.Equals(addr4)).IsFalse()
-}
-
-func TestDomainAddressEquals(t *testing.T) {
-	assert := assert.On(t)
-
-	addr := v2net.DomainAddress("v2ray.com")
-	assert.Bool(addr.Equals(nil)).IsFalse()
-
-	addr2 := v2net.DomainAddress("v2ray.com")
-	assert.Bool(addr.Equals(addr2)).IsTrue()
-
-	addr3 := v2net.DomainAddress("www.v2ray.com")
-	assert.Bool(addr.Equals(addr3)).IsFalse()
-
-	addr4 := v2net.IPAddress([]byte{1, 3, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6})
-	assert.Bool(addr.Equals(addr4)).IsFalse()
+func BenchmarkParseAddressDomain(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		addr := ParseAddress("v2ray.com")
+		if addr.Family() != AddressFamilyDomain {
+			panic("not domain")
+		}
+	}
 }

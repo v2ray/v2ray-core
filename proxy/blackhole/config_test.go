@@ -5,22 +5,21 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
-	. "github.com/v2ray/v2ray-core/proxy/blackhole"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
+	. "v2ray.com/core/proxy/blackhole"
 )
 
 func TestHTTPResponse(t *testing.T) {
-	assert := assert.On(t)
-
-	buffer := alloc.NewBuffer().Clear()
+	buffer := buf.New()
 
 	httpResponse := new(HTTPResponse)
-	httpResponse.WriteTo(v2io.NewAdaptiveWriter(buffer))
+	httpResponse.WriteTo(buf.NewWriter(buffer))
 
 	reader := bufio.NewReader(buffer)
 	response, err := http.ReadResponse(reader, nil)
-	assert.Error(err).IsNil()
-	assert.Int(response.StatusCode).Equals(403)
+	common.Must(err)
+	if response.StatusCode != 403 {
+		t.Error("expected status code 403, but got ", response.StatusCode)
+	}
 }

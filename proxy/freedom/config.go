@@ -1,13 +1,5 @@
 package freedom
 
-type DomainStrategy int
-
-const (
-	DomainStrategyAsIs  = DomainStrategy(0)
-	DomainStrategyUseIP = DomainStrategy(1)
-)
-
-type Config struct {
-	DomainStrategy DomainStrategy
-	Timeout        uint32
+func (c *Config) useIP() bool {
+	return c.DomainStrategy == Config_USE_IP || c.DomainStrategy == Config_USE_IP4 || c.DomainStrategy == Config_USE_IP6
 }

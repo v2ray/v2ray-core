@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package v2ray.core.transport.internet.tcp;
+option csharp_namespace = "V2Ray.Core.Transport.Internet.Tcp";
+option go_package = "tcp";
+option java_package = "com.v2ray.core.transport.internet.tcp";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/serial/typed_message.proto";
+
+message Config {
+  reserved 1;
+  v2ray.core.common.serial.TypedMessage header_settings = 2;
+}

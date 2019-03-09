@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package v2ray.core.proxy.shadowsocks;
+option csharp_namespace = "V2Ray.Core.Proxy.Shadowsocks";
+option go_package = "shadowsocks";
+option java_package = "com.v2ray.core.proxy.shadowsocks";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/net/network.proto";
+import "v2ray.com/core/common/protocol/user.proto";
+import "v2ray.com/core/common/protocol/server_spec.proto";
+
+message Account {
+  enum OneTimeAuth {
+    Auto = 0;
+    Disabled = 1;
+    Enabled = 2;
+  }
+  string password = 1;
+  CipherType cipher_type = 2;
+  OneTimeAuth ota = 3;
+}
+
+enum CipherType {
+  UNKNOWN = 0;
+  AES_128_CFB = 1;
+  AES_256_CFB = 2;
+  CHACHA20 = 3;
+  CHACHA20_IETF = 4;
+  AES_128_GCM = 5;
+  AES_256_GCM = 6;
+  CHACHA20_POLY1305 = 7;
+  NONE = 8;
+}
+
+message ServerConfig {
+  // UdpEnabled specified whether or not to enable UDP for Shadowsocks.
+  // Deprecated. Use 'network' field.
+  bool udp_enabled = 1 [deprecated = true];
+  v2ray.core.common.protocol.User user = 2;
+  repeated v2ray.core.common.net.Network network = 3;
+}
+
+message ClientConfig {
+  repeated v2ray.core.common.protocol.ServerEndpoint server = 1;
+}

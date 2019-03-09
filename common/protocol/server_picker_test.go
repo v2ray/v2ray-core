@@ -4,51 +4,68 @@ import (
 	"testing"
 	"time"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	. "github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/common/net"
+	. "v2ray.com/core/common/protocol"
 )
 
 func TestServerList(t *testing.T) {
-	assert := assert.On(t)
-
 	list := NewServerList()
-	list.AddServer(NewServerSpec(v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(1)), AlwaysValid()))
-	assert.Uint32(list.Size()).Equals(1)
-	list.AddServer(NewServerSpec(v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(2)), BeforeTime(time.Now().Add(time.Second))))
-	assert.Uint32(list.Size()).Equals(2)
+	list.AddServer(NewServerSpec(net.TCPDestination(net.LocalHostIP, net.Port(1)), AlwaysValid()))
+	if list.Size() != 1 {
+		t.Error("list size: ", list.Size())
+	}
+	list.AddServer(NewServerSpec(net.TCPDestination(net.LocalHostIP, net.Port(2)), BeforeTime(time.Now().Add(time.Second))))
+	if list.Size() != 2 {
+		t.Error("list.size: ", list.Size())
+	}
 
 	server := list.GetServer(1)
-	assert.Port(server.Destination().Port()).Equals(2)
+	if server.Destination().Port != 2 {
+		t.Error("server: ", server.Destination())
+	}
 	time.Sleep(2 * time.Second)
 	server = list.GetServer(1)
-	assert.Pointer(server).IsNil()
+	if server != nil {
+		t.Error("server: ", server)
+	}
 
 	server = list.GetServer(0)
-	assert.Port(server.Destination().Port()).Equals(1)
+	if server.Destination().Port != 1 {
+		t.Error("server: ", server.Destination())
+	}
 }
 
 func TestServerPicker(t *testing.T) {
-	assert := assert.On(t)
-
 	list := NewServerList()
-	list.AddServer(NewServerSpec(v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(1)), AlwaysValid()))
-	list.AddServer(NewServerSpec(v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(2)), BeforeTime(time.Now().Add(time.Second))))
-	list.AddServer(NewServerSpec(v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(3)), BeforeTime(time.Now().Add(time.Second))))
+	list.AddServer(NewServerSpec(net.TCPDestination(net.LocalHostIP, net.Port(1)), AlwaysValid()))
+	list.AddServer(NewServerSpec(net.TCPDestination(net.LocalHostIP, net.Port(2)), BeforeTime(time.Now().Add(time.Second))))
+	list.AddServer(NewServerSpec(net.TCPDestination(net.LocalHostIP, net.Port(3)), BeforeTime(time.Now().Add(time.Second))))
 
 	picker := NewRoundRobinServerPicker(list)
 	server := picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(1)
+	if server.Destination().Port != 1 {
+		t.Error("server: ", server.Destination())
+	}
 	server = picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(2)
+	if server.Destination().Port != 2 {
+		t.Error("server: ", server.Destination())
+	}
 	server = picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(3)
+	if server.Destination().Port != 3 {
+		t.Error("server: ", server.Destination())
+	}
 	server = picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(1)
+	if server.Destination().Port != 1 {
+		t.Error("server: ", server.Destination())
+	}
 
 	time.Sleep(2 * time.Second)
 	server = picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(1)
+	if server.Destination().Port != 1 {
+		t.Error("server: ", server.Destination())
+	}
 	server = picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(1)
+	if server.Destination().Port != 1 {
+		t.Error("server: ", server.Destination())
+	}
 }

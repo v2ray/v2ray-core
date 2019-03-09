@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package v2ray.core.app.log;
+option csharp_namespace = "V2Ray.Core.App.Log";
+option go_package = "log";
+option java_package = "com.v2ray.core.app.log";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/log/log.proto";
+
+enum LogType {
+  None = 0;
+  Console = 1;
+  File = 2;
+  Event = 3;
+}
+
+message Config {
+  LogType error_log_type = 1;
+  v2ray.core.common.log.Severity error_log_level = 2;
+  string error_log_path = 3;
+
+  LogType access_log_type = 4;
+  string access_log_path = 5;
+}

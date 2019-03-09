@@ -1,10 +1,13 @@
 package http
 
-// Config for HTTP proxy server.
-type Config struct {
-	Timeout int
-}
+func (sc *ServerConfig) HasAccount(username, password string) bool {
+	if sc.Accounts == nil {
+		return false
+	}
 
-// ClientConfig for HTTP proxy client.
-type ClientConfig struct {
+	p, found := sc.Accounts[username]
+	if !found {
+		return false
+	}
+	return p == password
 }

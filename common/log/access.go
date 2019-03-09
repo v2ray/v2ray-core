@@ -1,10 +1,11 @@
 package log
 
 import (
-	"github.com/v2ray/v2ray-core/common/log/internal"
+	"strings"
+
+	"v2ray.com/core/common/serial"
 )
 
-// AccessStatus is the status of an access request from clients.
 type AccessStatus string
 
 const (
@@ -12,27 +13,21 @@ const (
 	AccessRejected = AccessStatus("rejected")
 )
 
-var (
-	accessLoggerInstance internal.LogWriter = new(internal.NoOpLogWriter)
-)
-
-// InitAccessLogger initializes the access logger to write into the give file.
-func InitAccessLogger(file string) error {
-	logger, err := internal.NewFileLogWriter(file)
-	if err != nil {
-		Error("Failed to create access logger on file (", file, "): ", file, err)
-		return err
-	}
-	accessLoggerInstance = logger
-	return nil
+type AccessMessage struct {
+	From   interface{}
+	To     interface{}
+	Status AccessStatus
+	Reason interface{}
 }
 
-// Access writes an access log.
-func Access(from, to interface{}, status AccessStatus, reason interface{}) {
-	accessLoggerInstance.Log(&internal.AccessLog{
-		From:   from,
-		To:     to,
-		Status: string(status),
-		Reason: reason,
-	})
+func (m *AccessMessage) String() string {
+	builder := strings.Builder{}
+	builder.WriteString(serial.ToString(m.From))
+	builder.WriteByte(' ')
+	builder.WriteString(string(m.Status))
+	builder.WriteByte(' ')
+	builder.WriteString(serial.ToString(m.To))
+	builder.WriteByte(' ')
+	builder.WriteString(serial.ToString(m.Reason))
+	return builder.String()
 }

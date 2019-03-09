@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package v2ray.core.common.net;
+option csharp_namespace = "V2Ray.Core.Common.Net";
+option go_package = "net";
+option java_package = "com.v2ray.core.common.net";
+option java_multiple_files = true;
+
+// Address of a network host. It may be either an IP address or a domain address.
+message IPOrDomain {
+  oneof address {
+    // IP address. Must by either 4 or 16 bytes.
+    bytes ip = 1;
+
+    // Domain address.
+    string domain = 2;
+  }
+}

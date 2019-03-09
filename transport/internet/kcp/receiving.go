@@ -1,120 +1,44 @@
+// +build !confonly
+
 package kcp
 
 import (
 	"sync"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
+	"v2ray.com/core/common/buf"
 )
 
 type ReceivingWindow struct {
-	start uint32
-	size  uint32
-	list  []*DataSegment
+	cache map[uint32]*DataSegment
 }
 
-func NewReceivingWindow(size uint32) *ReceivingWindow {
+func NewReceivingWindow() *ReceivingWindow {
 	return &ReceivingWindow{
-		start: 0,
-		size:  size,
-		list:  make([]*DataSegment, size),
+		cache: make(map[uint32]*DataSegment),
 	}
 }
 
-func (this *ReceivingWindow) Size() uint32 {
-	return this.size
-}
-
-func (this *ReceivingWindow) Position(idx uint32) uint32 {
-	return (idx + this.start) % this.size
-}
-
-func (this *ReceivingWindow) Set(idx uint32, value *DataSegment) bool {
-	pos := this.Position(idx)
-	if this.list[pos] != nil {
+func (w *ReceivingWindow) Set(id uint32, value *DataSegment) bool {
+	_, f := w.cache[id]
+	if f {
 		return false
 	}
-	this.list[pos] = value
+	w.cache[id] = value
 	return true
 }
 
-func (this *ReceivingWindow) Remove(idx uint32) *DataSegment {
-	pos := this.Position(idx)
-	e := this.list[pos]
-	this.list[pos] = nil
-	return e
+func (w *ReceivingWindow) Has(id uint32) bool {
+	_, f := w.cache[id]
+	return f
 }
 
-func (this *ReceivingWindow) RemoveFirst() *DataSegment {
-	return this.Remove(0)
-}
-
-func (this *ReceivingWindow) Advance() {
-	this.start++
-	if this.start == this.size {
-		this.start = 0
+func (w *ReceivingWindow) Remove(id uint32) *DataSegment {
+	v, f := w.cache[id]
+	if !f {
+		return nil
 	}
-}
-
-type ReceivingQueue struct {
-	start uint32
-	cap   uint32
-	len   uint32
-	data  []*alloc.Buffer
-}
-
-func NewReceivingQueue(size uint32) *ReceivingQueue {
-	return &ReceivingQueue{
-		cap:  size,
-		data: make([]*alloc.Buffer, size),
-	}
-}
-
-func (this *ReceivingQueue) IsEmpty() bool {
-	return this.len == 0
-}
-
-func (this *ReceivingQueue) IsFull() bool {
-	return this.len == this.cap
-}
-
-func (this *ReceivingQueue) Read(buf []byte) int {
-	if this.IsEmpty() {
-		return 0
-	}
-
-	totalBytes := 0
-	lenBuf := len(buf)
-	for !this.IsEmpty() && totalBytes < lenBuf {
-		payload := this.data[this.start]
-		nBytes, _ := payload.Read(buf)
-		buf = buf[nBytes:]
-		totalBytes += nBytes
-		if payload.IsEmpty() {
-			payload.Release()
-			this.data[this.start] = nil
-			this.start++
-			if this.start == this.cap {
-				this.start = 0
-			}
-			this.len--
-			if this.len == 0 {
-				this.start = 0
-			}
-		}
-	}
-	return totalBytes
-}
-
-func (this *ReceivingQueue) Put(payload *alloc.Buffer) {
-	this.data[(this.start+this.len)%this.cap] = payload
-	this.len++
-}
-
-func (this *ReceivingQueue) Close() {
-	for i := uint32(0); i < this.len; i++ {
-		this.data[(this.start+i)%this.cap].Release()
-		this.data[(this.start+i)%this.cap] = nil
-	}
+	delete(w.cache, id)
+	return v
 }
 
 type AckList struct {
@@ -122,159 +46,215 @@ type AckList struct {
 	timestamps []uint32
 	numbers    []uint32
 	nextFlush  []uint32
+
+	flushCandidates []uint32
+	dirty           bool
 }
 
 func NewAckList(writer SegmentWriter) *AckList {
 	return &AckList{
-		writer:     writer,
-		timestamps: make([]uint32, 0, 32),
-		numbers:    make([]uint32, 0, 32),
-		nextFlush:  make([]uint32, 0, 32),
+		writer:          writer,
+		timestamps:      make([]uint32, 0, 128),
+		numbers:         make([]uint32, 0, 128),
+		nextFlush:       make([]uint32, 0, 128),
+		flushCandidates: make([]uint32, 0, 128),
 	}
 }
 
-func (this *AckList) Add(number uint32, timestamp uint32) {
-	this.timestamps = append(this.timestamps, timestamp)
-	this.numbers = append(this.numbers, number)
-	this.nextFlush = append(this.nextFlush, 0)
+func (l *AckList) Add(number uint32, timestamp uint32) {
+	l.timestamps = append(l.timestamps, timestamp)
+	l.numbers = append(l.numbers, number)
+	l.nextFlush = append(l.nextFlush, 0)
+	l.dirty = true
 }
 
-func (this *AckList) Clear(una uint32) {
+func (l *AckList) Clear(una uint32) {
 	count := 0
-	for i := 0; i < len(this.numbers); i++ {
-		if this.numbers[i] >= una {
-			if i != count {
-				this.numbers[count] = this.numbers[i]
-				this.timestamps[count] = this.timestamps[i]
-				this.nextFlush[count] = this.nextFlush[i]
-			}
-			count++
+	for i := 0; i < len(l.numbers); i++ {
+		if l.numbers[i] < una {
+			continue
 		}
+		if i != count {
+			l.numbers[count] = l.numbers[i]
+			l.timestamps[count] = l.timestamps[i]
+			l.nextFlush[count] = l.nextFlush[i]
+		}
+		count++
 	}
-	if count < len(this.numbers) {
-		this.numbers = this.numbers[:count]
-		this.timestamps = this.timestamps[:count]
-		this.nextFlush = this.nextFlush[:count]
+	if count < len(l.numbers) {
+		l.numbers = l.numbers[:count]
+		l.timestamps = l.timestamps[:count]
+		l.nextFlush = l.nextFlush[:count]
+		l.dirty = true
 	}
 }
 
-func (this *AckList) Flush(current uint32, rto uint32) {
+func (l *AckList) Flush(current uint32, rto uint32) {
+	l.flushCandidates = l.flushCandidates[:0]
+
 	seg := NewAckSegment()
-	for i := 0; i < len(this.numbers) && !seg.IsFull(); i++ {
-		if this.nextFlush[i] <= current {
-			seg.PutNumber(this.numbers[i])
-			seg.PutTimestamp(this.timestamps[i])
-			this.nextFlush[i] = current + rto/2
+	for i := 0; i < len(l.numbers); i++ {
+		if l.nextFlush[i] > current {
+			if len(l.flushCandidates) < cap(l.flushCandidates) {
+				l.flushCandidates = append(l.flushCandidates, l.numbers[i])
+			}
+			continue
+		}
+		seg.PutNumber(l.numbers[i])
+		seg.PutTimestamp(l.timestamps[i])
+		timeout := rto / 2
+		if timeout < 20 {
+			timeout = 20
+		}
+		l.nextFlush[i] = current + timeout
+
+		if seg.IsFull() {
+			l.writer.Write(seg)
+			seg.Release()
+			seg = NewAckSegment()
+			l.dirty = false
 		}
 	}
-	if seg.Count > 0 {
-		this.writer.Write(seg)
-		seg.Release()
+
+	if l.dirty || !seg.IsEmpty() {
+		for _, number := range l.flushCandidates {
+			if seg.IsFull() {
+				break
+			}
+			seg.PutNumber(number)
+		}
+		l.writer.Write(seg)
+		l.dirty = false
 	}
+
+	seg.Release()
 }
 
 type ReceivingWorker struct {
 	sync.RWMutex
 	conn       *Connection
-	queue      *ReceivingQueue
+	leftOver   buf.MultiBuffer
 	window     *ReceivingWindow
 	acklist    *AckList
-	updated    bool
 	nextNumber uint32
 	windowSize uint32
 }
 
 func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
-	windowSize := effectiveConfig.GetReceivingWindowSize()
 	worker := &ReceivingWorker{
 		conn:       kcp,
-		queue:      NewReceivingQueue(effectiveConfig.GetReceivingQueueSize()),
-		window:     NewReceivingWindow(windowSize),
-		windowSize: windowSize,
+		window:     NewReceivingWindow(),
+		windowSize: kcp.Config.GetReceivingInFlightSize(),
 	}
 	worker.acklist = NewAckList(worker)
 	return worker
 }
 
-func (this *ReceivingWorker) ProcessSendingNext(number uint32) {
-	this.Lock()
-	defer this.Unlock()
-
-	this.acklist.Clear(number)
+func (w *ReceivingWorker) Release() {
+	w.Lock()
+	buf.ReleaseMulti(w.leftOver)
+	w.leftOver = nil
+	w.Unlock()
 }
 
-func (this *ReceivingWorker) ProcessSegment(seg *DataSegment) {
-	this.Lock()
-	defer this.Unlock()
+func (w *ReceivingWorker) ProcessSendingNext(number uint32) {
+	w.Lock()
+	defer w.Unlock()
+
+	w.acklist.Clear(number)
+}
+
+func (w *ReceivingWorker) ProcessSegment(seg *DataSegment) {
+	w.Lock()
+	defer w.Unlock()
 
 	number := seg.Number
-	idx := number - this.nextNumber
-	if idx >= this.windowSize {
+	idx := number - w.nextNumber
+	if idx >= w.windowSize {
 		return
 	}
-	this.acklist.Clear(seg.SendingNext)
-	this.acklist.Add(number, seg.Timestamp)
+	w.acklist.Clear(seg.SendingNext)
+	w.acklist.Add(number, seg.Timestamp)
 
-	if !this.window.Set(idx, seg) {
+	if !w.window.Set(seg.Number, seg) {
 		seg.Release()
 	}
+}
 
-	for !this.queue.IsFull() {
-		seg := this.window.RemoveFirst()
+func (w *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
+	if w.leftOver != nil {
+		mb := w.leftOver
+		w.leftOver = nil
+		return mb
+	}
+
+	mb := make(buf.MultiBuffer, 0, 32)
+
+	w.Lock()
+	defer w.Unlock()
+	for {
+		seg := w.window.Remove(w.nextNumber)
 		if seg == nil {
 			break
 		}
-
-		this.queue.Put(seg.Data)
-		seg.Data = nil
+		w.nextNumber++
+		mb = append(mb, seg.Detach())
 		seg.Release()
-		this.window.Advance()
-		this.nextNumber++
-		this.updated = true
 	}
+
+	return mb
 }
 
-func (this *ReceivingWorker) Read(b []byte) int {
-	this.Lock()
-	defer this.Unlock()
-
-	return this.queue.Read(b)
+func (w *ReceivingWorker) Read(b []byte) int {
+	mb := w.ReadMultiBuffer()
+	if mb.IsEmpty() {
+		return 0
+	}
+	mb, nBytes := buf.SplitBytes(mb, b)
+	if !mb.IsEmpty() {
+		w.leftOver = mb
+	}
+	return nBytes
 }
 
-func (this *ReceivingWorker) Flush(current uint32) {
-	this.Lock()
-	defer this.Unlock()
-
-	this.acklist.Flush(current, this.conn.roundTrip.Timeout())
+func (w *ReceivingWorker) IsDataAvailable() bool {
+	w.RLock()
+	defer w.RUnlock()
+	return w.window.Has(w.nextNumber)
 }
 
-func (this *ReceivingWorker) Write(seg Segment) {
+func (w *ReceivingWorker) NextNumber() uint32 {
+	w.RLock()
+	defer w.RUnlock()
+
+	return w.nextNumber
+}
+
+func (w *ReceivingWorker) Flush(current uint32) {
+	w.Lock()
+	defer w.Unlock()
+
+	w.acklist.Flush(current, w.conn.roundTrip.Timeout())
+}
+
+func (w *ReceivingWorker) Write(seg Segment) error {
 	ackSeg := seg.(*AckSegment)
-	ackSeg.Conv = this.conn.conv
-	ackSeg.ReceivingNext = this.nextNumber
-	ackSeg.ReceivingWindow = this.nextNumber + this.windowSize
-	if this.conn.state == StateReadyToClose {
+	ackSeg.Conv = w.conn.meta.Conversation
+	ackSeg.ReceivingNext = w.nextNumber
+	ackSeg.ReceivingWindow = w.nextNumber + w.windowSize
+	ackSeg.Option = 0
+	if w.conn.State() == StateReadyToClose {
 		ackSeg.Option = SegmentOptionClose
 	}
-	this.conn.output.Write(ackSeg)
-	this.updated = false
+	return w.conn.output.Write(ackSeg)
 }
 
-func (this *ReceivingWorker) CloseRead() {
-	this.Lock()
-	defer this.Unlock()
-
-	this.queue.Close()
+func (*ReceivingWorker) CloseRead() {
 }
 
-func (this *ReceivingWorker) PingNecessary() bool {
-	this.RLock()
-	defer this.RUnlock()
-	return this.updated
-}
+func (w *ReceivingWorker) UpdateNecessary() bool {
+	w.RLock()
+	defer w.RUnlock()
 
-func (this *ReceivingWorker) MarkPingNecessary(b bool) {
-	this.Lock()
-	defer this.Unlock()
-	this.updated = b
+	return len(w.acklist.numbers) > 0
 }

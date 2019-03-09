@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v2ray/v2ray-core/common/dice"
-	v2net "github.com/v2ray/v2ray-core/common/net"
+	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/net"
 )
 
 type ValidationStrategy interface {
@@ -13,44 +13,44 @@ type ValidationStrategy interface {
 	Invalidate()
 }
 
-type AlwaysValidStrategy struct{}
+type alwaysValidStrategy struct{}
 
 func AlwaysValid() ValidationStrategy {
-	return AlwaysValidStrategy{}
+	return alwaysValidStrategy{}
 }
 
-func (this AlwaysValidStrategy) IsValid() bool {
+func (alwaysValidStrategy) IsValid() bool {
 	return true
 }
 
-func (this AlwaysValidStrategy) Invalidate() {}
+func (alwaysValidStrategy) Invalidate() {}
 
-type TimeoutValidStrategy struct {
+type timeoutValidStrategy struct {
 	until time.Time
 }
 
 func BeforeTime(t time.Time) ValidationStrategy {
-	return &TimeoutValidStrategy{
+	return &timeoutValidStrategy{
 		until: t,
 	}
 }
 
-func (this *TimeoutValidStrategy) IsValid() bool {
-	return this.until.After(time.Now())
+func (s *timeoutValidStrategy) IsValid() bool {
+	return s.until.After(time.Now())
 }
 
-func (this *TimeoutValidStrategy) Invalidate() {
-	this.until = time.Time{}
+func (s *timeoutValidStrategy) Invalidate() {
+	s.until = time.Time{}
 }
 
 type ServerSpec struct {
 	sync.RWMutex
-	dest  v2net.Destination
-	users []*User
+	dest  net.Destination
+	users []*MemoryUser
 	valid ValidationStrategy
 }
 
-func NewServerSpec(dest v2net.Destination, valid ValidationStrategy, users ...*User) *ServerSpec {
+func NewServerSpec(dest net.Destination, valid ValidationStrategy, users ...*MemoryUser) *ServerSpec {
 	return &ServerSpec{
 		dest:  dest,
 		users: users,
@@ -58,43 +58,65 @@ func NewServerSpec(dest v2net.Destination, valid ValidationStrategy, users ...*U
 	}
 }
 
-func (this *ServerSpec) Destination() v2net.Destination {
-	return this.dest
+func NewServerSpecFromPB(spec ServerEndpoint) (*ServerSpec, error) {
+	dest := net.TCPDestination(spec.Address.AsAddress(), net.Port(spec.Port))
+	mUsers := make([]*MemoryUser, len(spec.User))
+	for idx, u := range spec.User {
+		mUser, err := u.ToMemoryUser()
+		if err != nil {
+			return nil, err
+		}
+		mUsers[idx] = mUser
+	}
+	return NewServerSpec(dest, AlwaysValid(), mUsers...), nil
 }
 
-func (this *ServerSpec) HasUser(user *User) bool {
-	this.RLock()
-	defer this.RUnlock()
+func (s *ServerSpec) Destination() net.Destination {
+	return s.dest
+}
 
-	account := user.Account
-	for _, u := range this.users {
-		if u.Account.Equals(account) {
+func (s *ServerSpec) HasUser(user *MemoryUser) bool {
+	s.RLock()
+	defer s.RUnlock()
+
+	for _, u := range s.users {
+		if u.Account.Equals(user.Account) {
 			return true
 		}
 	}
 	return false
 }
 
-func (this *ServerSpec) AddUser(user *User) {
-	if this.HasUser(user) {
+func (s *ServerSpec) AddUser(user *MemoryUser) {
+	if s.HasUser(user) {
 		return
 	}
 
-	this.Lock()
-	defer this.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
-	this.users = append(this.users, user)
+	s.users = append(s.users, user)
 }
 
-func (this *ServerSpec) PickUser() *User {
-	userCount := len(this.users)
-	return this.users[dice.Roll(userCount)]
+func (s *ServerSpec) PickUser() *MemoryUser {
+	s.RLock()
+	defer s.RUnlock()
+
+	userCount := len(s.users)
+	switch userCount {
+	case 0:
+		return nil
+	case 1:
+		return s.users[0]
+	default:
+		return s.users[dice.Roll(userCount)]
+	}
 }
 
-func (this *ServerSpec) IsValid() bool {
-	return this.valid.IsValid()
+func (s *ServerSpec) IsValid() bool {
+	return s.valid.IsValid()
 }
 
-func (this *ServerSpec) Invalidate() {
-	this.valid.Invalidate()
+func (s *ServerSpec) Invalidate() {
+	s.valid.Invalidate()
 }

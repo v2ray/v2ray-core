@@ -1,182 +1,198 @@
+// +build !confonly
+
 package kcp
 
 import (
-	"net"
+	"context"
+	"crypto/cipher"
+	"crypto/tls"
 	"sync"
-	"time"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/serial"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/transport/internet"
-	"github.com/v2ray/v2ray-core/transport/internet/udp"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/transport/internet"
+	v2tls "v2ray.com/core/transport/internet/tls"
+	"v2ray.com/core/transport/internet/udp"
 )
+
+type ConnectionID struct {
+	Remote net.Address
+	Port   net.Port
+	Conv   uint16
+}
 
 // Listener defines a server listening for connections
 type Listener struct {
 	sync.Mutex
-	running       bool
-	authenticator internet.Authenticator
-	sessions      map[string]*Connection
-	awaitingConns chan *Connection
-	hub           *udp.UDPHub
+	sessions  map[ConnectionID]*Connection
+	hub       *udp.Hub
+	tlsConfig *tls.Config
+	config    *Config
+	reader    PacketReader
+	header    internet.PacketHeader
+	security  cipher.AEAD
+	addConn   internet.ConnHandler
 }
 
-func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
-	auth, err := effectiveConfig.GetAuthenticator()
+func NewListener(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, addConn internet.ConnHandler) (*Listener, error) {
+	kcpSettings := streamSettings.ProtocolSettings.(*Config)
+	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to create packet header").Base(err).AtError()
+	}
+	security, err := kcpSettings.GetSecurity()
+	if err != nil {
+		return nil, newError("failed to create security").Base(err).AtError()
 	}
 	l := &Listener{
-		authenticator: auth,
-		sessions:      make(map[string]*Connection),
-		awaitingConns: make(chan *Connection, 64),
-		running:       true,
+		header:   header,
+		security: security,
+		reader: &KCPPacketReader{
+			Header:   header,
+			Security: security,
+		},
+		sessions: make(map[ConnectionID]*Connection),
+		config:   kcpSettings,
+		addConn:  addConn,
 	}
-	hub, err := udp.ListenUDP(address, port, udp.ListenOption{Callback: l.OnReceive})
+
+	if config := v2tls.ConfigFromStreamSettings(streamSettings); config != nil {
+		l.tlsConfig = config.GetTLSConfig()
+	}
+
+	hub, err := udp.ListenUDP(ctx, address, port, streamSettings, udp.HubCapacity(1024))
 	if err != nil {
 		return nil, err
 	}
+	l.Lock()
 	l.hub = hub
-	log.Info("KCP|Listener: listening on ", address, ":", port)
+	l.Unlock()
+	newError("listening on ", address, ":", port).WriteToLog()
+
+	go l.handlePackets()
+
 	return l, nil
 }
 
-func (this *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInfo) {
-	defer payload.Release()
+func (l *Listener) handlePackets() {
+	receive := l.hub.Receive()
+	for payload := range receive {
+		l.OnReceive(payload.Payload, payload.Source)
+	}
+}
 
-	src := session.Source
+func (l *Listener) OnReceive(payload *buf.Buffer, src net.Destination) {
+	segments := l.reader.Read(payload.Bytes())
+	payload.Release()
 
-	if valid := this.authenticator.Open(payload); !valid {
-		log.Info("KCP|Listener: discarding invalid payload from ", src)
+	if len(segments) == 0 {
+		newError("discarding invalid payload from ", src).WriteToLog()
 		return
 	}
-	if !this.running {
-		return
+
+	conv := segments[0].Conversation()
+	cmd := segments[0].Command()
+
+	id := ConnectionID{
+		Remote: src.Address,
+		Port:   src.Port,
+		Conv:   conv,
 	}
-	this.Lock()
-	defer this.Unlock()
-	if !this.running {
-		return
-	}
-	if payload.Len() < 4 {
-		return
-	}
-	conv := serial.BytesToUint16(payload.Value)
-	cmd := Command(payload.Value[2])
-	sourceId := src.NetAddr() + "|" + serial.Uint16ToString(conv)
-	conn, found := this.sessions[sourceId]
+
+	l.Lock()
+	defer l.Unlock()
+
+	conn, found := l.sessions[id]
+
 	if !found {
 		if cmd == CommandTerminate {
 			return
 		}
-		log.Debug("KCP|Listener: Creating session with id(", sourceId, ") from ", src)
 		writer := &Writer{
-			id:       sourceId,
-			hub:      this.hub,
+			id:       id,
+			hub:      l.hub,
 			dest:     src,
-			listener: this,
+			listener: l,
 		}
-		srcAddr := &net.UDPAddr{
-			IP:   src.Address().IP(),
-			Port: int(src.Port()),
+		remoteAddr := &net.UDPAddr{
+			IP:   src.Address.IP(),
+			Port: int(src.Port),
 		}
-		auth, err := effectiveConfig.GetAuthenticator()
-		if err != nil {
-			log.Error("KCP|Listener: Failed to create authenticator: ", err)
+		localAddr := l.hub.Addr()
+		conn = NewConnection(ConnMetadata{
+			LocalAddr:    localAddr,
+			RemoteAddr:   remoteAddr,
+			Conversation: conv,
+		}, &KCPPacketWriter{
+			Header:   l.header,
+			Security: l.security,
+			Writer:   writer,
+		}, writer, l.config)
+		var netConn internet.Connection = conn
+		if l.tlsConfig != nil {
+			tlsConn := tls.Server(conn, l.tlsConfig)
+			netConn = tlsConn
 		}
-		conn = NewConnection(conv, writer, this.Addr().(*net.UDPAddr), srcAddr, auth)
-		select {
-		case this.awaitingConns <- conn:
-		case <-time.After(time.Second * 5):
-			conn.Close()
-			return
-		}
-		this.sessions[sourceId] = conn
+
+		l.addConn(netConn)
+		l.sessions[id] = conn
 	}
-	conn.Input(payload.Value)
+	conn.Input(segments)
 }
 
-func (this *Listener) Remove(dest string) {
-	if !this.running {
-		return
-	}
-	this.Lock()
-	defer this.Unlock()
-	if !this.running {
-		return
-	}
-	log.Debug("KCP|Listener: Removing session ", dest)
-	delete(this.sessions, dest)
-}
-
-// Accept implements the Accept method in the Listener interface; it waits for the next call and returns a generic Conn.
-func (this *Listener) Accept() (internet.Connection, error) {
-	for {
-		if !this.running {
-			return nil, ErrClosedListener
-		}
-		select {
-		case conn := <-this.awaitingConns:
-			return conn, nil
-		case <-time.After(time.Second):
-
-		}
-	}
+func (l *Listener) Remove(id ConnectionID) {
+	l.Lock()
+	delete(l.sessions, id)
+	l.Unlock()
 }
 
 // Close stops listening on the UDP address. Already Accepted connections are not closed.
-func (this *Listener) Close() error {
-	if !this.running {
-		return ErrClosedListener
-	}
-	this.Lock()
-	defer this.Unlock()
+func (l *Listener) Close() error {
+	l.hub.Close()
 
-	this.running = false
-	close(this.awaitingConns)
-	for _, conn := range this.sessions {
+	l.Lock()
+	defer l.Unlock()
+
+	for _, conn := range l.sessions {
 		go conn.Terminate()
 	}
-	this.hub.Close()
 
 	return nil
 }
 
-func (this *Listener) ActiveConnections() int {
-	this.Lock()
-	defer this.Unlock()
+func (l *Listener) ActiveConnections() int {
+	l.Lock()
+	defer l.Unlock()
 
-	return len(this.sessions)
+	return len(l.sessions)
 }
 
 // Addr returns the listener's network address, The Addr returned is shared by all invocations of Addr, so do not modify it.
-func (this *Listener) Addr() net.Addr {
-	return this.hub.Addr()
+func (l *Listener) Addr() net.Addr {
+	return l.hub.Addr()
 }
 
 type Writer struct {
-	id       string
-	dest     v2net.Destination
-	hub      *udp.UDPHub
+	id       ConnectionID
+	dest     net.Destination
+	hub      *udp.Hub
 	listener *Listener
 }
 
-func (this *Writer) Write(payload []byte) (int, error) {
-	return this.hub.WriteTo(payload, this.dest)
+func (w *Writer) Write(payload []byte) (int, error) {
+	return w.hub.WriteTo(payload, w.dest)
 }
 
-func (this *Writer) Close() error {
-	this.listener.Remove(this.id)
+func (w *Writer) Close() error {
+	w.listener.Remove(w.id)
 	return nil
 }
 
-func ListenKCP(address v2net.Address, port v2net.Port) (internet.Listener, error) {
-	return NewListener(address, port)
+func ListenKCP(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, addConn internet.ConnHandler) (internet.Listener, error) {
+	return NewListener(ctx, address, port, streamSettings, addConn)
 }
 
 func init() {
-	internet.KCPListenFunc = ListenKCP
+	common.Must(internet.RegisterTransportListener(protocolName, ListenKCP))
 }

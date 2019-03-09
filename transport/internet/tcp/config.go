@@ -1,15 +1,16 @@
+// +build !confonly
+
 package tcp
 
-type Config struct {
-	ConnectionReuse bool
-}
-
-func (this *Config) Apply() {
-	effectiveConfig = this
-}
-
-var (
-	effectiveConfig = &Config{
-		ConnectionReuse: true,
-	}
+import (
+	"v2ray.com/core/common"
+	"v2ray.com/core/transport/internet"
 )
+
+const protocolName = "tcp"
+
+func init() {
+	common.Must(internet.RegisterProtocolConfigCreator(protocolName, func() interface{} {
+		return new(Config)
+	}))
+}

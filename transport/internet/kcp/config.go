@@ -1,77 +1,107 @@
+// +build !confonly
+
 package kcp
 
 import (
-	"github.com/v2ray/v2ray-core/transport/internet"
+	"crypto/cipher"
+
+	"v2ray.com/core/common"
+	"v2ray.com/core/transport/internet"
 )
 
-type Config struct {
-	Mtu              uint32 // Maximum transmission unit
-	Tti              uint32
-	UplinkCapacity   uint32
-	DownlinkCapacity uint32
-	Congestion       bool
-	WriteBuffer      uint32
-	ReadBuffer       uint32
-	HeaderType       string
-	HeaderConfig     internet.AuthenticatorConfig
+const protocolName = "mkcp"
+
+// GetMTUValue returns the value of MTU settings.
+func (c *Config) GetMTUValue() uint32 {
+	if c == nil || c.Mtu == nil {
+		return 1350
+	}
+	return c.Mtu.Value
 }
 
-func (this *Config) Apply() {
-	effectiveConfig = *this
+// GetTTIValue returns the value of TTI settings.
+func (c *Config) GetTTIValue() uint32 {
+	if c == nil || c.Tti == nil {
+		return 50
+	}
+	return c.Tti.Value
 }
 
-func (this *Config) GetAuthenticator() (internet.Authenticator, error) {
-	auth := NewSimpleAuthenticator()
-	if this.HeaderConfig != nil {
-		header, err := internet.CreateAuthenticator(this.HeaderType, this.HeaderConfig)
+// GetUplinkCapacityValue returns the value of UplinkCapacity settings.
+func (c *Config) GetUplinkCapacityValue() uint32 {
+	if c == nil || c.UplinkCapacity == nil {
+		return 5
+	}
+	return c.UplinkCapacity.Value
+}
+
+// GetDownlinkCapacityValue returns the value of DownlinkCapacity settings.
+func (c *Config) GetDownlinkCapacityValue() uint32 {
+	if c == nil || c.DownlinkCapacity == nil {
+		return 20
+	}
+	return c.DownlinkCapacity.Value
+}
+
+// GetWriteBufferSize returns the size of WriterBuffer in bytes.
+func (c *Config) GetWriteBufferSize() uint32 {
+	if c == nil || c.WriteBuffer == nil {
+		return 2 * 1024 * 1024
+	}
+	return c.WriteBuffer.Size
+}
+
+// GetReadBufferSize returns the size of ReadBuffer in bytes.
+func (c *Config) GetReadBufferSize() uint32 {
+	if c == nil || c.ReadBuffer == nil {
+		return 2 * 1024 * 1024
+	}
+	return c.ReadBuffer.Size
+}
+
+// GetSecurity returns the security settings.
+func (*Config) GetSecurity() (cipher.AEAD, error) {
+	return NewSimpleAuthenticator(), nil
+}
+
+func (c *Config) GetPackerHeader() (internet.PacketHeader, error) {
+	if c.HeaderConfig != nil {
+		rawConfig, err := c.HeaderConfig.GetInstance()
 		if err != nil {
 			return nil, err
 		}
-		auth = internet.NewAuthenticatorChain(header, auth)
+
+		return internet.CreatePacketHeader(rawConfig)
 	}
-	return auth, nil
+	return nil, nil
 }
 
-func (this *Config) GetSendingInFlightSize() uint32 {
-	size := this.UplinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti) / 2
-	if size == 0 {
+func (c *Config) GetSendingInFlightSize() uint32 {
+	size := c.GetUplinkCapacityValue() * 1024 * 1024 / c.GetMTUValue() / (1000 / c.GetTTIValue())
+	if size < 8 {
 		size = 8
 	}
 	return size
 }
 
-func (this *Config) GetSendingWindowSize() uint32 {
-	return this.GetSendingInFlightSize() * 4
+func (c *Config) GetSendingBufferSize() uint32 {
+	return c.GetWriteBufferSize() / c.GetMTUValue()
 }
 
-func (this *Config) GetSendingQueueSize() uint32 {
-	return this.WriteBuffer / this.Mtu
-}
-
-func (this *Config) GetReceivingWindowSize() uint32 {
-	size := this.DownlinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti) / 2
-	if size == 0 {
+func (c *Config) GetReceivingInFlightSize() uint32 {
+	size := c.GetDownlinkCapacityValue() * 1024 * 1024 / c.GetMTUValue() / (1000 / c.GetTTIValue())
+	if size < 8 {
 		size = 8
 	}
 	return size
 }
 
-func (this *Config) GetReceivingQueueSize() uint32 {
-	return this.ReadBuffer / this.Mtu
+func (c *Config) GetReceivingBufferSize() uint32 {
+	return c.GetReadBufferSize() / c.GetMTUValue()
 }
 
-func DefaultConfig() Config {
-	return Config{
-		Mtu:              1350,
-		Tti:              20,
-		UplinkCapacity:   5,
-		DownlinkCapacity: 20,
-		Congestion:       false,
-		WriteBuffer:      1 * 1024 * 1024,
-		ReadBuffer:       1 * 1024 * 1024,
-	}
+func init() {
+	common.Must(internet.RegisterProtocolConfigCreator(protocolName, func() interface{} {
+		return new(Config)
+	}))
 }
-
-var (
-	effectiveConfig = DefaultConfig()
-)

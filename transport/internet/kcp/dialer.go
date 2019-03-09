@@ -1,40 +1,101 @@
+// +build !confonly
+
 package kcp
 
 import (
-	"net"
+	"context"
+	"crypto/tls"
+	"io"
 	"sync/atomic"
 
-	"github.com/v2ray/v2ray-core/common/dice"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/transport/internet"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/transport/internet"
+	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
 var (
-	globalConv = uint32(dice.Roll(65536))
+	globalConv = uint32(dice.RollUint16())
 )
 
-func DialKCP(src v2net.Address, dest v2net.Destination) (internet.Connection, error) {
-	udpDest := v2net.UDPDestination(dest.Address(), dest.Port())
-	log.Info("KCP|Dialer: Dialing KCP to ", udpDest)
-	conn, err := internet.DialToDest(src, udpDest)
+func fetchInput(ctx context.Context, input io.Reader, reader PacketReader, conn *Connection) {
+	cache := make(chan *buf.Buffer, 1024)
+	go func() {
+		for {
+			payload := buf.New()
+			if _, err := payload.ReadFrom(input); err != nil {
+				payload.Release()
+				close(cache)
+				return
+			}
+			select {
+			case cache <- payload:
+			default:
+				payload.Release()
+			}
+		}
+	}()
+
+	for payload := range cache {
+		segments := reader.Read(payload.Bytes())
+		payload.Release()
+		if len(segments) > 0 {
+			conn.Input(segments)
+		}
+	}
+}
+
+// DialKCP dials a new KCP connections to the specific destination.
+func DialKCP(ctx context.Context, dest net.Destination, streamSettings *internet.MemoryStreamConfig) (internet.Connection, error) {
+	dest.Network = net.Network_UDP
+	newError("dialing mKCP to ", dest).WriteToLog()
+
+	rawConn, err := internet.DialSystem(ctx, dest, streamSettings.SocketSettings)
 	if err != nil {
-		log.Error("KCP|Dialer: Failed to dial to dest: ", err)
-		return nil, err
+		return nil, newError("failed to dial to dest: ", err).AtWarning().Base(err)
 	}
 
-	cpip, err := effectiveConfig.GetAuthenticator()
+	kcpSettings := streamSettings.ProtocolSettings.(*Config)
+
+	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
-		log.Error("KCP|Dialer: Failed to create authenticator: ", err)
-		return nil, err
+		return nil, newError("failed to create packet header").Base(err)
 	}
+	security, err := kcpSettings.GetSecurity()
+	if err != nil {
+		return nil, newError("failed to create security").Base(err)
+	}
+	reader := &KCPPacketReader{
+		Header:   header,
+		Security: security,
+	}
+	writer := &KCPPacketWriter{
+		Header:   header,
+		Security: security,
+		Writer:   rawConn,
+	}
+
 	conv := uint16(atomic.AddUint32(&globalConv, 1))
-	session := NewConnection(conv, conn, conn.LocalAddr().(*net.UDPAddr), conn.RemoteAddr().(*net.UDPAddr), cpip)
-	session.FetchInputFrom(conn)
+	session := NewConnection(ConnMetadata{
+		LocalAddr:    rawConn.LocalAddr(),
+		RemoteAddr:   rawConn.RemoteAddr(),
+		Conversation: conv,
+	}, writer, rawConn, kcpSettings)
 
-	return session, nil
+	go fetchInput(ctx, rawConn, reader, session)
+
+	var iConn internet.Connection = session
+
+	if config := v2tls.ConfigFromStreamSettings(streamSettings); config != nil {
+		tlsConn := tls.Client(iConn, config.GetTLSConfig(v2tls.WithDestination(dest)))
+		iConn = tlsConn
+	}
+
+	return iConn, nil
 }
 
 func init() {
-	internet.KCPDialer = DialKCP
+	common.Must(internet.RegisterTransportDialer(protocolName, DialKCP))
 }

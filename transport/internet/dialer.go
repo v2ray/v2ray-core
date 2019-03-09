@@ -1,71 +1,72 @@
 package internet
 
 import (
-	"crypto/tls"
-	"errors"
-	"net"
+	"context"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2tls "github.com/v2ray/v2ray-core/transport/internet/tls"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 )
 
-var (
-	ErrUnsupportedStreamType = errors.New("Unsupported stream type.")
-)
+// Dialer is the interface for dialing outbound connections.
+type Dialer interface {
+	// Dial dials a system connection to the given destination.
+	Dial(ctx context.Context, destination net.Destination) (Connection, error)
 
-type Dialer func(src v2net.Address, dest v2net.Destination) (Connection, error)
-
-var (
-	TCPDialer    Dialer
-	KCPDialer    Dialer
-	RawTCPDialer Dialer
-	UDPDialer    Dialer
-	WSDialer     Dialer
-)
-
-func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (Connection, error) {
-
-	var connection Connection
-	var err error
-	if dest.IsTCP() {
-		switch {
-		case settings.IsCapableOf(StreamConnectionTypeTCP):
-			connection, err = TCPDialer(src, dest)
-		case settings.IsCapableOf(StreamConnectionTypeKCP):
-			connection, err = KCPDialer(src, dest)
-		case settings.IsCapableOf(StreamConnectionTypeWebSocket):
-			connection, err = WSDialer(src, dest)
-
-		/*Warning: Hours wasted: the following item must be last one
-
-		internet.StreamConnectionType have a default value of 1,
-		so the following attempt will catch all.
-		*/
-
-		case settings.IsCapableOf(StreamConnectionTypeRawTCP):
-			connection, err = RawTCPDialer(src, dest)
-		default:
-			return nil, ErrUnsupportedStreamType
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		if settings.Security == StreamSecurityTypeNone {
-			return connection, nil
-		}
-
-		config := settings.TLSSettings.GetTLSConfig()
-		if dest.Address().Family().IsDomain() {
-			config.ServerName = dest.Address().Domain()
-		}
-		tlsConn := tls.Client(connection, config)
-		return v2tls.NewConnection(tlsConn), nil
-	}
-
-	return UDPDialer(src, dest)
+	// Address returns the address used by this Dialer. Maybe nil if not known.
+	Address() net.Address
 }
 
-func DialToDest(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
-	return effectiveSystemDialer.Dial(src, dest)
+// dialFunc is an interface to dial network connection to a specific destination.
+type dialFunc func(ctx context.Context, dest net.Destination, streamSettings *MemoryStreamConfig) (Connection, error)
+
+var (
+	transportDialerCache = make(map[string]dialFunc)
+)
+
+// RegisterTransportDialer registers a Dialer with given name.
+func RegisterTransportDialer(protocol string, dialer dialFunc) error {
+	if _, found := transportDialerCache[protocol]; found {
+		return newError(protocol, " dialer already registered").AtError()
+	}
+	transportDialerCache[protocol] = dialer
+	return nil
+}
+
+// Dial dials a internet connection towards the given destination.
+func Dial(ctx context.Context, dest net.Destination, streamSettings *MemoryStreamConfig) (Connection, error) {
+	if dest.Network == net.Network_TCP {
+		if streamSettings == nil {
+			s, err := ToMemoryStreamConfig(nil)
+			if err != nil {
+				return nil, newError("failed to create default stream settings").Base(err)
+			}
+			streamSettings = s
+		}
+
+		protocol := streamSettings.ProtocolName
+		dialer := transportDialerCache[protocol]
+		if dialer == nil {
+			return nil, newError(protocol, " dialer not registered").AtError()
+		}
+		return dialer(ctx, dest, streamSettings)
+	}
+
+	if dest.Network == net.Network_UDP {
+		udpDialer := transportDialerCache["udp"]
+		if udpDialer == nil {
+			return nil, newError("UDP dialer not registered").AtError()
+		}
+		return udpDialer(ctx, dest, streamSettings)
+	}
+
+	return nil, newError("unknown network ", dest.Network)
+}
+
+// DialSystem calls system dialer to create a network connection.
+func DialSystem(ctx context.Context, dest net.Destination, sockopt *SocketConfig) (net.Conn, error) {
+	var src net.Address
+	if outbound := session.OutboundFromContext(ctx); outbound != nil {
+		src = outbound.Gateway
+	}
+	return effectiveSystemDialer.Dial(ctx, src, dest, sockopt)
 }

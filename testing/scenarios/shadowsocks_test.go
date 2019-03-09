@@ -1,91 +1,828 @@
 package scenarios
 
 import (
-	"net"
+	"crypto/rand"
 	"testing"
+	"time"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/testing/assert"
-	"github.com/v2ray/v2ray-core/testing/servers/tcp"
+	"github.com/google/go-cmp/cmp"
+	"golang.org/x/sync/errgroup"
 
-	ssclient "github.com/shadowsocks/shadowsocks-go/shadowsocks"
+	"v2ray.com/core"
+	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
+	clog "v2ray.com/core/common/log"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/proxy/dokodemo"
+	"v2ray.com/core/proxy/freedom"
+	"v2ray.com/core/proxy/shadowsocks"
+	"v2ray.com/core/testing/servers/tcp"
+	"v2ray.com/core/testing/servers/udp"
 )
 
-func TestShadowsocksTCP(t *testing.T) {
-	assert := assert.On(t)
-
-	tcpServer := &tcp.Server{
-		Port: v2net.Port(50052),
-		MsgProcessor: func(data []byte) []byte {
-			buffer := make([]byte, 0, 2048)
-			buffer = append(buffer, []byte("Processed: ")...)
-			buffer = append(buffer, data...)
-			return buffer
-		},
+func TestShadowsocksAES256TCP(t *testing.T) {
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
 	}
-	_, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	dest, err := tcpServer.Start()
+	common.Must(err)
 	defer tcpServer.Close()
 
-	assert.Error(InitializeServerServer("test_6")).IsNil()
+	account := serial.ToTypedMessage(&shadowsocks.Account{
+		Password:   "shadowsocks-password",
+		CipherType: shadowsocks.CipherType_AES_256_CFB,
+		Ota:        shadowsocks.Account_Enabled,
+	})
 
-	cipher, err := ssclient.NewCipher("aes-256-cfb", "v2ray-password")
-	assert.Error(err).IsNil()
+	serverPort := tcp.PickPort()
+	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
+					User: &protocol.User{
+						Account: account,
+						Level:   1,
+					},
+					Network: []net.Network{net.Network_TCP},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
 
-	rawAddr := []byte{1, 127, 0, 0, 1, 0xc3, 0x84} // 127.0.0.1:50052
-	conn, err := ssclient.DialWithRawAddr(rawAddr, "127.0.0.1:50051", cipher)
-	assert.Error(err).IsNil()
+	clientPort := tcp.PickPort()
+	clientConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
+					Server: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: account,
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
 
-	payload := "shadowsocks request."
-	nBytes, err := conn.Write([]byte(payload))
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(len(payload))
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	conn.Conn.(*net.TCPConn).CloseWrite()
+	var errg errgroup.Group
+	for i := 0; i < 10; i++ {
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
+	}
+	if err := errg.Wait(); err != nil {
+		t.Fatal(err)
+	}
+}
 
-	response := make([]byte, 1024)
-	nBytes, err = conn.Read(response)
-	assert.Error(err).IsNil()
-	assert.String("Processed: " + payload).Equals(string(response[:nBytes]))
-	conn.Close()
+func TestShadowsocksAES128UDP(t *testing.T) {
+	udpServer := udp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := udpServer.Start()
+	common.Must(err)
+	defer udpServer.Close()
 
-	cipher, err = ssclient.NewCipher("aes-128-cfb", "v2ray-another")
-	assert.Error(err).IsNil()
+	account := serial.ToTypedMessage(&shadowsocks.Account{
+		Password:   "shadowsocks-password",
+		CipherType: shadowsocks.CipherType_AES_128_CFB,
+		Ota:        shadowsocks.Account_Enabled,
+	})
 
-	conn, err = ssclient.DialWithRawAddr(rawAddr, "127.0.0.1:50055", cipher)
-	assert.Error(err).IsNil()
+	serverPort := tcp.PickPort()
+	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
+					User: &protocol.User{
+						Account: account,
+						Level:   1,
+					},
+					Network: []net.Network{net.Network_UDP},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
 
-	payload = "shadowsocks request 2."
-	nBytes, err = conn.Write([]byte(payload))
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(len(payload))
+	clientPort := tcp.PickPort()
+	clientConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_UDP},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
+					Server: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: account,
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
 
-	conn.Conn.(*net.TCPConn).CloseWrite()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	response = make([]byte, 1024)
-	nBytes, err = conn.Read(response)
-	assert.Error(err).IsNil()
-	assert.String("Processed: " + payload).Equals(string(response[:nBytes]))
-	conn.Close()
+	var errg errgroup.Group
+	for i := 0; i < 10; i++ {
+		errg.Go(func() error {
+			conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
+				IP:   []byte{127, 0, 0, 1},
+				Port: int(clientPort),
+			})
+			if err != nil {
+				return err
+			}
+			defer conn.Close()
 
-	cipher, err = ssclient.NewCipher("chacha20", "new-password")
-	assert.Error(err).IsNil()
+			payload := make([]byte, 1024)
+			common.Must2(rand.Read(payload))
 
-	conn, err = ssclient.DialWithRawAddr(rawAddr, "127.0.0.1:50056", cipher)
-	assert.Error(err).IsNil()
+			nBytes, err := conn.Write([]byte(payload))
+			if err != nil {
+				return err
+			}
+			if nBytes != len(payload) {
+				return errors.New("expect ", len(payload), " written, but actually ", nBytes)
+			}
 
-	payload = "shadowsocks request 3."
-	nBytes, err = conn.Write([]byte(payload))
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(len(payload))
+			response := readFrom(conn, time.Second*5, 1024)
+			if r := cmp.Diff(response, xor(payload)); r != "" {
+				return errors.New(r)
+			}
+			return nil
+		})
+	}
 
-	conn.Conn.(*net.TCPConn).CloseWrite()
+	if err := errg.Wait(); err != nil {
+		t.Fatal(err)
+	}
+}
 
-	response = make([]byte, 1024)
-	nBytes, err = conn.Read(response)
-	assert.Error(err).IsNil()
-	assert.String("Processed: " + payload).Equals(string(response[:nBytes]))
-	conn.Close()
+func TestShadowsocksChacha20TCP(t *testing.T) {
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := tcpServer.Start()
+	common.Must(err)
 
-	CloseAllServers()
+	defer tcpServer.Close()
+
+	account := serial.ToTypedMessage(&shadowsocks.Account{
+		Password:   "shadowsocks-password",
+		CipherType: shadowsocks.CipherType_CHACHA20_IETF,
+		Ota:        shadowsocks.Account_Enabled,
+	})
+
+	serverPort := tcp.PickPort()
+	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
+					User: &protocol.User{
+						Account: account,
+						Level:   1,
+					},
+					Network: []net.Network{net.Network_TCP},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	clientPort := tcp.PickPort()
+	clientConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
+					Server: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: account,
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	common.Must(err)
+	defer CloseAllServers(servers)
+
+	var errg errgroup.Group
+	for i := 0; i < 10; i++ {
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*40))
+	}
+
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestShadowsocksChacha20Poly1305TCP(t *testing.T) {
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := tcpServer.Start()
+	common.Must(err)
+	defer tcpServer.Close()
+
+	account := serial.ToTypedMessage(&shadowsocks.Account{
+		Password:   "shadowsocks-password",
+		CipherType: shadowsocks.CipherType_CHACHA20_POLY1305,
+	})
+
+	serverPort := tcp.PickPort()
+	serverConfig := &core.Config{
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
+					User: &protocol.User{
+						Account: account,
+						Level:   1,
+					},
+					Network: []net.Network{net.Network_TCP},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	clientPort := tcp.PickPort()
+	clientConfig := &core.Config{
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
+					Server: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: account,
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	common.Must(err)
+	defer CloseAllServers(servers)
+
+	var errg errgroup.Group
+	for i := 0; i < 10; i++ {
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
+	}
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestShadowsocksAES256GCMTCP(t *testing.T) {
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := tcpServer.Start()
+	common.Must(err)
+	defer tcpServer.Close()
+
+	account := serial.ToTypedMessage(&shadowsocks.Account{
+		Password:   "shadowsocks-password",
+		CipherType: shadowsocks.CipherType_AES_256_GCM,
+	})
+
+	serverPort := tcp.PickPort()
+	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
+					User: &protocol.User{
+						Account: account,
+						Level:   1,
+					},
+					Network: []net.Network{net.Network_TCP},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	clientPort := tcp.PickPort()
+	clientConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
+					Server: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: account,
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	common.Must(err)
+	defer CloseAllServers(servers)
+
+	var errg errgroup.Group
+	for i := 0; i < 10; i++ {
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
+	}
+
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestShadowsocksAES128GCMUDP(t *testing.T) {
+	udpServer := udp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := udpServer.Start()
+	common.Must(err)
+	defer udpServer.Close()
+
+	account := serial.ToTypedMessage(&shadowsocks.Account{
+		Password:   "shadowsocks-password",
+		CipherType: shadowsocks.CipherType_AES_128_GCM,
+	})
+
+	serverPort := tcp.PickPort()
+	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
+					User: &protocol.User{
+						Account: account,
+						Level:   1,
+					},
+					Network: []net.Network{net.Network_UDP},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	clientPort := tcp.PickPort()
+	clientConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_UDP},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
+					Server: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: account,
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	common.Must(err)
+	defer CloseAllServers(servers)
+
+	var errg errgroup.Group
+	for i := 0; i < 10; i++ {
+		errg.Go(testUDPConn(clientPort, 1024, time.Second*5))
+	}
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestShadowsocksAES128GCMUDPMux(t *testing.T) {
+	udpServer := udp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := udpServer.Start()
+	common.Must(err)
+	defer udpServer.Close()
+
+	account := serial.ToTypedMessage(&shadowsocks.Account{
+		Password:   "shadowsocks-password",
+		CipherType: shadowsocks.CipherType_AES_128_GCM,
+	})
+
+	serverPort := tcp.PickPort()
+	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
+					User: &protocol.User{
+						Account: account,
+						Level:   1,
+					},
+					Network: []net.Network{net.Network_TCP},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	clientPort := tcp.PickPort()
+	clientConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_UDP},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
+					MultiplexSettings: &proxyman.MultiplexingConfig{
+						Enabled:     true,
+						Concurrency: 8,
+					},
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
+					Server: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: account,
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	common.Must(err)
+	defer CloseAllServers(servers)
+
+	var errg errgroup.Group
+	for i := 0; i < 10; i++ {
+		errg.Go(testUDPConn(clientPort, 1024, time.Second*5))
+	}
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestShadowsocksNone(t *testing.T) {
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := tcpServer.Start()
+	common.Must(err)
+
+	defer tcpServer.Close()
+
+	account := serial.ToTypedMessage(&shadowsocks.Account{
+		Password:   "shadowsocks-password",
+		CipherType: shadowsocks.CipherType_NONE,
+		Ota:        shadowsocks.Account_Enabled,
+	})
+
+	serverPort := tcp.PickPort()
+	serverConfig := &core.Config{
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
+					User: &protocol.User{
+						Account: account,
+						Level:   1,
+					},
+					Network: []net.Network{net.Network_TCP},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	clientPort := tcp.PickPort()
+	clientConfig := &core.Config{
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
+					Server: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: account,
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	common.Must(err)
+
+	defer CloseAllServers(servers)
+
+	var errg errgroup.Group
+	for i := 0; i < 10; i++ {
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
+	}
+
+	if err := errg.Wait(); err != nil {
+		t.Fatal(err)
+	}
 }

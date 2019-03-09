@@ -55,13 +55,12 @@ func ChaCha20Block(s *[16]uint32, out []byte, rounds int) {
 }
 
 func main() {
-	file, err := os.OpenFile("chacha_core.go", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	file, err := os.OpenFile("chacha_core.generated.go", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
 		log.Fatalf("Failed to generate chacha_core.go: %v", err)
 	}
 	defer file.Close()
 
-	fmt.Fprintln(file, "// GENERATED CODE. DO NOT MODIFY!")
 	fmt.Fprintln(file, "package internal")
 	fmt.Fprintln(file)
 	fmt.Fprintln(file, "import \"encoding/binary\"")

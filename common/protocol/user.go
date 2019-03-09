@@ -1,35 +1,39 @@
 package protocol
 
-type UserLevel byte
+func (u *User) GetTypedAccount() (Account, error) {
+	if u.GetAccount() == nil {
+		return nil, newError("Account missing").AtWarning()
+	}
 
-const (
-	UserLevelAdmin     = UserLevel(255)
-	UserLevelUntrusted = UserLevel(0)
-)
+	rawAccount, err := u.Account.GetInstance()
+	if err != nil {
+		return nil, err
+	}
+	if asAccount, ok := rawAccount.(AsAccount); ok {
+		return asAccount.AsAccount()
+	}
+	if account, ok := rawAccount.(Account); ok {
+		return account, nil
+	}
+	return nil, newError("Unknown account type: ", u.Account.Type)
+}
 
-type User struct {
+func (u *User) ToMemoryUser() (*MemoryUser, error) {
+	account, err := u.GetTypedAccount()
+	if err != nil {
+		return nil, err
+	}
+	return &MemoryUser{
+		Account: account,
+		Email:   u.Email,
+		Level:   u.Level,
+	}, nil
+}
+
+// MemoryUser is a parsed form of User, to reduce number of parsing of Account proto.
+type MemoryUser struct {
+	// Account is the parsed account of the protocol.
 	Account Account
-	Level   UserLevel
 	Email   string
-}
-
-func NewUser(level UserLevel, email string) *User {
-	return &User{
-		Level: level,
-		Email: email,
-	}
-}
-
-type UserSettings struct {
-	PayloadReadTimeout int
-}
-
-func GetUserSettings(level UserLevel) UserSettings {
-	settings := UserSettings{
-		PayloadReadTimeout: 120,
-	}
-	if level > 0 {
-		settings.PayloadReadTimeout = 0
-	}
-	return settings
+	Level   uint32
 }

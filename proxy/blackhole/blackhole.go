@@ -1,49 +1,49 @@
+// +build !confonly
+
+// Package blackhole is an outbound handler that blocks all connections.
+
 package blackhole
 
+//go:generate errorgen
+
 import (
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/registry"
-	"github.com/v2ray/v2ray-core/transport/internet"
-	"github.com/v2ray/v2ray-core/transport/ray"
+	"context"
+	"time"
+
+	"v2ray.com/core/common"
+	"v2ray.com/core/transport"
+	"v2ray.com/core/transport/internet"
 )
 
-// BlackHole is an outbound connection that sliently swallow the entire payload.
-type BlackHole struct {
-	meta     *proxy.OutboundHandlerMeta
-	response Response
+// Handler is an outbound connection that silently swallow the entire payload.
+type Handler struct {
+	response ResponseConfig
 }
 
-func NewBlackHole(space app.Space, config *Config, meta *proxy.OutboundHandlerMeta) *BlackHole {
-	return &BlackHole{
-		meta:     meta,
-		response: config.Response,
+// New creates a new blackhole handler.
+func New(ctx context.Context, config *Config) (*Handler, error) {
+	response, err := config.GetInternalResponse()
+	if err != nil {
+		return nil, err
 	}
+	return &Handler{
+		response: response,
+	}, nil
 }
 
-func (this *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
-	payload.Release()
-
-	this.response.WriteTo(ray.OutboundOutput())
-	ray.OutboundOutput().Close()
-
-	ray.OutboundInput().Release()
-
+// Process implements OutboundHandler.Dispatch().
+func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
+	nBytes := h.response.WriteTo(link.Writer)
+	if nBytes > 0 {
+		// Sleep a little here to make sure the response is sent to client.
+		time.Sleep(time.Second)
+	}
+	common.Interrupt(link.Writer)
 	return nil
 }
 
-type Factory struct{}
-
-func (this *Factory) StreamCapability() internet.StreamConnectionType {
-	return internet.StreamConnectionTypeRawTCP
-}
-
-func (this *Factory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-	return NewBlackHole(space, config.(*Config), meta), nil
-}
-
 func init() {
-	registry.MustRegisterOutboundHandlerCreator("blackhole", new(Factory))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return New(ctx, config.(*Config))
+	}))
 }

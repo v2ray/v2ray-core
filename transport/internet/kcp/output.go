@@ -1,79 +1,56 @@
+// +build !confonly
+
 package kcp
 
 import (
 	"io"
 	"sync"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
-	"github.com/v2ray/v2ray-core/transport/internet"
+	"v2ray.com/core/common/retry"
+
+	"v2ray.com/core/common/buf"
 )
 
 type SegmentWriter interface {
-	Write(seg Segment)
+	Write(seg Segment) error
 }
 
-type BufferedSegmentWriter struct {
+type SimpleSegmentWriter struct {
 	sync.Mutex
-	mtu    uint32
-	buffer *alloc.Buffer
-	writer v2io.Writer
+	buffer *buf.Buffer
+	writer io.Writer
 }
 
-func NewSegmentWriter(writer *AuthenticationWriter) *BufferedSegmentWriter {
-	return &BufferedSegmentWriter{
-		mtu:    writer.Mtu(),
+func NewSegmentWriter(writer io.Writer) SegmentWriter {
+	return &SimpleSegmentWriter{
+		writer: writer,
+		buffer: buf.New(),
+	}
+}
+
+func (w *SimpleSegmentWriter) Write(seg Segment) error {
+	w.Lock()
+	defer w.Unlock()
+
+	w.buffer.Clear()
+	rawBytes := w.buffer.Extend(seg.ByteSize())
+	seg.Serialize(rawBytes)
+	_, err := w.writer.Write(w.buffer.Bytes())
+	return err
+}
+
+type RetryableWriter struct {
+	writer SegmentWriter
+}
+
+func NewRetryableWriter(writer SegmentWriter) SegmentWriter {
+	return &RetryableWriter{
 		writer: writer,
 	}
 }
 
-func (this *BufferedSegmentWriter) Write(seg Segment) {
-	this.Lock()
-	defer this.Unlock()
-
-	nBytes := seg.ByteSize()
-	if uint32(this.buffer.Len()+nBytes) > this.mtu {
-		this.FlushWithoutLock()
-	}
-
-	if this.buffer == nil {
-		this.buffer = alloc.NewLocalBuffer(2048).Clear()
-	}
-
-	this.buffer.Value = seg.Bytes(this.buffer.Value)
-}
-
-func (this *BufferedSegmentWriter) FlushWithoutLock() {
-	go this.writer.Write(this.buffer)
-	this.buffer = nil
-}
-
-func (this *BufferedSegmentWriter) Flush() {
-	this.Lock()
-	defer this.Unlock()
-
-	if this.buffer.Len() == 0 {
-		return
-	}
-
-	this.FlushWithoutLock()
-}
-
-type AuthenticationWriter struct {
-	Authenticator internet.Authenticator
-	Writer        io.Writer
-}
-
-func (this *AuthenticationWriter) Write(payload *alloc.Buffer) error {
-	defer payload.Release()
-
-	this.Authenticator.Seal(payload)
-	_, err := this.Writer.Write(payload.Value)
-	return err
-}
-
-func (this *AuthenticationWriter) Release() {}
-
-func (this *AuthenticationWriter) Mtu() uint32 {
-	return effectiveConfig.Mtu - uint32(this.Authenticator.Overhead())
+func (w *RetryableWriter) Write(seg Segment) error {
+	return retry.Timed(5, 100).On(func() error {
+		return w.writer.Write(seg)
+	})
 }

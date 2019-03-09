@@ -1,62 +1,79 @@
 package protocol_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	. "github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/net"
+	. "v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/uuid"
+	"v2ray.com/core/proxy/vmess"
 )
 
-type TestAccount struct {
-	id int
-}
-
-func (this *TestAccount) Equals(account Account) bool {
-	return account.(*TestAccount).id == this.id
-}
-
-func TestServerSpecUser(t *testing.T) {
-	assert := assert.On(t)
-
-	account := &TestAccount{
-		id: 0,
-	}
-	user := NewUser(UserLevel(0), "")
-	user.Account = account
-	rec := NewServerSpec(v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), 80), AlwaysValid(), user)
-	assert.Bool(rec.HasUser(user)).IsTrue()
-
-	account2 := &TestAccount{
-		id: 1,
-	}
-	user2 := NewUser(UserLevel(0), "")
-	user2.Account = account2
-	assert.Bool(rec.HasUser(user2)).IsFalse()
-
-	rec.AddUser(user2)
-	assert.Bool(rec.HasUser(user2)).IsTrue()
-}
-
 func TestAlwaysValidStrategy(t *testing.T) {
-	assert := assert.On(t)
-
 	strategy := AlwaysValid()
-	assert.Bool(strategy.IsValid()).IsTrue()
+	if !strategy.IsValid() {
+		t.Error("strategy not valid")
+	}
 	strategy.Invalidate()
-	assert.Bool(strategy.IsValid()).IsTrue()
+	if !strategy.IsValid() {
+		t.Error("strategy not valid")
+	}
 }
 
 func TestTimeoutValidStrategy(t *testing.T) {
-	assert := assert.On(t)
-
 	strategy := BeforeTime(time.Now().Add(2 * time.Second))
-	assert.Bool(strategy.IsValid()).IsTrue()
+	if !strategy.IsValid() {
+		t.Error("strategy not valid")
+	}
 	time.Sleep(3 * time.Second)
-	assert.Bool(strategy.IsValid()).IsFalse()
+	if strategy.IsValid() {
+		t.Error("strategy is valid")
+	}
 
 	strategy = BeforeTime(time.Now().Add(2 * time.Second))
 	strategy.Invalidate()
-	assert.Bool(strategy.IsValid()).IsFalse()
+	if strategy.IsValid() {
+		t.Error("strategy is valid")
+	}
+}
+
+func TestUserInServerSpec(t *testing.T) {
+	uuid1 := uuid.New()
+	uuid2 := uuid.New()
+
+	toAccount := func(a *vmess.Account) Account {
+		account, err := a.AsAccount()
+		common.Must(err)
+		return account
+	}
+
+	spec := NewServerSpec(net.Destination{}, AlwaysValid(), &MemoryUser{
+		Email:   "test1@v2ray.com",
+		Account: toAccount(&vmess.Account{Id: uuid1.String()}),
+	})
+	if spec.HasUser(&MemoryUser{
+		Email:   "test1@v2ray.com",
+		Account: toAccount(&vmess.Account{Id: uuid2.String()}),
+	}) {
+		t.Error("has user: ", uuid2)
+	}
+
+	spec.AddUser(&MemoryUser{Email: "test2@v2ray.com"})
+	if !spec.HasUser(&MemoryUser{
+		Email:   "test1@v2ray.com",
+		Account: toAccount(&vmess.Account{Id: uuid1.String()}),
+	}) {
+		t.Error("not having user: ", uuid1)
+	}
+}
+
+func TestPickUser(t *testing.T) {
+	spec := NewServerSpec(net.Destination{}, AlwaysValid(), &MemoryUser{Email: "test1@v2ray.com"}, &MemoryUser{Email: "test2@v2ray.com"}, &MemoryUser{Email: "test3@v2ray.com"})
+	user := spec.PickUser()
+	if !strings.HasSuffix(user.Email, "@v2ray.com") {
+		t.Error("user: ", user.Email)
+	}
 }

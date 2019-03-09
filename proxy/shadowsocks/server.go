@@ -1,275 +1,249 @@
-// R.I.P Shadowsocks
+// +build !confonly
+
 package shadowsocks
 
 import (
-	"crypto/rand"
-	"io"
-	"sync"
+	"context"
+	"time"
 
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/app/dispatcher"
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/crypto"
-	v2io "github.com/v2ray/v2ray-core/common/io"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/registry"
-	"github.com/v2ray/v2ray-core/transport/internet"
-	"github.com/v2ray/v2ray-core/transport/internet/udp"
+	"v2ray.com/core"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
+	udp_proto "v2ray.com/core/common/protocol/udp"
+	"v2ray.com/core/common/session"
+	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/policy"
+	"v2ray.com/core/features/routing"
+	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/udp"
 )
 
 type Server struct {
-	packetDispatcher dispatcher.PacketDispatcher
-	config           *Config
-	meta             *proxy.InboundHandlerMeta
-	accepting        bool
-	tcpHub           *internet.TCPHub
-	udpHub           *udp.UDPHub
-	udpServer        *udp.UDPServer
+	config        ServerConfig
+	user          *protocol.MemoryUser
+	policyManager policy.Manager
 }
 
-func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher, meta *proxy.InboundHandlerMeta) *Server {
-	return &Server{
-		config:           config,
-		packetDispatcher: packetDispatcher,
-		meta:             meta,
-	}
-}
-
-func (this *Server) Port() v2net.Port {
-	return this.meta.Port
-}
-
-func (this *Server) Close() {
-	this.accepting = false
-	// TODO: synchronization
-	if this.tcpHub != nil {
-		this.tcpHub.Close()
-		this.tcpHub = nil
+// NewServer create a new Shadowsocks server.
+func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
+	if config.GetUser() == nil {
+		return nil, newError("user is not specified")
 	}
 
-	if this.udpHub != nil {
-		this.udpHub.Close()
-		this.udpHub = nil
-	}
-
-}
-
-func (this *Server) Start() error {
-	if this.accepting {
-		return nil
-	}
-
-	tcpHub, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.handleConnection, this.meta.StreamSettings)
+	mUser, err := config.User.ToMemoryUser()
 	if err != nil {
-		log.Error("Shadowsocks: Failed to listen TCP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
-		return err
+		return nil, newError("failed to parse user account").Base(err)
 	}
-	this.tcpHub = tcpHub
 
-	if this.config.UDP {
-		this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
-		udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, udp.ListenOption{Callback: this.handlerUDPPayload})
-		if err != nil {
-			log.Error("Shadowsocks: Failed to listen UDP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
-			return err
+	v := core.MustFromContext(ctx)
+	s := &Server{
+		config:        *config,
+		user:          mUser,
+		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
+	}
+
+	return s, nil
+}
+
+func (s *Server) Network() []net.Network {
+	list := s.config.Network
+	if len(list) == 0 {
+		list = append(list, net.Network_TCP)
+	}
+	if s.config.UdpEnabled {
+		list = append(list, net.Network_UDP)
+	}
+	return list
+}
+
+func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher routing.Dispatcher) error {
+	switch network {
+	case net.Network_TCP:
+		return s.handleConnection(ctx, conn, dispatcher)
+	case net.Network_UDP:
+		return s.handlerUDPPayload(ctx, conn, dispatcher)
+	default:
+		return newError("unknown network: ", network)
+	}
+}
+
+func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection, dispatcher routing.Dispatcher) error {
+	udpServer := udp.NewDispatcher(dispatcher, func(ctx context.Context, packet *udp_proto.Packet) {
+		request := protocol.RequestHeaderFromContext(ctx)
+		if request == nil {
+			return
 		}
-		this.udpHub = udpHub
-	}
 
-	this.accepting = true
+		payload := packet.Payload
+		data, err := EncodeUDPPacket(request, payload.Bytes())
+		payload.Release()
+		if err != nil {
+			newError("failed to encode UDP packet").Base(err).AtWarning().WriteToLog(session.ExportIDToError(ctx))
+			return
+		}
+		defer data.Release()
+
+		conn.Write(data.Bytes())
+	})
+
+	account := s.user.Account.(*MemoryAccount)
+	inbound := session.InboundFromContext(ctx)
+	if inbound == nil {
+		panic("no inbound metadata")
+	}
+	inbound.User = s.user
+
+	reader := buf.NewPacketReader(conn)
+	for {
+		mpayload, err := reader.ReadMultiBuffer()
+		if err != nil {
+			break
+		}
+
+		for _, payload := range mpayload {
+			request, data, err := DecodeUDPPacket(s.user, payload)
+			if err != nil {
+				if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
+					newError("dropping invalid UDP packet from: ", inbound.Source).Base(err).WriteToLog(session.ExportIDToError(ctx))
+					log.Record(&log.AccessMessage{
+						From:   inbound.Source,
+						To:     "",
+						Status: log.AccessRejected,
+						Reason: err,
+					})
+				}
+				payload.Release()
+				continue
+			}
+
+			if request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Disabled {
+				newError("client payload enables OTA but server doesn't allow it").WriteToLog(session.ExportIDToError(ctx))
+				payload.Release()
+				continue
+			}
+
+			if !request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Enabled {
+				newError("client payload disables OTA but server forces it").WriteToLog(session.ExportIDToError(ctx))
+				payload.Release()
+				continue
+			}
+
+			dest := request.Destination()
+			if inbound.Source.IsValid() {
+				log.Record(&log.AccessMessage{
+					From:   inbound.Source,
+					To:     dest,
+					Status: log.AccessAccepted,
+					Reason: "",
+				})
+			}
+			newError("tunnelling request to ", dest).WriteToLog(session.ExportIDToError(ctx))
+
+			ctx = protocol.ContextWithRequestHeader(ctx, request)
+			udpServer.Dispatch(ctx, dest, data)
+		}
+	}
 
 	return nil
 }
 
-func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.SessionInfo) {
-	defer payload.Release()
+func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher routing.Dispatcher) error {
+	sessionPolicy := s.policyManager.ForLevel(s.user.Level)
+	conn.SetReadDeadline(time.Now().Add(sessionPolicy.Timeouts.Handshake))
 
-	source := session.Source
-	ivLen := this.config.Cipher.IVSize()
-	iv := payload.Value[:ivLen]
-	key := this.config.Key
-	payload.SliceFrom(ivLen)
-
-	stream, err := this.config.Cipher.NewDecodingStream(key, iv)
+	bufferedReader := buf.BufferedReader{Reader: buf.NewReader(conn)}
+	request, bodyReader, err := ReadTCPSession(s.user, &bufferedReader)
 	if err != nil {
-		log.Error("Shadowsocks: Failed to create decoding stream: ", err)
-		return
+		log.Record(&log.AccessMessage{
+			From:   conn.RemoteAddr(),
+			To:     "",
+			Status: log.AccessRejected,
+			Reason: err,
+		})
+		return newError("failed to create request from: ", conn.RemoteAddr()).Base(err)
+	}
+	conn.SetReadDeadline(time.Time{})
+
+	inbound := session.InboundFromContext(ctx)
+	if inbound == nil {
+		panic("no inbound metadata")
+	}
+	inbound.User = s.user
+
+	dest := request.Destination()
+	log.Record(&log.AccessMessage{
+		From:   conn.RemoteAddr(),
+		To:     dest,
+		Status: log.AccessAccepted,
+		Reason: "",
+	})
+	newError("tunnelling request to ", dest).WriteToLog(session.ExportIDToError(ctx))
+
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
+
+	ctx = policy.ContextWithBufferPolicy(ctx, sessionPolicy.Buffer)
+	link, err := dispatcher.Dispatch(ctx, dest)
+	if err != nil {
+		return err
 	}
 
-	reader := crypto.NewCryptionReader(stream, payload)
+	responseDone := func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
-	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), true)
-	if err != nil {
-		if err != io.EOF {
-			log.Access(source, "", log.AccessRejected, err)
-			log.Warning("Shadowsocks: Invalid request from ", source, ": ", err)
-		}
-		return
-	}
-	//defer request.Release()
-
-	dest := v2net.UDPDestination(request.Address, request.Port)
-	log.Access(source, dest, log.AccessAccepted, "")
-	log.Info("Shadowsocks: Tunnelling request to ", dest)
-
-	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest}, request.DetachUDPPayload(), func(destination v2net.Destination, payload *alloc.Buffer) {
-		defer payload.Release()
-
-		response := alloc.NewBuffer().Slice(0, ivLen)
-		defer response.Release()
-
-		rand.Read(response.Value)
-		respIv := response.Value
-
-		stream, err := this.config.Cipher.NewEncodingStream(key, respIv)
+		bufferedWriter := buf.NewBufferedWriter(buf.NewWriter(conn))
+		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
-			log.Error("Shadowsocks: Failed to create encoding stream: ", err)
-			return
+			return newError("failed to write response").Base(err)
 		}
 
-		writer := crypto.NewCryptionWriter(stream, response)
-
-		switch request.Address.Family() {
-		case v2net.AddressFamilyIPv4:
-			writer.Write([]byte{AddrTypeIPv4})
-			writer.Write(request.Address.IP())
-		case v2net.AddressFamilyIPv6:
-			writer.Write([]byte{AddrTypeIPv6})
-			writer.Write(request.Address.IP())
-		case v2net.AddressFamilyDomain:
-			writer.Write([]byte{AddrTypeDomain, byte(len(request.Address.Domain()))})
-			writer.Write([]byte(request.Address.Domain()))
-		}
-
-		writer.Write(request.Port.Bytes(nil))
-		writer.Write(payload.Value)
-
-		if request.OTA {
-			respAuth := NewAuthenticator(HeaderKeyGenerator(key, respIv))
-			respAuth.Authenticate(response.Value, response.Value[ivLen:])
-		}
-
-		this.udpHub.WriteTo(response.Value, source)
-	})
-}
-
-func (this *Server) handleConnection(conn internet.Connection) {
-	defer conn.Close()
-
-	buffer := alloc.NewSmallBuffer()
-	defer buffer.Release()
-
-	timedReader := v2net.NewTimeOutReader(16, conn)
-	defer timedReader.Release()
-
-	bufferedReader := v2io.NewBufferedReader(timedReader)
-	defer bufferedReader.Release()
-
-	ivLen := this.config.Cipher.IVSize()
-	_, err := io.ReadFull(bufferedReader, buffer.Value[:ivLen])
-	if err != nil {
-		if err != io.EOF {
-			log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
-			log.Warning("Shadowsocks: Failed to read IV: ", err)
-		}
-		return
-	}
-
-	iv := buffer.Value[:ivLen]
-	key := this.config.Key
-
-	stream, err := this.config.Cipher.NewDecodingStream(key, iv)
-	if err != nil {
-		log.Error("Shadowsocks: Failed to create decoding stream: ", err)
-		return
-	}
-
-	reader := crypto.NewCryptionReader(stream, bufferedReader)
-
-	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), false)
-	if err != nil {
-		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
-		log.Warning("Shadowsocks: Invalid request from ", conn.RemoteAddr(), ": ", err)
-		return
-	}
-	defer request.Release()
-	bufferedReader.SetCached(false)
-
-	userSettings := protocol.GetUserSettings(this.config.Level)
-	timedReader.SetTimeOut(userSettings.PayloadReadTimeout)
-
-	dest := v2net.TCPDestination(request.Address, request.Port)
-	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
-	log.Info("Shadowsocks: Tunnelling request to ", dest)
-
-	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
-		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
-		Destination: dest,
-	})
-	defer ray.InboundOutput().Release()
-
-	var writeFinish sync.Mutex
-	writeFinish.Lock()
-	go func() {
-		if payload, err := ray.InboundOutput().Read(); err == nil {
-			payload.SliceBack(ivLen)
-			rand.Read(payload.Value[:ivLen])
-
-			stream, err := this.config.Cipher.NewEncodingStream(key, payload.Value[:ivLen])
+		{
+			payload, err := link.Reader.ReadMultiBuffer()
 			if err != nil {
-				log.Error("Shadowsocks: Failed to create encoding stream: ", err)
-				return
+				return err
 			}
-			stream.XORKeyStream(payload.Value[ivLen:], payload.Value[ivLen:])
-
-			conn.Write(payload.Value)
-			payload.Release()
-
-			writer := crypto.NewCryptionWriter(stream, conn)
-			v2writer := v2io.NewAdaptiveWriter(writer)
-
-			v2io.Pipe(ray.InboundOutput(), v2writer)
-			writer.Release()
-			v2writer.Release()
+			if err := responseWriter.WriteMultiBuffer(payload); err != nil {
+				return err
+			}
 		}
-		writeFinish.Unlock()
-	}()
 
-	var payloadReader v2io.Reader
-	if request.OTA {
-		payloadAuth := NewAuthenticator(ChunkKeyGenerator(iv))
-		payloadReader = NewChunkReader(reader, payloadAuth)
-	} else {
-		payloadReader = v2io.NewAdaptiveReader(reader)
+		if err := bufferedWriter.SetBuffered(false); err != nil {
+			return err
+		}
+
+		if err := buf.Copy(link.Reader, responseWriter, buf.UpdateActivity(timer)); err != nil {
+			return newError("failed to transport all TCP response").Base(err)
+		}
+
+		return nil
 	}
 
-	v2io.Pipe(payloadReader, ray.InboundInput())
-	ray.InboundInput().Close()
-	payloadReader.Release()
+	requestDone := func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
 
-	writeFinish.Lock()
-}
+		if err := buf.Copy(bodyReader, link.Writer, buf.UpdateActivity(timer)); err != nil {
+			return newError("failed to transport all TCP request").Base(err)
+		}
 
-type ServerFactory struct{}
-
-func (this *ServerFactory) StreamCapability() internet.StreamConnectionType {
-	return internet.StreamConnectionTypeRawTCP
-}
-
-func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, common.ErrBadConfiguration
+		return nil
 	}
-	return NewServer(
-		rawConfig.(*Config),
-		space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-		meta), nil
+
+	var requestDoneAndCloseWriter = task.OnSuccess(requestDone, task.Close(link.Writer))
+	if err := task.Run(ctx, requestDoneAndCloseWriter, responseDone); err != nil {
+		common.Interrupt(link.Reader)
+		common.Interrupt(link.Writer)
+		return newError("connection ends").Base(err)
+	}
+
+	return nil
 }
 
 func init() {
-	registry.MustRegisterInboundHandlerCreator("shadowsocks", new(ServerFactory))
+	common.Must(common.RegisterConfig((*ServerConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewServer(ctx, config.(*ServerConfig))
+	}))
 }

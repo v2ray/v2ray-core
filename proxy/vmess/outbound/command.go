@@ -1,34 +1,44 @@
+// +build !confonly
+
 package outbound
 
 import (
 	"time"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/proxy/vmess"
 )
 
-func (this *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitchAccount) {
-	primary := protocol.NewID(cmd.ID)
-	alters := protocol.NewAlterIDs(primary, cmd.AlterIds)
-	account := &vmess.Account{
-		ID:       primary,
-		AlterIDs: alters,
+func (h *Handler) handleSwitchAccount(cmd *protocol.CommandSwitchAccount) {
+	rawAccount := &vmess.Account{
+		Id:      cmd.ID.String(),
+		AlterId: uint32(cmd.AlterIds),
+		SecuritySettings: &protocol.SecurityConfig{
+			Type: protocol.SecurityType_LEGACY,
+		},
 	}
-	user := protocol.NewUser(cmd.Level, "")
-	user.Account = account
-	dest := v2net.TCPDestination(cmd.Host, cmd.Port)
+
+	account, err := rawAccount.AsAccount()
+	common.Must(err)
+	user := &protocol.MemoryUser{
+		Email:   "",
+		Level:   cmd.Level,
+		Account: account,
+	}
+	dest := net.TCPDestination(cmd.Host, cmd.Port)
 	until := time.Now().Add(time.Duration(cmd.ValidMin) * time.Minute)
-	this.serverList.AddServer(protocol.NewServerSpec(dest, protocol.BeforeTime(until), user))
+	h.serverList.AddServer(protocol.NewServerSpec(dest, protocol.BeforeTime(until), user))
 }
 
-func (this *VMessOutboundHandler) handleCommand(dest v2net.Destination, cmd protocol.ResponseCommand) {
+func (h *Handler) handleCommand(dest net.Destination, cmd protocol.ResponseCommand) {
 	switch typedCommand := cmd.(type) {
 	case *protocol.CommandSwitchAccount:
 		if typedCommand.Host == nil {
-			typedCommand.Host = dest.Address()
+			typedCommand.Host = dest.Address
 		}
-		this.handleSwitchAccount(typedCommand)
+		h.handleSwitchAccount(typedCommand)
 	default:
 	}
 }

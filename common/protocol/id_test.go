@@ -3,15 +3,19 @@ package protocol_test
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/common/predicate"
-	. "github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/common/uuid"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	. "v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/uuid"
 )
 
-func TestCmdKey(t *testing.T) {
-	assert := assert.On(t)
+func TestIdEquals(t *testing.T) {
+	id1 := NewID(uuid.New())
+	id2 := NewID(id1.UUID())
 
-	id := NewID(uuid.New())
-	assert.Bool(predicate.BytesAll(id.CmdKey(), 0)).IsFalse()
+	if !id1.Equals(id2) {
+		t.Error("expected id1 to equal id2, but actually not")
+	}
+
+	if id1.String() != id2.String() {
+		t.Error(id1.String(), " != ", id2.String())
+	}
 }

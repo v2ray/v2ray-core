@@ -1,451 +1,367 @@
+// +build !confonly
+
 package kcp
 
 import (
+	"container/list"
 	"sync"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
+	"v2ray.com/core/common/buf"
 )
 
 type SendingWindow struct {
-	start uint32
-	cap   uint32
-	len   uint32
-	last  uint32
-
-	data []*DataSegment
-	prev []uint32
-	next []uint32
-
+	cache             *list.List
 	totalInFlightSize uint32
 	writer            SegmentWriter
 	onPacketLoss      func(uint32)
 }
 
-func NewSendingWindow(size uint32, writer SegmentWriter, onPacketLoss func(uint32)) *SendingWindow {
+func NewSendingWindow(writer SegmentWriter, onPacketLoss func(uint32)) *SendingWindow {
 	window := &SendingWindow{
-		start:        0,
-		cap:          size,
-		len:          0,
-		last:         0,
-		data:         make([]*DataSegment, size),
-		prev:         make([]uint32, size),
-		next:         make([]uint32, size),
+		cache:        list.New(),
 		writer:       writer,
 		onPacketLoss: onPacketLoss,
 	}
 	return window
 }
 
-func (this *SendingWindow) Len() int {
-	return int(this.len)
-}
-
-func (this *SendingWindow) IsEmpty() bool {
-	return this.len == 0
-}
-
-func (this *SendingWindow) Size() uint32 {
-	return this.cap
-}
-
-func (this *SendingWindow) IsFull() bool {
-	return this.len == this.cap
-}
-
-func (this *SendingWindow) Push(seg *DataSegment) {
-	pos := (this.start + this.len) % this.cap
-	this.data[pos] = seg
-	if this.len > 0 {
-		this.next[this.last] = pos
-		this.prev[pos] = this.last
-	}
-	this.last = pos
-	this.len++
-}
-
-func (this *SendingWindow) First() *DataSegment {
-	return this.data[this.start]
-}
-
-func (this *SendingWindow) Clear(una uint32) {
-	for !this.IsEmpty() && this.data[this.start].Number < una {
-		this.Remove(0)
-	}
-}
-
-func (this *SendingWindow) Remove(idx uint32) {
-	if this.len == 0 {
+func (sw *SendingWindow) Release() {
+	if sw == nil {
 		return
 	}
-
-	pos := (this.start + idx) % this.cap
-	seg := this.data[pos]
-	if seg == nil {
-		return
-	}
-	this.totalInFlightSize--
-	seg.Release()
-	this.data[pos] = nil
-	if pos == this.start && pos == this.last {
-		this.len = 0
-		this.start = 0
-		this.last = 0
-	} else if pos == this.start {
-		delta := this.next[pos] - this.start
-		if this.next[pos] < this.start {
-			delta = this.next[pos] + this.cap - this.start
-		}
-		this.start = this.next[pos]
-		this.len -= delta
-	} else if pos == this.last {
-		this.last = this.prev[pos]
-	} else {
-		this.next[this.prev[pos]] = this.next[pos]
-		this.prev[this.next[pos]] = this.prev[pos]
+	for sw.cache.Len() > 0 {
+		seg := sw.cache.Front().Value.(*DataSegment)
+		seg.Release()
+		sw.cache.Remove(sw.cache.Front())
 	}
 }
 
-func (this *SendingWindow) HandleFastAck(number uint32) {
-	if this.len == 0 {
-		return
-	}
+func (sw *SendingWindow) Len() uint32 {
+	return uint32(sw.cache.Len())
+}
 
-	for i := this.start; ; i = this.next[i] {
-		seg := this.data[i]
-		if number-seg.Number > 0x7FFFFFFF {
+func (sw *SendingWindow) IsEmpty() bool {
+	return sw.cache.Len() == 0
+}
+
+func (sw *SendingWindow) Push(number uint32, b *buf.Buffer) {
+	seg := NewDataSegment()
+	seg.Number = number
+	seg.payload = b
+
+	sw.cache.PushBack(seg)
+}
+
+func (sw *SendingWindow) FirstNumber() uint32 {
+	return sw.cache.Front().Value.(*DataSegment).Number
+}
+
+func (sw *SendingWindow) Clear(una uint32) {
+	for !sw.IsEmpty() {
+		seg := sw.cache.Front().Value.(*DataSegment)
+		if seg.Number >= una {
 			break
 		}
-		if number != seg.Number {
-			seg.ackSkipped++
+		seg.Release()
+		sw.cache.Remove(sw.cache.Front())
+	}
+}
+
+func (sw *SendingWindow) HandleFastAck(number uint32, rto uint32) {
+	if sw.IsEmpty() {
+		return
+	}
+
+	sw.Visit(func(seg *DataSegment) bool {
+		if number == seg.Number || number-seg.Number > 0x7FFFFFFF {
+			return false
 		}
-		if i == this.last {
+
+		if seg.transmit > 0 && seg.timeout > rto/3 {
+			seg.timeout -= rto / 3
+		}
+		return true
+	})
+}
+
+func (sw *SendingWindow) Visit(visitor func(seg *DataSegment) bool) {
+	if sw.IsEmpty() {
+		return
+	}
+
+	for e := sw.cache.Front(); e != nil; e = e.Next() {
+		seg := e.Value.(*DataSegment)
+		if !visitor(seg) {
 			break
 		}
 	}
 }
 
-func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32, maxInFlightSize uint32) {
-	if this.IsEmpty() {
+func (sw *SendingWindow) Flush(current uint32, rto uint32, maxInFlightSize uint32) {
+	if sw.IsEmpty() {
 		return
 	}
 
 	var lost uint32
 	var inFlightSize uint32
 
-	for i := this.start; ; i = this.next[i] {
-		segment := this.data[i]
-		needsend := false
+	sw.Visit(func(segment *DataSegment) bool {
+		if current-segment.timeout >= 0x7FFFFFFF {
+			return true
+		}
 		if segment.transmit == 0 {
-			needsend = true
-			segment.transmit++
-			segment.timeout = current + rto
-			this.totalInFlightSize++
-		} else if current-segment.timeout < 0x7FFFFFFF {
-			needsend = true
-			segment.transmit++
-			segment.timeout = current + rto
+			// First time
+			sw.totalInFlightSize++
+		} else {
 			lost++
-		} else if segment.ackSkipped >= resend {
-			needsend = true
-			segment.transmit++
-			segment.ackSkipped = 0
-			segment.timeout = current + rto
 		}
+		segment.timeout = current + rto
 
-		if needsend {
-			segment.Timestamp = current
-			this.writer.Write(segment)
-			inFlightSize++
-			if inFlightSize >= maxInFlightSize {
-				break
+		segment.Timestamp = current
+		segment.transmit++
+		sw.writer.Write(segment)
+		inFlightSize++
+		if inFlightSize >= maxInFlightSize {
+			return false
+		}
+		return true
+	})
+
+	if sw.onPacketLoss != nil && inFlightSize > 0 && sw.totalInFlightSize != 0 {
+		rate := lost * 100 / sw.totalInFlightSize
+		sw.onPacketLoss(rate)
+	}
+}
+
+func (sw *SendingWindow) Remove(number uint32) bool {
+	if sw.IsEmpty() {
+		return false
+	}
+
+	for e := sw.cache.Front(); e != nil; e = e.Next() {
+		seg := e.Value.(*DataSegment)
+		if seg.Number > number {
+			return false
+		} else if seg.Number == number {
+			if sw.totalInFlightSize > 0 {
+				sw.totalInFlightSize--
 			}
+			seg.Release()
+			sw.cache.Remove(e)
+			return true
 		}
-		if i == this.last {
-			break
-		}
 	}
 
-	if this.onPacketLoss != nil && inFlightSize > 0 && this.totalInFlightSize != 0 {
-		rate := lost * 100 / this.totalInFlightSize
-		this.onPacketLoss(rate)
-	}
-}
-
-type SendingQueue struct {
-	start uint32
-	cap   uint32
-	len   uint32
-	list  []*alloc.Buffer
-}
-
-func NewSendingQueue(size uint32) *SendingQueue {
-	return &SendingQueue{
-		start: 0,
-		cap:   size,
-		list:  make([]*alloc.Buffer, size),
-		len:   0,
-	}
-}
-
-func (this *SendingQueue) IsFull() bool {
-	return this.len == this.cap
-}
-
-func (this *SendingQueue) IsEmpty() bool {
-	return this.len == 0
-}
-
-func (this *SendingQueue) Pop() *alloc.Buffer {
-	if this.IsEmpty() {
-		return nil
-	}
-	seg := this.list[this.start]
-	this.list[this.start] = nil
-	this.len--
-	this.start++
-	if this.start == this.cap {
-		this.start = 0
-	}
-	if this.IsEmpty() {
-		this.start = 0
-	}
-	return seg
-}
-
-func (this *SendingQueue) Last() *alloc.Buffer {
-	if this.IsEmpty() {
-		return nil
-	}
-	return this.list[(this.start+this.len-1+this.cap)%this.cap]
-}
-
-func (this *SendingQueue) Push(seg *alloc.Buffer) {
-	if this.IsFull() {
-		return
-	}
-	this.list[(this.start+this.len)%this.cap] = seg
-	this.len++
-}
-
-func (this *SendingQueue) Clear() {
-	for i := uint32(0); i < this.len; i++ {
-		this.list[(i+this.start)%this.cap].Release()
-		this.list[(i+this.start)%this.cap] = nil
-	}
-	this.start = 0
-	this.len = 0
-}
-
-func (this *SendingQueue) Len() uint32 {
-	return this.len
+	return false
 }
 
 type SendingWorker struct {
 	sync.RWMutex
-	conn                *Connection
-	window              *SendingWindow
-	queue               *SendingQueue
-	firstUnacknowledged uint32
-	nextNumber          uint32
-	remoteNextNumber    uint32
-	controlWindow       uint32
-	fastResend          uint32
-	updated             bool
+	conn                       *Connection
+	window                     *SendingWindow
+	firstUnacknowledged        uint32
+	nextNumber                 uint32
+	remoteNextNumber           uint32
+	controlWindow              uint32
+	fastResend                 uint32
+	windowSize                 uint32
+	firstUnacknowledgedUpdated bool
+	closed                     bool
 }
 
 func NewSendingWorker(kcp *Connection) *SendingWorker {
 	worker := &SendingWorker{
 		conn:             kcp,
-		queue:            NewSendingQueue(effectiveConfig.GetSendingQueueSize()),
 		fastResend:       2,
 		remoteNextNumber: 32,
-		controlWindow:    effectiveConfig.GetSendingInFlightSize(),
+		controlWindow:    kcp.Config.GetSendingInFlightSize(),
+		windowSize:       kcp.Config.GetSendingBufferSize(),
 	}
-	worker.window = NewSendingWindow(effectiveConfig.GetSendingWindowSize(), worker, worker.OnPacketLoss)
+	worker.window = NewSendingWindow(worker, worker.OnPacketLoss)
 	return worker
 }
 
-func (this *SendingWorker) ProcessReceivingNext(nextNumber uint32) {
-	this.Lock()
-	defer this.Unlock()
-
-	this.ProcessReceivingNextWithoutLock(nextNumber)
+func (w *SendingWorker) Release() {
+	w.Lock()
+	w.window.Release()
+	w.closed = true
+	w.Unlock()
 }
 
-func (this *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
-	this.window.Clear(nextNumber)
-	this.FindFirstUnacknowledged()
+func (w *SendingWorker) ProcessReceivingNext(nextNumber uint32) {
+	w.Lock()
+	defer w.Unlock()
+
+	w.ProcessReceivingNextWithoutLock(nextNumber)
 }
 
-// @Private
-func (this *SendingWorker) FindFirstUnacknowledged() {
-	prevUna := this.firstUnacknowledged
-	if !this.window.IsEmpty() {
-		this.firstUnacknowledged = this.window.First().Number
+func (w *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
+	w.window.Clear(nextNumber)
+	w.FindFirstUnacknowledged()
+}
+
+func (w *SendingWorker) FindFirstUnacknowledged() {
+	first := w.firstUnacknowledged
+	if !w.window.IsEmpty() {
+		w.firstUnacknowledged = w.window.FirstNumber()
 	} else {
-		this.firstUnacknowledged = this.nextNumber
+		w.firstUnacknowledged = w.nextNumber
 	}
-	if this.firstUnacknowledged != prevUna {
-		this.updated = true
+	if first != w.firstUnacknowledged {
+		w.firstUnacknowledgedUpdated = true
 	}
 }
 
-// @Private
-func (this *SendingWorker) ProcessAck(number uint32) {
-	// number < this.firstUnacknowledged || number >= this.nextNumber
-	if number-this.firstUnacknowledged > 0x7FFFFFFF || number-this.nextNumber < 0x7FFFFFFF {
+func (w *SendingWorker) processAck(number uint32) bool {
+	// number < v.firstUnacknowledged || number >= v.nextNumber
+	if number-w.firstUnacknowledged > 0x7FFFFFFF || number-w.nextNumber < 0x7FFFFFFF {
+		return false
+	}
+
+	removed := w.window.Remove(number)
+	if removed {
+		w.FindFirstUnacknowledged()
+	}
+	return removed
+}
+
+func (w *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint32) {
+	defer seg.Release()
+
+	w.Lock()
+	defer w.Unlock()
+
+	if w.closed {
 		return
 	}
 
-	this.window.Remove(number - this.firstUnacknowledged)
-	this.FindFirstUnacknowledged()
-}
-
-func (this *SendingWorker) FillWindow(current uint32) {
-	for !this.queue.IsEmpty() && !this.window.IsFull() {
-		seg := NewDataSegment()
-		seg.Data = this.queue.Pop()
-		seg.Number = this.nextNumber
-		seg.timeout = current
-		seg.ackSkipped = 0
-		seg.transmit = 0
-		this.window.Push(seg)
-		this.nextNumber++
+	if w.remoteNextNumber < seg.ReceivingWindow {
+		w.remoteNextNumber = seg.ReceivingWindow
 	}
-}
+	w.ProcessReceivingNextWithoutLock(seg.ReceivingNext)
 
-func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
-	defer seg.Release()
-
-	this.Lock()
-	defer this.Unlock()
-
-	if this.remoteNextNumber < seg.ReceivingWindow {
-		this.remoteNextNumber = seg.ReceivingWindow
-	}
-	this.ProcessReceivingNextWithoutLock(seg.ReceivingNext)
-	if current-seg.Timestamp < 10000 {
-		this.conn.roundTrip.Update(current-seg.Timestamp, current)
+	if seg.IsEmpty() {
+		return
 	}
 
 	var maxack uint32
-	for i := 0; i < int(seg.Count); i++ {
-		number := seg.NumberList[i]
-
-		this.ProcessAck(number)
+	var maxackRemoved bool
+	for _, number := range seg.NumberList {
+		removed := w.processAck(number)
 		if maxack < number {
 			maxack = number
+			maxackRemoved = removed
 		}
 	}
 
-	this.window.HandleFastAck(maxack)
-	this.FillWindow(current)
+	if maxackRemoved {
+		w.window.HandleFastAck(maxack, rto)
+		if current-seg.Timestamp < 10000 {
+			w.conn.roundTrip.Update(current-seg.Timestamp, current)
+		}
+	}
 }
 
-func (this *SendingWorker) Push(b []byte) int {
-	nBytes := 0
-	this.Lock()
-	defer this.Unlock()
-	if !this.queue.IsEmpty() {
-		lastSeg := this.queue.Last()
-		if lastSeg.Len() < int(this.conn.mss) {
-			delta := int(this.conn.mss) - lastSeg.Len()
-			if delta > len(b) {
-				delta = len(b)
-			}
-			lastSeg.Append(b[:delta])
-			b = b[delta:]
-			nBytes += delta
-		}
+func (w *SendingWorker) Push(b *buf.Buffer) bool {
+	w.Lock()
+	defer w.Unlock()
+
+	if w.closed {
+		return false
 	}
-	for len(b) > 0 && !this.queue.IsFull() {
-		var size int
-		if len(b) > int(this.conn.mss) {
-			size = int(this.conn.mss)
-		} else {
-			size = len(b)
-		}
-		this.queue.Push(AllocateBuffer().Clear().Append(b[:size]))
-		b = b[size:]
-		nBytes += size
+
+	if w.window.Len() > w.windowSize {
+		return false
 	}
-	return nBytes
+
+	w.window.Push(w.nextNumber, b)
+	w.nextNumber++
+	return true
 }
 
-// @Private
-func (this *SendingWorker) Write(seg Segment) {
+func (w *SendingWorker) Write(seg Segment) error {
 	dataSeg := seg.(*DataSegment)
 
-	dataSeg.Conv = this.conn.conv
-	dataSeg.SendingNext = this.firstUnacknowledged
+	dataSeg.Conv = w.conn.meta.Conversation
+	dataSeg.SendingNext = w.firstUnacknowledged
 	dataSeg.Option = 0
-	if this.conn.State() == StateReadyToClose {
+	if w.conn.State() == StateReadyToClose {
 		dataSeg.Option = SegmentOptionClose
 	}
 
-	this.conn.output.Write(dataSeg)
-	this.updated = false
+	return w.conn.output.Write(dataSeg)
 }
 
-func (this *SendingWorker) PingNecessary() bool {
-	this.RLock()
-	defer this.RUnlock()
-
-	return this.updated
-}
-
-func (this *SendingWorker) MarkPingNecessary(b bool) {
-	this.Lock()
-	defer this.Unlock()
-
-	this.updated = b
-}
-
-func (this *SendingWorker) OnPacketLoss(lossRate uint32) {
-	if !effectiveConfig.Congestion || this.conn.roundTrip.Timeout() == 0 {
+func (w *SendingWorker) OnPacketLoss(lossRate uint32) {
+	if !w.conn.Config.Congestion || w.conn.roundTrip.Timeout() == 0 {
 		return
 	}
 
 	if lossRate >= 15 {
-		this.controlWindow = 3 * this.controlWindow / 4
+		w.controlWindow = 3 * w.controlWindow / 4
 	} else if lossRate <= 5 {
-		this.controlWindow += this.controlWindow / 4
+		w.controlWindow += w.controlWindow / 4
 	}
-	if this.controlWindow < 16 {
-		this.controlWindow = 16
+	if w.controlWindow < 16 {
+		w.controlWindow = 16
 	}
-	if this.controlWindow > 2*effectiveConfig.GetSendingInFlightSize() {
-		this.controlWindow = 2 * effectiveConfig.GetSendingInFlightSize()
+	if w.controlWindow > 2*w.conn.Config.GetSendingInFlightSize() {
+		w.controlWindow = 2 * w.conn.Config.GetSendingInFlightSize()
 	}
 }
 
-func (this *SendingWorker) Flush(current uint32) {
-	this.Lock()
-	defer this.Unlock()
+func (w *SendingWorker) Flush(current uint32) {
+	w.Lock()
 
-	cwnd := this.firstUnacknowledged + effectiveConfig.GetSendingInFlightSize()
-	if cwnd > this.remoteNextNumber {
-		cwnd = this.remoteNextNumber
-	}
-	if effectiveConfig.Congestion && cwnd > this.firstUnacknowledged+this.controlWindow {
-		cwnd = this.firstUnacknowledged + this.controlWindow
+	if w.closed {
+		w.Unlock()
+		return
 	}
 
-	this.FillWindow(current)
-	this.window.Flush(current, this.conn.fastresend, this.conn.roundTrip.Timeout(), cwnd)
+	cwnd := w.firstUnacknowledged + w.conn.Config.GetSendingInFlightSize()
+	if cwnd > w.remoteNextNumber {
+		cwnd = w.remoteNextNumber
+	}
+	if w.conn.Config.Congestion && cwnd > w.firstUnacknowledged+w.controlWindow {
+		cwnd = w.firstUnacknowledged + w.controlWindow
+	}
+
+	if !w.window.IsEmpty() {
+		w.window.Flush(current, w.conn.roundTrip.Timeout(), cwnd)
+		w.firstUnacknowledgedUpdated = false
+	}
+
+	updated := w.firstUnacknowledgedUpdated
+	w.firstUnacknowledgedUpdated = false
+
+	w.Unlock()
+
+	if updated {
+		w.conn.Ping(current, CommandPing)
+	}
 }
 
-func (this *SendingWorker) CloseWrite() {
-	this.Lock()
-	defer this.Unlock()
+func (w *SendingWorker) CloseWrite() {
+	w.Lock()
+	defer w.Unlock()
 
-	this.window.Clear(0xFFFFFFFF)
-	this.queue.Clear()
+	w.window.Clear(0xFFFFFFFF)
 }
 
-func (this *SendingWorker) IsEmpty() bool {
-	this.RLock()
-	defer this.RUnlock()
+func (w *SendingWorker) IsEmpty() bool {
+	w.RLock()
+	defer w.RUnlock()
 
-	return this.window.IsEmpty() && this.queue.IsEmpty()
+	return w.window.IsEmpty()
+}
+
+func (w *SendingWorker) UpdateNecessary() bool {
+	return !w.IsEmpty()
+}
+
+func (w *SendingWorker) FirstUnacknowledged() uint32 {
+	w.RLock()
+	defer w.RUnlock()
+
+	return w.firstUnacknowledged
 }

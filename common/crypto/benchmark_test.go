@@ -4,7 +4,7 @@ import (
 	"crypto/cipher"
 	"testing"
 
-	. "github.com/v2ray/v2ray-core/common/crypto"
+	. "v2ray.com/core/common/crypto"
 )
 
 const benchSize = 1024 * 1024

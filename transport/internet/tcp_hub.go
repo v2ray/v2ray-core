@@ -1,97 +1,71 @@
 package internet
 
 import (
-	"crypto/tls"
-	"errors"
-	"net"
-	"sync"
+	"context"
 
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2tls "github.com/v2ray/v2ray-core/transport/internet/tls"
+	"v2ray.com/core/common/net"
 )
 
 var (
-	ErrClosedConnection = errors.New("Connection already closed.")
-
-	KCPListenFunc    ListenFunc
-	TCPListenFunc    ListenFunc
-	RawTCPListenFunc ListenFunc
-	WSListenFunc     ListenFunc
+	transportListenerCache = make(map[string]ListenFunc)
 )
 
-type ListenFunc func(address v2net.Address, port v2net.Port) (Listener, error)
+func RegisterTransportListener(protocol string, listener ListenFunc) error {
+	if _, found := transportListenerCache[protocol]; found {
+		return newError(protocol, " listener already registered.").AtError()
+	}
+	transportListenerCache[protocol] = listener
+	return nil
+}
+
+type ConnHandler func(Connection)
+
+type ListenFunc func(ctx context.Context, address net.Address, port net.Port, settings *MemoryStreamConfig, handler ConnHandler) (Listener, error)
+
 type Listener interface {
-	Accept() (Connection, error)
 	Close() error
 	Addr() net.Addr
 }
 
-type TCPHub struct {
-	sync.Mutex
-	listener     Listener
-	connCallback ConnectionHandler
-	accepting    bool
-	tlsConfig    *tls.Config
-}
-
-func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandler, settings *StreamSettings) (*TCPHub, error) {
-	var listener Listener
-	var err error
-	switch {
-	case settings.IsCapableOf(StreamConnectionTypeTCP):
-		listener, err = TCPListenFunc(address, port)
-	case settings.IsCapableOf(StreamConnectionTypeKCP):
-		listener, err = KCPListenFunc(address, port)
-	case settings.IsCapableOf(StreamConnectionTypeWebSocket):
-		listener, err = WSListenFunc(address, port)
-	case settings.IsCapableOf(StreamConnectionTypeRawTCP):
-		listener, err = RawTCPListenFunc(address, port)
-	default:
-		log.Error("Internet|Listener: Unknown stream type: ", settings.Type)
-		err = ErrUnsupportedStreamType
-	}
-
-	if err != nil {
-		log.Warning("Internet|Listener: Failed to listen on ", address, ":", port)
-		return nil, err
-	}
-
-	var tlsConfig *tls.Config
-	if settings.Security == StreamSecurityTypeTLS {
-		tlsConfig = settings.TLSSettings.GetTLSConfig()
-	}
-
-	hub := &TCPHub{
-		listener:     listener,
-		connCallback: callback,
-		tlsConfig:    tlsConfig,
-	}
-
-	go hub.start()
-	return hub, nil
-}
-
-func (this *TCPHub) Close() {
-	this.accepting = false
-	this.listener.Close()
-}
-
-func (this *TCPHub) start() {
-	this.accepting = true
-	for this.accepting {
-		conn, err := this.listener.Accept()
-
+func ListenTCP(ctx context.Context, address net.Address, port net.Port, settings *MemoryStreamConfig, handler ConnHandler) (Listener, error) {
+	if settings == nil {
+		s, err := ToMemoryStreamConfig(nil)
 		if err != nil {
-			if this.accepting {
-				log.Warning("Internet|Listener: Failed to accept new TCP connection: ", err)
-			}
-			continue
+			return nil, newError("failed to create default stream settings").Base(err)
 		}
-		if this.tlsConfig != nil {
-			tlsConn := tls.Server(conn, this.tlsConfig)
-			conn = v2tls.NewConnection(tlsConn)
-		}
-		go this.connCallback(conn)
+		settings = s
 	}
+
+	if address.Family().IsDomain() && address.Domain() == "localhost" {
+		address = net.LocalHostIP
+	}
+
+	if address.Family().IsDomain() {
+		return nil, newError("domain address is not allowed for listening: ", address.Domain())
+	}
+
+	protocol := settings.ProtocolName
+	listenFunc := transportListenerCache[protocol]
+	if listenFunc == nil {
+		return nil, newError(protocol, " listener not registered.").AtError()
+	}
+	listener, err := listenFunc(ctx, address, port, settings, handler)
+	if err != nil {
+		return nil, newError("failed to listen on address: ", address, ":", port).Base(err)
+	}
+	return listener, nil
+}
+
+// ListenSystem listens on a local address for incoming TCP connections.
+//
+// v2ray:api:beta
+func ListenSystem(ctx context.Context, addr net.Addr, sockopt *SocketConfig) (net.Listener, error) {
+	return effectiveListener.Listen(ctx, addr, sockopt)
+}
+
+// ListenSystemPacket listens on a local address for incoming UDP connections.
+//
+// v2ray:api:beta
+func ListenSystemPacket(ctx context.Context, addr net.Addr, sockopt *SocketConfig) (net.PacketConn, error) {
+	return effectiveListener.ListenPacket(ctx, addr, sockopt)
 }

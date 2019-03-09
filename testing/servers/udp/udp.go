@@ -2,32 +2,33 @@ package udp
 
 import (
 	"fmt"
-	"net"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 type Server struct {
-	Port         v2net.Port
+	Port         net.Port
 	MsgProcessor func(msg []byte) []byte
 	accepting    bool
 	conn         *net.UDPConn
 }
 
-func (server *Server) Start() (v2net.Destination, error) {
+func (server *Server) Start() (net.Destination, error) {
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   []byte{127, 0, 0, 1},
 		Port: int(server.Port),
 		Zone: "",
 	})
 	if err != nil {
-		return nil, err
+		return net.Destination{}, err
 	}
-	server.Port = v2net.Port(conn.LocalAddr().(*net.UDPAddr).Port)
+	server.Port = net.Port(conn.LocalAddr().(*net.UDPAddr).Port)
+	fmt.Println("UDP server started on port ", server.Port)
+
 	server.conn = conn
 	go server.handleConnection(conn)
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
-	return v2net.UDPDestination(v2net.IPAddress(localAddr.IP), v2net.Port(localAddr.Port)), nil
+	return net.UDPDestination(net.IPAddress(localAddr.IP), net.Port(localAddr.Port)), nil
 }
 
 func (server *Server) handleConnection(conn *net.UDPConn) {
@@ -41,11 +42,13 @@ func (server *Server) handleConnection(conn *net.UDPConn) {
 		}
 
 		response := server.MsgProcessor(buffer[:nBytes])
-		conn.WriteToUDP(response, addr)
+		if _, err := conn.WriteToUDP(response, addr); err != nil {
+			fmt.Println("Failed to write to UDP: ", err.Error())
+		}
 	}
 }
 
-func (server *Server) Close() {
+func (server *Server) Close() error {
 	server.accepting = false
-	server.conn.Close()
+	return server.conn.Close()
 }

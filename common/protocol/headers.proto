@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package v2ray.core.common.protocol;
+option csharp_namespace = "V2Ray.Core.Common.Protocol";
+option go_package = "protocol";
+option java_package = "com.v2ray.core.common.protocol";
+option java_multiple_files = true;
+
+enum SecurityType {
+  UNKNOWN = 0;
+  LEGACY = 1;
+  AUTO = 2;
+  AES128_GCM = 3;
+  CHACHA20_POLY1305 = 4;
+  NONE = 5;
+}
+
+message SecurityConfig {
+  SecurityType type = 1;
+}

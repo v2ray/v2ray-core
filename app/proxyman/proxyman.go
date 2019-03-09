@@ -1,69 +1,21 @@
+// Package proxyman defines applications for managing inbound and outbound proxies.
 package proxyman
 
 import (
-	"sync"
+	"context"
 
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/proxy"
+	"v2ray.com/core/common/session"
 )
 
-const (
-	APP_ID_INBOUND_MANAGER  = app.ID(4)
-	APP_ID_OUTBOUND_MANAGER = app.ID(6)
-)
-
-type InboundHandlerManager interface {
-	GetHandler(tag string) (proxy.InboundHandler, int)
-}
-
-type OutboundHandlerManager interface {
-	GetHandler(tag string) proxy.OutboundHandler
-	GetDefaultHandler() proxy.OutboundHandler
-}
-
-type DefaultOutboundHandlerManager struct {
-	sync.RWMutex
-	defaultHandler proxy.OutboundHandler
-	taggedHandler  map[string]proxy.OutboundHandler
-}
-
-func NewDefaultOutboundHandlerManager() *DefaultOutboundHandlerManager {
-	return &DefaultOutboundHandlerManager{
-		taggedHandler: make(map[string]proxy.OutboundHandler),
+// ContextWithSniffingConfig is a wrapper of session.ContextWithContent.
+// Deprecated. Use session.ContextWithContent directly.
+func ContextWithSniffingConfig(ctx context.Context, c *SniffingConfig) context.Context {
+	content := session.ContentFromContext(ctx)
+	if content == nil {
+		content = new(session.Content)
+		ctx = session.ContextWithContent(ctx, content)
 	}
-}
-
-func (this *DefaultOutboundHandlerManager) Release() {
-
-}
-
-func (this *DefaultOutboundHandlerManager) GetDefaultHandler() proxy.OutboundHandler {
-	this.RLock()
-	defer this.RUnlock()
-	if this.defaultHandler == nil {
-		return nil
-	}
-	return this.defaultHandler
-}
-
-func (this *DefaultOutboundHandlerManager) SetDefaultHandler(handler proxy.OutboundHandler) {
-	this.Lock()
-	defer this.Unlock()
-	this.defaultHandler = handler
-}
-
-func (this *DefaultOutboundHandlerManager) GetHandler(tag string) proxy.OutboundHandler {
-	this.RLock()
-	defer this.RUnlock()
-	if handler, found := this.taggedHandler[tag]; found {
-		return handler
-	}
-	return nil
-}
-
-func (this *DefaultOutboundHandlerManager) SetHandler(tag string, handler proxy.OutboundHandler) {
-	this.Lock()
-	defer this.Unlock()
-
-	this.taggedHandler[tag] = handler
+	content.SniffingRequest.Enabled = c.Enabled
+	content.SniffingRequest.OverrideDestinationForProtocol = c.DestinationOverride
+	return ctx
 }
