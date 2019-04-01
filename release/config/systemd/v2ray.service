@@ -15,6 +15,9 @@ ExecStart=/usr/bin/v2ray/v2ray -config /etc/v2ray/config.json
 Restart=on-failure
 # Don't restart in the case of configuration error
 RestartPreventExitStatus=23
+# Increase Number of Open Files Limit
+LimitNOFILE=1048576
+LimitNPROC=512
 
 [Install]
 WantedBy=multi-user.target
