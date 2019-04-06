@@ -1,3 +1,5 @@
+// +build !confonly
+
 package reverse
 
 import (
@@ -97,7 +99,7 @@ func (o *Outbound) Tag() string {
 func (o *Outbound) Dispatch(ctx context.Context, link *transport.Link) {
 	if err := o.portal.HandleConnection(ctx, link); err != nil {
 		newError("failed to process reverse connection").Base(err).WriteToLog(session.ExportIDToError(ctx))
-		pipe.CloseError(link.Writer)
+		common.Interrupt(link.Writer)
 	}
 }
 
@@ -244,7 +246,7 @@ func (w *PortalWorker) heartbeat() error {
 
 		defer func() {
 			common.Close(w.writer)
-			pipe.CloseError(w.reader)
+			common.Interrupt(w.reader)
 			w.writer = nil
 		}()
 	}

@@ -23,7 +23,6 @@ var (
 	version    = flag.Bool("version", false, "Show current version of V2Ray.")
 	test       = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
 	format     = flag.String("format", "json", "Format of input file.")
-	plugin     = flag.Bool("plugin", false, "True to load plugins.")
 )
 
 func fileExists(file string) bool {
@@ -96,13 +95,6 @@ func main() {
 		return
 	}
 
-	if *plugin {
-		if err := core.LoadPlugins(); err != nil {
-			fmt.Println("Failed to load plugins:", err.Error())
-			os.Exit(-1)
-		}
-	}
-
 	server, err := startV2Ray()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -119,13 +111,14 @@ func main() {
 		fmt.Println("Failed to start", err)
 		os.Exit(-1)
 	}
+	defer server.Close()
 
 	// Explicitly triggering GC to remove garbage from config loading.
 	runtime.GC()
 
-	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
-
-	<-osSignals
-	server.Close()
+	{
+		osSignals := make(chan os.Signal, 1)
+		signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
+		<-osSignals
+	}
 }

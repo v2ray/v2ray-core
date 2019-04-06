@@ -1,13 +1,15 @@
+// +build !confonly
+
 package mtproto
 
 import (
+	"bytes"
 	"context"
 	"time"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/compare"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -17,7 +19,6 @@ import (
 	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/pipe"
 )
 
 var (
@@ -64,11 +65,14 @@ func (s *Server) Network() []net.Network {
 	return []net.Network{net.Network_TCP}
 }
 
+var ctype1 = []byte{0xef, 0xef, 0xef, 0xef}
+var ctype2 = []byte{0xee, 0xee, 0xee, 0xee}
+
 func isValidConnectionType(c [4]byte) bool {
-	if compare.BytesAll(c[:], 0xef) {
+	if bytes.Equal(c[:], ctype1) {
 		return true
 	}
-	if compare.BytesAll(c[:], 0xee) {
+	if bytes.Equal(c[:], ctype2) {
 		return true
 	}
 	return false
@@ -141,10 +145,10 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 		return buf.Copy(link.Reader, writer, buf.UpdateActivity(timer))
 	}
 
-	var responseDoneAndCloseWriter = task.Single(response, task.OnSuccess(task.Close(link.Writer)))
-	if err := task.Run(task.WithContext(ctx), task.Parallel(request, responseDoneAndCloseWriter))(); err != nil {
-		pipe.CloseError(link.Reader)
-		pipe.CloseError(link.Writer)
+	var responseDoneAndCloseWriter = task.OnSuccess(response, task.Close(link.Writer))
+	if err := task.Run(ctx, request, responseDoneAndCloseWriter); err != nil {
+		common.Interrupt(link.Reader)
+		common.Interrupt(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 

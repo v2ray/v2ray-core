@@ -28,6 +28,18 @@ message Domain {
 
   // Domain value.
   string value = 2;
+
+  message Attribute {
+    string key = 1;
+
+    oneof typed_value {
+      bool bool_value = 2;
+      int64 int_value = 3;
+    }
+  }
+
+  // Attributes of this domain. May be used for filtering.
+  repeated Attribute attribute = 3;
 }
 
 // IP for routing decision, in CIDR form.
@@ -71,7 +83,7 @@ message RoutingRule {
   repeated Domain domain = 2;
 
   // List of CIDRs for target IP address matching.
-  // The list must be sorted beforehand.
+  // Deprecated. Use geoip below.
   repeated CIDR cidr = 3 [deprecated = true];
   
   // List of GeoIPs for target IP address matching. If this entry exists, the cidr above will have no effect.
@@ -79,7 +91,12 @@ message RoutingRule {
   // For customized GeoIPs, please leave country code empty.
   repeated GeoIP geoip = 10;
 
-  v2ray.core.common.net.PortRange port_range = 4;
+  // A range of port [from, to]. If the destination port is in this range, this rule takes effect.
+  // Deprecated. Use port_list.
+  v2ray.core.common.net.PortRange port_range = 4 [deprecated = true];
+
+  // List of ports.
+  v2ray.core.common.net.PortList port_list = 14;
 
   // List of networks. Deprecated. Use networks.
   v2ray.core.common.net.NetworkList network_list = 5 [deprecated = true];
@@ -96,6 +113,8 @@ message RoutingRule {
   repeated string user_email = 7;
   repeated string inbound_tag = 8;
   repeated string protocol = 9;
+
+  string attributes = 15;
 }
 
 message BalancingRule {

@@ -1,83 +1,90 @@
 package pipe_test
 
 import (
+	"errors"
 	"io"
-	"sync"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"golang.org/x/sync/errgroup"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/task"
 	. "v2ray.com/core/transport/pipe"
-	. "v2ray.com/ext/assert"
 )
 
 func TestPipeReadWrite(t *testing.T) {
-	assert := With(t)
-
 	pReader, pWriter := New(WithSizeLimit(1024))
 
 	b := buf.New()
 	b.WriteString("abcd")
-	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}), IsNil)
+	common.Must(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}))
 
 	b2 := buf.New()
 	b2.WriteString("efg")
-	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b2}), IsNil)
+	common.Must(pWriter.WriteMultiBuffer(buf.MultiBuffer{b2}))
 
 	rb, err := pReader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(rb.String(), Equals, "abcdefg")
+	common.Must(err)
+	if r := cmp.Diff(rb.String(), "abcdefg"); r != "" {
+		t.Error(r)
+	}
 }
 
-func TestPipeCloseError(t *testing.T) {
-	assert := With(t)
-
+func TestPipeInterrupt(t *testing.T) {
 	pReader, pWriter := New(WithSizeLimit(1024))
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
 	b.Write(payload)
-	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}), IsNil)
-	pWriter.CloseError()
+	common.Must(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}))
+	pWriter.Interrupt()
 
 	rb, err := pReader.ReadMultiBuffer()
-	assert(err, Equals, io.ErrClosedPipe)
-	assert(rb.IsEmpty(), IsTrue)
+	if err != io.ErrClosedPipe {
+		t.Fatal("expect io.ErrClosePipe, but got ", err)
+	}
+	if !rb.IsEmpty() {
+		t.Fatal("expect empty buffer, but got ", rb.Len())
+	}
 }
 
 func TestPipeClose(t *testing.T) {
-	assert := With(t)
-
 	pReader, pWriter := New(WithSizeLimit(1024))
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
-	b.Write(payload)
-	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}), IsNil)
-	assert(pWriter.Close(), IsNil)
+	common.Must2(b.Write(payload))
+	common.Must(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}))
+	common.Must(pWriter.Close())
 
 	rb, err := pReader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(rb.String(), Equals, b.String())
+	common.Must(err)
+	if rb.String() != string(payload) {
+		t.Fatal("expect content ", string(payload), " but actually ", rb.String())
+	}
 
 	rb, err = pReader.ReadMultiBuffer()
-	assert(err, Equals, io.EOF)
-	assert(rb.IsEmpty(), IsTrue)
+	if err != io.EOF {
+		t.Fatal("expected EOF, but got ", err)
+	}
+	if !rb.IsEmpty() {
+		t.Fatal("expect empty buffer, but got ", rb.String())
+	}
 }
 
 func TestPipeLimitZero(t *testing.T) {
-	assert := With(t)
-
 	pReader, pWriter := New(WithSizeLimit(0))
 	bb := buf.New()
-	bb.Write([]byte{'a', 'b'})
-	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{bb}), IsNil)
+	common.Must2(bb.Write([]byte{'a', 'b'}))
+	common.Must(pWriter.WriteMultiBuffer(buf.MultiBuffer{bb}))
 
-	err := task.Run(task.Parallel(func() error {
+	var errg errgroup.Group
+	errg.Go(func() error {
 		b := buf.New()
 		b.Write([]byte{'c', 'd'})
 		return pWriter.WriteMultiBuffer(buf.MultiBuffer{b})
-	}, func() error {
+	})
+	errg.Go(func() error {
 		time.Sleep(time.Second)
 
 		var container buf.MultiBufferContainer
@@ -85,49 +92,49 @@ func TestPipeLimitZero(t *testing.T) {
 			return err
 		}
 
-		assert(container.String(), Equals, "abcd")
+		if r := cmp.Diff(container.String(), "abcd"); r != "" {
+			return errors.New(r)
+		}
 		return nil
-	}, func() error {
+	})
+	errg.Go(func() error {
 		time.Sleep(time.Second * 2)
-		pWriter.Close()
-		return nil
-	}))()
-
-	assert(err, IsNil)
+		return pWriter.Close()
+	})
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestPipeWriteMultiThread(t *testing.T) {
-	assert := With(t)
-
 	pReader, pWriter := New(WithSizeLimit(0))
 
-	var wg sync.WaitGroup
-
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
+		errg.Go(func() error {
 			b := buf.New()
 			b.WriteString("abcd")
-			pWriter.WriteMultiBuffer(buf.MultiBuffer{b})
-			wg.Done()
-		}()
+			return pWriter.WriteMultiBuffer(buf.MultiBuffer{b})
+		})
 	}
-
 	time.Sleep(time.Millisecond * 100)
-
 	pWriter.Close()
-	wg.Wait()
+	errg.Wait()
 
 	b, err := pReader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(b[0].Bytes(), Equals, []byte{'a', 'b', 'c', 'd'})
+	common.Must(err)
+	if r := cmp.Diff(b[0].Bytes(), []byte{'a', 'b', 'c', 'd'}); r != "" {
+		t.Error(r)
+	}
 }
 
 func TestInterfaces(t *testing.T) {
-	assert := With(t)
+	_ = (buf.Reader)(new(Reader))
+	_ = (buf.TimeoutReader)(new(Reader))
 
-	assert((*Reader)(nil), Implements, (*buf.Reader)(nil))
-	assert((*Reader)(nil), Implements, (*buf.TimeoutReader)(nil))
+	_ = (common.Interruptible)(new(Reader))
+	_ = (common.Interruptible)(new(Writer))
+	_ = (common.Closable)(new(Writer))
 }
 
 func BenchmarkPipeReadWrite(b *testing.B) {

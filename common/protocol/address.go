@@ -2,13 +2,11 @@ package protocol
 
 import (
 	"io"
-	"unsafe"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/common/stack"
 )
 
 type AddressOption func(*option)
@@ -226,7 +224,6 @@ func (p *addressParser) readAddress(b *buf.Buffer, reader io.Reader) (net.Addres
 	}
 }
 
-//go:nosplit
 func (p *addressParser) writeAddress(writer io.Writer, address net.Address) error {
 	tb := p.addrByteMap[address.Family()]
 	if tb == afInvalid {
@@ -235,13 +232,7 @@ func (p *addressParser) writeAddress(writer io.Writer, address net.Address) erro
 
 	switch address.Family() {
 	case net.AddressFamilyIPv4, net.AddressFamilyIPv6:
-		var bytes stack.TwoBytes
-		s := bytes[:1]
-		s[0] = tb
-		p := uintptr(unsafe.Pointer(&s))
-		v := (*[]byte)(unsafe.Pointer(p))
-
-		if _, err := writer.Write(*v); err != nil {
+		if _, err := writer.Write([]byte{tb}); err != nil {
 			return err
 		}
 		if _, err := writer.Write(address.IP()); err != nil {
@@ -253,17 +244,10 @@ func (p *addressParser) writeAddress(writer io.Writer, address net.Address) erro
 			return newError("Super long domain is not supported: ", domain)
 		}
 
-		var bytes stack.TwoBytes
-		s := bytes[:]
-		s[0] = tb
-		s[1] = byte(len(domain))
-		p := uintptr(unsafe.Pointer(&s))
-		v := (*[]byte)(unsafe.Pointer(p))
-
-		if _, err := writer.Write(*v); err != nil {
+		if _, err := writer.Write([]byte{tb, byte(len(domain))}); err != nil {
 			return err
 		}
-		if _, err := io.WriteString(writer, domain); err != nil {
+		if _, err := writer.Write([]byte(domain)); err != nil {
 			return err
 		}
 	default:

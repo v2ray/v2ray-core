@@ -22,6 +22,5 @@ if [ -z "$GOPATH" ]; then
 fi
 
 go get -u v2ray.com/core/...
-go get -u v2ray.com/ext/...
 go build -o $GOPATH/bin/v2ray v2ray.com/core/main
-go build -o $GOPATH/bin/v2ctl v2ray.com/ext/tools/control/main
+go build -o $GOPATH/bin/v2ctl v2ray.com/core/infra/control/main

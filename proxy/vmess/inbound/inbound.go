@@ -1,3 +1,5 @@
+// +build !confonly
+
 package inbound
 
 //go:generate errorgen
@@ -26,7 +28,6 @@ import (
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/encoding"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/pipe"
 )
 
 type userByEmail struct {
@@ -139,9 +140,10 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 
 // Close implements common.Closable.
 func (h *Handler) Close() error {
-	return task.Run(
-		task.SequentialAll(
-			task.Close(h.clients), task.Close(h.sessionHistory), task.Close(h.usersByEmail)))()
+	return errors.Combine(
+		h.clients.Close(),
+		h.sessionHistory.Close(),
+		common.Close(h.usersByEmail))
 }
 
 // Network implements proxy.Inbound.Network().
@@ -290,9 +292,10 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	}
 
 	responseDone := func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
+
 		writer := buf.NewBufferedWriter(buf.NewWriter(connection))
 		defer writer.Flush()
-		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 		response := &protocol.ResponseHeader{
 			Command: h.generateCommand(ctx, request),
@@ -300,10 +303,10 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		return transferResponse(timer, svrSession, request, response, link.Reader, writer)
 	}
 
-	var requestDonePost = task.Single(requestDone, task.OnSuccess(task.Close(link.Writer)))
-	if err := task.Run(task.WithContext(ctx), task.Parallel(requestDonePost, responseDone))(); err != nil {
-		pipe.CloseError(link.Reader)
-		pipe.CloseError(link.Writer)
+	var requestDonePost = task.OnSuccess(requestDone, task.Close(link.Writer))
+	if err := task.Run(ctx, requestDonePost, responseDone); err != nil {
+		common.Interrupt(link.Reader)
+		common.Interrupt(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 

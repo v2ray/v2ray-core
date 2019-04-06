@@ -57,6 +57,8 @@ type Session struct {
 }
 
 // Manager is a feature that provides Policy for the given user by its id or level.
+//
+// v2ray:api:stable
 type Manager interface {
 	features.Feature
 
@@ -68,6 +70,8 @@ type Manager interface {
 }
 
 // ManagerType returns the type of Manager interface. Can be used to implement common.HasType.
+//
+// v2ray:api:stable
 func ManagerType() interface{} {
 	return (*Manager)(nil)
 }

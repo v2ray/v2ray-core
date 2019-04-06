@@ -40,6 +40,10 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, settings
 		address = net.LocalHostIP
 	}
 
+	if address.Family().IsDomain() {
+		return nil, newError("domain address is not allowed for listening: ", address.Domain())
+	}
+
 	protocol := settings.ProtocolName
 	listenFunc := transportListenerCache[protocol]
 	if listenFunc == nil {
@@ -52,10 +56,16 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, settings
 	return listener, nil
 }
 
+// ListenSystem listens on a local address for incoming TCP connections.
+//
+// v2ray:api:beta
 func ListenSystem(ctx context.Context, addr net.Addr, sockopt *SocketConfig) (net.Listener, error) {
 	return effectiveListener.Listen(ctx, addr, sockopt)
 }
 
+// ListenSystemPacket listens on a local address for incoming UDP connections.
+//
+// v2ray:api:beta
 func ListenSystemPacket(ctx context.Context, addr net.Addr, sockopt *SocketConfig) (net.PacketConn, error) {
 	return effectiveListener.ListenPacket(ctx, addr, sockopt)
 }

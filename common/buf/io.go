@@ -2,6 +2,7 @@ package buf
 
 import (
 	"io"
+	"net"
 	"syscall"
 	"time"
 )
@@ -38,11 +39,22 @@ func WriteAllBytes(writer io.Writer, payload []byte) error {
 	return nil
 }
 
+func isPacketReader(reader io.Reader) bool {
+	_, ok := reader.(net.PacketConn)
+	return ok
+}
+
 // NewReader creates a new Reader.
 // The Reader instance doesn't take the ownership of reader.
 func NewReader(reader io.Reader) Reader {
 	if mr, ok := reader.(Reader); ok {
 		return mr
+	}
+
+	if isPacketReader(reader) {
+		return &PacketReader{
+			Reader: reader,
+		}
 	}
 
 	if useReadv {
@@ -61,14 +73,36 @@ func NewReader(reader io.Reader) Reader {
 	}
 }
 
+// NewPacketReader creates a new PacketReader based on the given reader.
+func NewPacketReader(reader io.Reader) Reader {
+	if mr, ok := reader.(Reader); ok {
+		return mr
+	}
+
+	return &PacketReader{
+		Reader: reader,
+	}
+}
+
+func isPacketWriter(writer io.Writer) bool {
+	if _, ok := writer.(net.PacketConn); ok {
+		return true
+	}
+
+	// If the writer doesn't implement syscall.Conn, it is probably not a TCP connection.
+	if _, ok := writer.(syscall.Conn); !ok {
+		return true
+	}
+	return false
+}
+
 // NewWriter creates a new Writer.
 func NewWriter(writer io.Writer) Writer {
 	if mw, ok := writer.(Writer); ok {
 		return mw
 	}
 
-	if _, ok := writer.(syscall.Conn); !ok {
-		// If the writer doesn't implement syscall.Conn, it is probably not a TCP connection.
+	if isPacketWriter(writer) {
 		return &SequentialWriter{
 			Writer: writer,
 		}

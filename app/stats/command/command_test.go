@@ -4,19 +4,20 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"v2ray.com/core/app/stats"
 	. "v2ray.com/core/app/stats/command"
-	. "v2ray.com/ext/assert"
+	"v2ray.com/core/common"
 )
 
 func TestGetStats(t *testing.T) {
-	assert := With(t)
-
 	m, err := stats.NewManager(context.Background(), &stats.Config{})
-	assert(err, IsNil)
+	common.Must(err)
 
 	sc, err := m.RegisterCounter("test_counter")
-	assert(err, IsNil)
+	common.Must(err)
 
 	sc.Set(1)
 
@@ -48,55 +49,43 @@ func TestGetStats(t *testing.T) {
 			Reset_: tc.reset,
 		})
 		if tc.err {
-			assert(err, IsNotNil)
+			if err == nil {
+				t.Error("nil error: ", tc.name)
+			}
 		} else {
-			assert(err, IsNil)
-			assert(resp.Stat.Name, Equals, tc.name)
-			assert(resp.Stat.Value, Equals, tc.value)
+			common.Must(err)
+			if r := cmp.Diff(resp.Stat, &Stat{Name: tc.name, Value: tc.value}); r != "" {
+				t.Error(r)
+			}
 		}
 	}
 }
 
 func TestQueryStats(t *testing.T) {
-	assert := With(t)
-
 	m, err := stats.NewManager(context.Background(), &stats.Config{})
-	assert(err, IsNil)
+	common.Must(err)
 
 	sc1, err := m.RegisterCounter("test_counter")
-	assert(err, IsNil)
+	common.Must(err)
 	sc1.Set(1)
 
 	sc2, err := m.RegisterCounter("test_counter_2")
-	assert(err, IsNil)
+	common.Must(err)
 	sc2.Set(2)
 
 	sc3, err := m.RegisterCounter("test_counter_3")
-	assert(err, IsNil)
+	common.Must(err)
 	sc3.Set(3)
 
 	s := NewStatsServer(m)
 	resp, err := s.QueryStats(context.Background(), &QueryStatsRequest{
 		Pattern: "counter_",
 	})
-	assert(err, IsNil)
-	assert(len(resp.Stat), Equals, 2)
-
-	v2 := false
-	v3 := false
-	for _, sc := range resp.Stat {
-		switch sc.Name {
-		case "test_counter_2":
-			assert(sc.Value, Equals, int64(2))
-			v2 = true
-		case "test_counter_3":
-			assert(sc.Value, Equals, int64(3))
-			v3 = true
-		default:
-			t.Error("unexpected stat name: ", sc.Name)
-			t.Fail()
-		}
+	common.Must(err)
+	if r := cmp.Diff(resp.Stat, []*Stat{
+		{Name: "test_counter_2", Value: 2},
+		{Name: "test_counter_3", Value: 3},
+	}, cmpopts.SortSlices(func(s1, s2 *Stat) bool { return s1.Name < s2.Name })); r != "" {
+		t.Error(r)
 	}
-	assert(v2, IsTrue)
-	assert(v3, IsTrue)
 }

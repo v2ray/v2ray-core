@@ -1,17 +1,19 @@
+// +build !confonly
+
 package router
 
 import (
-	"context"
 	"strings"
 
-	"v2ray.com/core/app/dispatcher"
+	"go.starlark.net/starlark"
+	"go.starlark.net/syntax"
+
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/strmatcher"
 )
 
 type Condition interface {
-	Apply(ctx context.Context) bool
+	Apply(ctx *Context) bool
 }
 
 type ConditionChan []Condition
@@ -26,7 +28,7 @@ func (v *ConditionChan) Add(cond Condition) *ConditionChan {
 	return v
 }
 
-func (v *ConditionChan) Apply(ctx context.Context) bool {
+func (v *ConditionChan) Apply(ctx *Context) bool {
 	for _, cond := range *v {
 		if !cond.Apply(ctx) {
 			return false
@@ -83,37 +85,36 @@ func (m *DomainMatcher) ApplyDomain(domain string) bool {
 	return m.matchers.Match(domain) > 0
 }
 
-func (m *DomainMatcher) Apply(ctx context.Context) bool {
-	outbound := session.OutboundFromContext(ctx)
-	if outbound == nil || !outbound.Target.IsValid() {
+func (m *DomainMatcher) Apply(ctx *Context) bool {
+	if ctx.Outbound == nil || !ctx.Outbound.Target.IsValid() {
 		return false
 	}
-	dest := outbound.Target
+	dest := ctx.Outbound.Target
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
 	return m.ApplyDomain(dest.Address.Domain())
 }
 
-func sourceFromContext(ctx context.Context) net.Destination {
-	inbound := session.InboundFromContext(ctx)
-	if inbound == nil {
-		return net.Destination{}
+func getIPsFromSource(ctx *Context) []net.IP {
+	if ctx.Inbound == nil || !ctx.Inbound.Source.IsValid() {
+		return nil
 	}
-	return inbound.Source
+	dest := ctx.Inbound.Source
+	if dest.Address.Family().IsDomain() {
+		return nil
+	}
+
+	return []net.IP{dest.Address.IP()}
 }
 
-func targetFromContent(ctx context.Context) net.Destination {
-	outbound := session.OutboundFromContext(ctx)
-	if outbound == nil {
-		return net.Destination{}
-	}
-	return outbound.Target
+func getIPsFromTarget(ctx *Context) []net.IP {
+	return ctx.GetTargetIPs()
 }
 
 type MultiGeoIPMatcher struct {
 	matchers []*GeoIPMatcher
-	destFunc func(context.Context) net.Destination
+	ipFunc   func(*Context) []net.IP
 }
 
 func NewMultiGeoIPMatcher(geoips []*GeoIP, onSource bool) (*MultiGeoIPMatcher, error) {
@@ -126,32 +127,21 @@ func NewMultiGeoIPMatcher(geoips []*GeoIP, onSource bool) (*MultiGeoIPMatcher, e
 		matchers = append(matchers, matcher)
 	}
 
-	var destFunc func(context.Context) net.Destination
-	if onSource {
-		destFunc = sourceFromContext
-	} else {
-		destFunc = targetFromContent
+	matcher := &MultiGeoIPMatcher{
+		matchers: matchers,
 	}
 
-	return &MultiGeoIPMatcher{
-		matchers: matchers,
-		destFunc: destFunc,
-	}, nil
+	if onSource {
+		matcher.ipFunc = getIPsFromSource
+	} else {
+		matcher.ipFunc = getIPsFromTarget
+	}
+
+	return matcher, nil
 }
 
-func (m *MultiGeoIPMatcher) Apply(ctx context.Context) bool {
-	ips := make([]net.IP, 0, 4)
-
-	dest := m.destFunc(ctx)
-
-	if dest.IsValid() && dest.Address.Family().IsIP() {
-		ips = append(ips, dest.Address.IP())
-	} else if resolver, ok := ResolvedIPsFromContext(ctx); ok {
-		resolvedIPs := resolver.Resolve()
-		for _, rip := range resolvedIPs {
-			ips = append(ips, rip.IP())
-		}
-	}
+func (m *MultiGeoIPMatcher) Apply(ctx *Context) bool {
+	ips := m.ipFunc(ctx)
 
 	for _, ip := range ips {
 		for _, matcher := range m.matchers {
@@ -164,21 +154,20 @@ func (m *MultiGeoIPMatcher) Apply(ctx context.Context) bool {
 }
 
 type PortMatcher struct {
-	port net.PortRange
+	port net.MemoryPortList
 }
 
-func NewPortMatcher(portRange net.PortRange) *PortMatcher {
+func NewPortMatcher(list *net.PortList) *PortMatcher {
 	return &PortMatcher{
-		port: portRange,
+		port: net.PortListFromProto(list),
 	}
 }
 
-func (v *PortMatcher) Apply(ctx context.Context) bool {
-	outbound := session.OutboundFromContext(ctx)
-	if outbound == nil || !outbound.Target.IsValid() {
+func (v *PortMatcher) Apply(ctx *Context) bool {
+	if ctx.Outbound == nil || !ctx.Outbound.Target.IsValid() {
 		return false
 	}
-	return v.port.Contains(outbound.Target.Port)
+	return v.port.Contains(ctx.Outbound.Target.Port)
 }
 
 type NetworkMatcher struct {
@@ -193,12 +182,11 @@ func NewNetworkMatcher(network []net.Network) NetworkMatcher {
 	return matcher
 }
 
-func (v NetworkMatcher) Apply(ctx context.Context) bool {
-	outbound := session.OutboundFromContext(ctx)
-	if outbound == nil || !outbound.Target.IsValid() {
+func (v NetworkMatcher) Apply(ctx *Context) bool {
+	if ctx.Outbound == nil || !ctx.Outbound.Target.IsValid() {
 		return false
 	}
-	return v.list[int(outbound.Target.Network)]
+	return v.list[int(ctx.Outbound.Target.Network)]
 }
 
 type UserMatcher struct {
@@ -217,13 +205,12 @@ func NewUserMatcher(users []string) *UserMatcher {
 	}
 }
 
-func (v *UserMatcher) Apply(ctx context.Context) bool {
-	inbound := session.InboundFromContext(ctx)
-	if inbound == nil {
+func (v *UserMatcher) Apply(ctx *Context) bool {
+	if ctx.Inbound == nil {
 		return false
 	}
 
-	user := inbound.User
+	user := ctx.Inbound.User
 	if user == nil {
 		return false
 	}
@@ -251,12 +238,11 @@ func NewInboundTagMatcher(tags []string) *InboundTagMatcher {
 	}
 }
 
-func (v *InboundTagMatcher) Apply(ctx context.Context) bool {
-	inbound := session.InboundFromContext(ctx)
-	if inbound == nil || len(inbound.Tag) == 0 {
+func (v *InboundTagMatcher) Apply(ctx *Context) bool {
+	if ctx.Inbound == nil || len(ctx.Inbound.Tag) == 0 {
 		return false
 	}
-	tag := inbound.Tag
+	tag := ctx.Inbound.Tag
 	for _, t := range v.tags {
 		if t == tag {
 			return true
@@ -283,14 +269,12 @@ func NewProtocolMatcher(protocols []string) *ProtocolMatcher {
 	}
 }
 
-func (m *ProtocolMatcher) Apply(ctx context.Context) bool {
-	result := dispatcher.SniffingResultFromContext(ctx)
-
-	if result == nil {
+func (m *ProtocolMatcher) Apply(ctx *Context) bool {
+	if ctx.Content == nil {
 		return false
 	}
 
-	protocol := result.Protocol()
+	protocol := ctx.Content.Protocol
 	for _, p := range m.protocols {
 		if strings.HasPrefix(protocol, p) {
 			return true
@@ -298,4 +282,61 @@ func (m *ProtocolMatcher) Apply(ctx context.Context) bool {
 	}
 
 	return false
+}
+
+type AttributeMatcher struct {
+	program *starlark.Program
+}
+
+func NewAttributeMatcher(code string) (*AttributeMatcher, error) {
+	starFile, err := syntax.Parse("attr.star", "satisfied=("+code+")", 0)
+	if err != nil {
+		return nil, newError("attr rule").Base(err)
+	}
+	p, err := starlark.FileProgram(starFile, func(name string) bool {
+		if name == "attrs" {
+			return true
+		}
+		return false
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &AttributeMatcher{
+		program: p,
+	}, nil
+}
+
+func (m *AttributeMatcher) Match(attrs map[string]interface{}) bool {
+	attrsDict := new(starlark.Dict)
+	for key, value := range attrs {
+		var starValue starlark.Value
+		switch value := value.(type) {
+		case string:
+			starValue = starlark.String(value)
+		}
+		if starValue != nil {
+			attrsDict.SetKey(starlark.String(key), starValue)
+		}
+	}
+
+	predefined := make(starlark.StringDict)
+	predefined["attrs"] = attrsDict
+
+	thread := &starlark.Thread{
+		Name: "matcher",
+	}
+	results, err := m.program.Init(thread, predefined)
+	if err != nil {
+		newError("attr matcher").Base(err).WriteToLog()
+	}
+	satisfied := results["satisfied"]
+	return satisfied != nil && bool(satisfied.Truth())
+}
+
+func (m *AttributeMatcher) Apply(ctx *Context) bool {
+	if ctx.Content == nil {
+		return false
+	}
+	return m.Match(ctx.Content.Attributes)
 }

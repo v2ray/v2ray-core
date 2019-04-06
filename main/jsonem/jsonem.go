@@ -3,7 +3,7 @@ package jsonem
 import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
-	"v2ray.com/ext/tools/conf/serial"
+	"v2ray.com/core/infra/conf/serial"
 )
 
 func init() {

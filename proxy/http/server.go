@@ -1,3 +1,5 @@
+// +build !confonly
+
 package http
 
 import (
@@ -6,7 +8,6 @@ import (
 	"encoding/base64"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
 	http_proto "v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
@@ -23,7 +25,6 @@ import (
 	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/pipe"
 )
 
 // Server is an HTTP proxy server.
@@ -52,28 +53,9 @@ func (s *Server) policy() policy.Session {
 	return p
 }
 
+// Network implements proxy.Inbound.
 func (*Server) Network() []net.Network {
 	return []net.Network{net.Network_TCP}
-}
-
-func parseHost(rawHost string, defaultPort net.Port) (net.Destination, error) {
-	port := defaultPort
-	host, rawPort, err := net.SplitHostPort(rawHost)
-	if err != nil {
-		if addrError, ok := err.(*net.AddrError); ok && strings.Contains(addrError.Err, "missing port") {
-			host = rawHost
-		} else {
-			return net.Destination{}, err
-		}
-	} else if len(rawPort) > 0 {
-		intPort, err := strconv.Atoi(rawPort)
-		if err != nil {
-			return net.Destination{}, err
-		}
-		port = net.Port(intPort)
-	}
-
-	return net.TCPDestination(net.ParseAddress(host), port), nil
 }
 
 func isTimeout(err error) bool {
@@ -103,6 +85,12 @@ type readerOnly struct {
 }
 
 func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher routing.Dispatcher) error {
+	if inbound := session.InboundFromContext(ctx); inbound != nil {
+		inbound.User = &protocol.MemoryUser{
+			Level: s.config.UserLevel,
+		}
+	}
+
 	reader := bufio.NewReaderSize(readerOnly{conn}, buf.Size)
 
 Start:
@@ -139,7 +127,7 @@ Start:
 	if len(host) == 0 {
 		host = request.URL.Host
 	}
-	dest, err := parseHost(host, defaultPort)
+	dest, err := http_proto.ParseHost(host, defaultPort)
 	if err != nil {
 		return newError("malformed proxy host: ", host).AtWarning().Base(err)
 	}
@@ -210,10 +198,10 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		return nil
 	}
 
-	var closeWriter = task.Single(requestDone, task.OnSuccess(task.Close(link.Writer)))
-	if err := task.Run(task.WithContext(ctx), task.Parallel(closeWriter, responseDone))(); err != nil {
-		pipe.CloseError(link.Reader)
-		pipe.CloseError(link.Writer)
+	var closeWriter = task.OnSuccess(requestDone, task.Close(link.Writer))
+	if err := task.Run(ctx, closeWriter, responseDone); err != nil {
+		common.Interrupt(link.Reader)
+		common.Interrupt(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 
@@ -250,6 +238,19 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 	if len(request.Header.Get("User-Agent")) == 0 {
 		request.Header.Set("User-Agent", "")
 	}
+
+	content := &session.Content{
+		Protocol: "http/1.1",
+	}
+
+	content.SetAttribute(":method", strings.ToUpper(request.Method))
+	content.SetAttribute(":path", request.URL.Path)
+	for key := range request.Header {
+		value := request.Header.Get(key)
+		content.SetAttribute(strings.ToLower(key), value)
+	}
+
+	ctx = session.ContextWithContent(ctx, content)
 
 	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
@@ -307,9 +308,9 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 		return nil
 	}
 
-	if err := task.Run(task.WithContext(ctx), task.Parallel(requestDone, responseDone))(); err != nil {
-		pipe.CloseError(link.Reader)
-		pipe.CloseError(link.Writer)
+	if err := task.Run(ctx, requestDone, responseDone); err != nil {
+		common.Interrupt(link.Reader)
+		common.Interrupt(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 

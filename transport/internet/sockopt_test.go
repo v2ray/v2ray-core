@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/compare"
 	"v2ray.com/core/testing/servers/tcp"
 	. "v2ray.com/core/transport/internet"
 )
@@ -34,7 +34,7 @@ func TestTCPFastOpen(t *testing.T) {
 
 	b := buf.New()
 	common.Must2(b.ReadFrom(conn))
-	if err := compare.BytesEqualWithDetail(b.Bytes(), []byte("abcd")); err != nil {
-		t.Fatal(err)
+	if r := cmp.Diff(b.Bytes(), []byte("abcd")); r != "" {
+		t.Fatal(r)
 	}
 }

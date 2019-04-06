@@ -19,7 +19,7 @@ func (w *Writer) Close() error {
 	return w.pipe.Close()
 }
 
-// CloseError sets the pipe to error state. Both reading and writing from/to the pipe will return io.ErrClosedPipe.
-func (w *Writer) CloseError() {
-	w.pipe.CloseError()
+// Interrupt implements common.Interruptible.
+func (w *Writer) Interrupt() {
+	w.pipe.Interrupt()
 }

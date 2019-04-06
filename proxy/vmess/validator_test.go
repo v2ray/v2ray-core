@@ -9,21 +9,18 @@ import (
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
 	. "v2ray.com/core/proxy/vmess"
-	. "v2ray.com/ext/assert"
 )
 
-func TestUserValidator(t *testing.T) {
-	assert := With(t)
+func toAccount(a *Account) protocol.Account {
+	account, err := a.AsAccount()
+	common.Must(err)
+	return account
+}
 
+func TestUserValidator(t *testing.T) {
 	hasher := protocol.DefaultIDHash
 	v := NewTimedUserValidator(hasher)
 	defer common.Close(v)
-
-	toAccount := func(a *Account) protocol.Account {
-		account, err := a.AsAccount()
-		common.Must(err)
-		return account
-	}
 
 	id := uuid.New()
 	user := &protocol.MemoryUser{
@@ -43,9 +40,15 @@ func TestUserValidator(t *testing.T) {
 			userHash := idHash.Sum(nil)
 
 			euser, ets, found := v.Get(userHash)
-			assert(found, IsTrue)
-			assert(euser.Email, Equals, user.Email)
-			assert(int64(ets), Equals, int64(ts))
+			if !found {
+				t.Fatal("user not found")
+			}
+			if euser.Email != user.Email {
+				t.Error("unexpected user email: ", euser.Email, " want ", user.Email)
+			}
+			if ets != ts {
+				t.Error("unexpected timestamp: ", ets, " want ", ts)
+			}
 		}
 
 		testSmallLag(0)
@@ -65,8 +68,9 @@ func TestUserValidator(t *testing.T) {
 			userHash := idHash.Sum(nil)
 
 			euser, _, found := v.Get(userHash)
-			assert(found, IsFalse)
-			assert(euser, IsNil)
+			if found || euser != nil {
+				t.Error("unexpected user")
+			}
 		}
 
 		testBigLag(121)
@@ -77,6 +81,30 @@ func TestUserValidator(t *testing.T) {
 		testBigLag(-500)
 	}
 
-	assert(v.Remove(user.Email), IsTrue)
-	assert(v.Remove(user.Email), IsFalse)
+	if v := v.Remove(user.Email); !v {
+		t.Error("unable to remove user")
+	}
+	if v := v.Remove(user.Email); v {
+		t.Error("remove user twice")
+	}
+}
+
+func BenchmarkUserValidator(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		hasher := protocol.DefaultIDHash
+		v := NewTimedUserValidator(hasher)
+
+		for j := 0; j < 1500; j++ {
+			id := uuid.New()
+			v.Add(&protocol.MemoryUser{
+				Email: "test",
+				Account: toAccount(&Account{
+					Id:      id.String(),
+					AlterId: 16,
+				}),
+			})
+		}
+
+		common.Close(v)
+	}
 }

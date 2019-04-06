@@ -1,8 +1,9 @@
+// +build !confonly
+
 package router
 
 import (
-	"context"
-
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/features/outbound"
 )
 
@@ -58,7 +59,7 @@ func (r *Rule) GetTag() (string, error) {
 	return r.Tag, nil
 }
 
-func (r *Rule) Apply(ctx context.Context) bool {
+func (r *Rule) Apply(ctx *Context) bool {
 	return r.Condition.Apply(ctx)
 }
 
@@ -81,8 +82,10 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 		conds.Add(NewInboundTagMatcher(rr.InboundTag))
 	}
 
-	if rr.PortRange != nil {
-		conds.Add(NewPortMatcher(*rr.PortRange))
+	if rr.PortList != nil {
+		conds.Add(NewPortMatcher(rr.PortList))
+	} else if rr.PortRange != nil {
+		conds.Add(NewPortMatcher(&net.PortList{Range: []*net.PortRange{rr.PortRange}}))
 	}
 
 	if len(rr.Networks) > 0 {
@@ -121,6 +124,14 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 
 	if len(rr.Protocol) > 0 {
 		conds.Add(NewProtocolMatcher(rr.Protocol))
+	}
+
+	if len(rr.Attributes) > 0 {
+		cond, err := NewAttributeMatcher(rr.Attributes)
+		if err != nil {
+			return nil, err
+		}
+		conds.Add(cond)
 	}
 
 	if conds.Len() == 0 {

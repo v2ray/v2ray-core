@@ -67,14 +67,3 @@ func New(opts ...Option) (*Reader, *Writer) {
 			pipe: p,
 		}
 }
-
-type closeError interface {
-	CloseError()
-}
-
-// CloseError invokes CloseError() method if the object is either Reader or Writer.
-func CloseError(v interface{}) {
-	if c, ok := v.(closeError); ok {
-		c.CloseError()
-	}
-}

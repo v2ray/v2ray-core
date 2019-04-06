@@ -8,6 +8,7 @@ const (
 	idSessionKey sessionKey = iota
 	inboundSessionKey
 	outboundSessionKey
+	contentSessionKey
 )
 
 // ContextWithID returns a new context with the given ID.
@@ -41,6 +42,17 @@ func ContextWithOutbound(ctx context.Context, outbound *Outbound) context.Contex
 func OutboundFromContext(ctx context.Context) *Outbound {
 	if outbound, ok := ctx.Value(outboundSessionKey).(*Outbound); ok {
 		return outbound
+	}
+	return nil
+}
+
+func ContextWithContent(ctx context.Context, content *Content) context.Context {
+	return context.WithValue(ctx, contentSessionKey, content)
+}
+
+func ContentFromContext(ctx context.Context) *Content {
+	if content, ok := ctx.Value(contentSessionKey).(*Content); ok {
+		return content
 	}
 	return nil
 }

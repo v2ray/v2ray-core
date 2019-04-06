@@ -1,16 +1,12 @@
 package localdns
 
 import (
-	"context"
-
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/features/dns"
 )
 
 // Client is an implementation of dns.Client, which queries localhost for DNS.
-type Client struct {
-	resolver net.Resolver
-}
+type Client struct{}
 
 // Type implements common.HasType.
 func (*Client) Type() interface{} {
@@ -24,16 +20,22 @@ func (*Client) Start() error { return nil }
 func (*Client) Close() error { return nil }
 
 // LookupIP implements Client.
-func (c *Client) LookupIP(host string) ([]net.IP, error) {
-	ipAddr, err := c.resolver.LookupIPAddr(context.Background(), host)
+func (*Client) LookupIP(host string) ([]net.IP, error) {
+	ips, err := net.LookupIP(host)
 	if err != nil {
 		return nil, err
 	}
-	ips := make([]net.IP, 0, len(ipAddr))
-	for _, addr := range ipAddr {
-		ips = append(ips, addr.IP)
+	parsedIPs := make([]net.IP, 0, len(ips))
+	for _, ip := range ips {
+		parsed := net.IPAddress(ip)
+		if parsed != nil {
+			parsedIPs = append(parsedIPs, parsed.IP())
+		}
 	}
-	return ips, nil
+	if len(parsedIPs) == 0 {
+		return nil, dns.ErrEmptyResponse
+	}
+	return parsedIPs, nil
 }
 
 // LookupIPv4 implements IPv4Lookup.
@@ -42,12 +44,14 @@ func (c *Client) LookupIPv4(host string) ([]net.IP, error) {
 	if err != nil {
 		return nil, err
 	}
-	var ipv4 []net.IP
+	ipv4 := make([]net.IP, 0, len(ips))
 	for _, ip := range ips {
-		parsed := net.IPAddress(ip)
-		if parsed.Family().IsIPv4() {
-			ipv4 = append(ipv4, parsed.IP())
+		if len(ip) == net.IPv4len {
+			ipv4 = append(ipv4, ip)
 		}
+	}
+	if len(ipv4) == 0 {
+		return nil, dns.ErrEmptyResponse
 	}
 	return ipv4, nil
 }
@@ -58,21 +62,19 @@ func (c *Client) LookupIPv6(host string) ([]net.IP, error) {
 	if err != nil {
 		return nil, err
 	}
-	var ipv6 []net.IP
+	ipv6 := make([]net.IP, 0, len(ips))
 	for _, ip := range ips {
-		parsed := net.IPAddress(ip)
-		if parsed.Family().IsIPv6() {
-			ipv6 = append(ipv6, parsed.IP())
+		if len(ip) == net.IPv6len {
+			ipv6 = append(ipv6, ip)
 		}
+	}
+	if len(ipv6) == 0 {
+		return nil, dns.ErrEmptyResponse
 	}
 	return ipv6, nil
 }
 
 // New create a new dns.Client that queries localhost for DNS.
 func New() *Client {
-	return &Client{
-		resolver: net.Resolver{
-			PreferGo: true,
-		},
-	}
+	return &Client{}
 }

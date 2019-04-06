@@ -1,3 +1,5 @@
+// +build !confonly
+
 package domainsocket
 
 import (
@@ -23,7 +25,7 @@ func (c *Config) GetUnixAddr() (*net.UnixAddr, error) {
 }
 
 func init() {
-	common.Must(internet.RegisterProtocolConfigCreatorByName(protocolName, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreator(protocolName, func() interface{} {
 		return new(Config)
 	}))
 }
