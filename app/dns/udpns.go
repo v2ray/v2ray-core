@@ -367,8 +367,8 @@ func (s *ClassicNameServer) sendQuery(ctx context.Context, domain string, option
 	msgs := s.buildMsgs(domain, option)
 
 	for _, msg := range msgs {
-		b, err := dns.PackMessage(msg)
-		common.Must(err)
+		b, _ := dns.PackMessage(msg)
+
 		udpCtx := context.Background()
 		if inbound := session.InboundFromContext(ctx); inbound != nil {
 			udpCtx = session.ContextWithInbound(udpCtx, inbound)
