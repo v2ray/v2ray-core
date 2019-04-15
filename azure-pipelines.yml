@@ -61,6 +61,8 @@ jobs:
     inputs:
       version: '1.12'
   - script: |
+      mkdir triggersrc
+      cp -r !(triggersrc) . triggersrc
       mkdir gopath
     displayName: Prepare Environment
     workingDirectory: '$(system.defaultWorkingDirectory)'
