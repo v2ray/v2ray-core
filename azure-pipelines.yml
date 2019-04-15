@@ -73,6 +73,7 @@ jobs:
   - script: |
       go version
       unset GOPATH
+      mkdir ./src
       mkdir ./src/v2ray.com
       ln -s ../triggersrc ./src/v2ray.com/core
       go get -v -t -d v2ray.com/core/...
