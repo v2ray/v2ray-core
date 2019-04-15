@@ -72,7 +72,9 @@ jobs:
     displayName: Apt Install
   - script: |
       go version
-      go get -v -t -d v2ray.com/core/...
+      #go get -v -t -d v2ray.com/core/...
+      unset GOPATH
+      go get -v -t -d github.com/v2fly/v2ray-core/...
     workingDirectory: '$(GOPATH)'
     displayName: 'Fetch sources'
   - script: |
