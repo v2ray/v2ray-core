@@ -68,7 +68,7 @@ jobs:
     workingDirectory: '$(system.defaultWorkingDirectory)'
   - script: |
       sudo apt-get -y update
-      sudo apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python openssl
+      sudo apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python openssl tree
     displayName: Apt Install
   - script: |
       go version
@@ -77,6 +77,7 @@ jobs:
       mkdir ./src/v2ray.com
       ln -s ../triggersrc ./src/v2ray.com/core
       go get -v -t -d ./src/v2ray.com/core/...
+      tree
     workingDirectory: '$(GOPATH)'
     displayName: 'Fetch sources'
   - script: |
