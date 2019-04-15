@@ -75,7 +75,7 @@ jobs:
       unset GOPATH
       mkdir ./src
       mkdir ./src/v2ray.com
-      ln -s ../triggersrc ./src/v2ray.com/core
+      ln -s $(pwd)/../triggersrc ./src/v2ray.com/core
       go get -v -t -d ./src/v2ray.com/core/...
       tree
     workingDirectory: '$(GOPATH)'
