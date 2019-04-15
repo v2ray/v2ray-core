@@ -75,6 +75,8 @@ jobs:
       #go get -v -t -d v2ray.com/core/...
       unset GOPATH
       go get -v -t -d github.com/v2fly/v2ray-core/...
+      mkdir ./src/v2ray.com
+      ln -s ./src/github.com/v2fly/v2ray-core/ ./src/v2ray.com/core
     workingDirectory: '$(GOPATH)'
     displayName: 'Fetch sources'
   - script: |
