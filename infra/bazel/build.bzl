@@ -30,6 +30,7 @@ def _go_command(ctx):
     "GOARCH="+ctx.attr.arch,
     #"GOROOT_FINAL=/go",
     "GO111MODULE=on",
+    "GOCACHE=${TMPDIR}/gocache"
   ]
 
   if ctx.attr.mips: # https://github.com/golang/go/issues/27260
