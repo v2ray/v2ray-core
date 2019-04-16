@@ -117,4 +117,4 @@ jobs:
     env:
       GITHUB_TOKEN: $(GITHUB_TOKEN)
       PRERELEASE: true
-      RELEASE_TAG: $(Build.SourceVersion)
+      RELEASE_TAG: unstable-$(Build.SourceVersion)
