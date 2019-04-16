@@ -101,6 +101,7 @@ jobs:
     displayName: 'Install Bazel'
   - script: |
       cd ./src/v2ray.com/core
+      ./release/updatedat.sh
       $HOME/bin/bazel build --action_env=GOPATH=$GOPATH --action_env=PATH=$PATH --action_env=GPG_PASS=${SIGN_KEY_PASS} --action_env=SPWD=$PWD --action_env=GOCACHE=$(go env GOCACHE) --spawn_strategy local //release:all
     workingDirectory: '$(GOPATH)'
     displayName: 'Build Binaries'
