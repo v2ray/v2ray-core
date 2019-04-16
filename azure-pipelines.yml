@@ -36,8 +36,6 @@ jobs:
 #variables:
 #    CODECOV_TOKEN: '$(coverage.token)'
 
-  variables:
-    - group: GithubToken
 
   steps:
   - checkout: self
@@ -58,8 +56,11 @@ jobs:
     vmImage: 'Ubuntu 16.04'
 
   variables:
-    GOPATH: '$(system.defaultWorkingDirectory)/gopath'
-    BAZEL_VER: '0.23.0'
+    - group: GithubToken
+    - name: GOPATH
+      value: '$(system.defaultWorkingDirectory)/gopath'
+    - name: BAZEL_VER
+      value: '0.23.0'
 
   steps:
   - checkout: self
