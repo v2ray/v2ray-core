@@ -108,8 +108,7 @@ jobs:
   - task: GitHubRelease@0
     inputs:
       gitHubConnection: v2flybleedingedge
-      repositoryName: v2fly/V2FlyBleedingEdgeBinary
-      target: '580bd35a4b8a35b672ee7c27b519bf74f4953002'
+      repositoryName: v2fly/v2ray-core
       tagSource: 'manual'
       tag: '$(Build.SourceVersion)'
       assets: '$(GOPATH)/release/*'
