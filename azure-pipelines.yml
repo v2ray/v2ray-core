@@ -104,7 +104,7 @@ jobs:
 
   - task: GitHubRelease@0
     inputs:
-      gitHubConnection: v2fly
+      gitHubConnection: v2flybleedingedge
       repositoryName: v2fly/V2FlyBleedingEdgeBinary
       tagSource: 'manual'
       tag: '$(Build.SourceVersion)'
