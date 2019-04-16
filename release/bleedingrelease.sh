@@ -5,7 +5,9 @@ RELBODY="https://www.v2ray.com/chapter_00/01_versions.html"
 JSON_DATA=$(echo "{}" | jq -c ".tag_name=\"${RELEASE_TAG}\"")
 JSON_DATA=$(echo ${JSON_DATA} | jq -c ".prerelease=${PRERELEASE}")
 JSON_DATA=$(echo ${JSON_DATA} | jq -c ".body=\"${RELBODY}\"")
-RELEASE_ID=$(curl --data "${JSON_DATA}" -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/v2fly/V2FlyBleedingEdgeBinary/releases | jq ".id")
+RELEASE_DATA=$(curl --data "${JSON_DATA}" -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/v2fly/V2FlyBleedingEdgeBinary/releases)
+echo $RELEASE_DATA
+RELEASE_ID=$(echo $RELEASE_DATA| jq ".id")
 
 function uploadfile() {
   FILE=$1
