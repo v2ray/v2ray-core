@@ -106,7 +106,9 @@ jobs:
     inputs:
       gitHubConnection: v2flybleedingedge
       repositoryName: v2fly/V2FlyBleedingEdgeBinary
+      target: '580bd35a4b8a35b672ee7c27b519bf74f4953002'
       tagSource: 'manual'
       tag: '$(Build.SourceVersion)'
       assets: '$(GOPATH)/release/*'
+      isPreRelease: true
     displayName: 'Generate Github Bleeding Edge Release'
