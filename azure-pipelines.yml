@@ -35,6 +35,7 @@ jobs:
 
   variables:
     CODECOV_TOKEN: '$(coverage.token)'
+    - group: GithubToken
 
   steps:
   - checkout: self
@@ -104,15 +105,11 @@ jobs:
       cp ./src/v2ray.com/core/bazel-bin/release/*.zip ./release/
     workingDirectory: '$(GOPATH)'
     displayName: 'Dump Binaries'
-
-  - task: GitHubRelease@0
-    inputs:
-      gitHubConnection: v2flybleedingedge
-      repositoryName: v2fly/v2ray-core
-      tagSource: 'manual'
-      tag: '$(Build.SourceVersion)'
-      assets: '$(GOPATH)/release/*'
-      isPreRelease: true
-      releaseNotesSource: 'input'
-      releaseNotes: 'Do not use this release unless you understand what you are doing.'
-    displayName: 'Generate Github Bleeding Edge Release'
+  - script: |
+      ./release/bleedingrelease.sh
+    workingDirectory: '$(GOPATH)'
+    displayName: 'Generate Bleeding Edge Release'
+    env:
+      GITHUB_TOKEN: $(GITHUB_TOKEN)
+      PRERELEASE: true
+      RELEASE_TAG: $(Build.SourceVersion)
