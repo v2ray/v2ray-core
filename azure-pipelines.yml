@@ -3,8 +3,11 @@ trigger:
   branches:
     include:
     - master
+    - dev*
 
-pr: none
+pr:
+  - master
+  - dev*
 
 jobs:
 - template: azure-pipelines.template.yml
@@ -111,4 +114,6 @@ jobs:
       tag: '$(Build.SourceVersion)'
       assets: '$(GOPATH)/release/*'
       isPreRelease: true
+      releaseNotesSource: 'input'
+      releaseNotes: 'Do not use this release unless you understand what you are doing.'
     displayName: 'Generate Github Bleeding Edge Release'
