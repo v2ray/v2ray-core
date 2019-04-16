@@ -35,6 +35,8 @@ jobs:
 
   variables:
     CODECOV_TOKEN: '$(coverage.token)'
+
+  variables:
     - group: GithubToken
 
   steps:
