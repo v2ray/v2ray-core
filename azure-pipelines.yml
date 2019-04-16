@@ -101,3 +101,12 @@ jobs:
       cp ./src/v2ray.com/core/bazel-bin/release/*.zip ./release/
     workingDirectory: '$(GOPATH)'
     displayName: 'Dump Binaries'
+
+  - task: GitHubRelease@0
+    inputs:
+      gitHubConnection: v2fly
+      repositoryName: v2fly/V2FlyBleedingEdgeBinary
+      tagSource: 'manual'
+      tag: '$(Build.SourceVersion)'
+      assets: '$(GOPATH)/release/*'
+    displayName: 'Generate Github Bleeding Edge Release'
