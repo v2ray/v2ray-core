@@ -108,6 +108,7 @@ jobs:
     workingDirectory: '$(GOPATH)'
     displayName: 'Dump Binaries'
   - script: |
+      cd ./src/v2ray.com/core
       ./release/bleedingrelease.sh
     workingDirectory: '$(GOPATH)'
     displayName: 'Generate Bleeding Edge Release'
