@@ -18,10 +18,10 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-var (
-	version  = "4.23.2"
+const (
+	version  = "4.20"
 	build    = "Custom"
-	codename = "V2Fly, a community-driven edition of V2Ray."
+	codename = "Let's Fly"
 	intro    = "A unified platform for anti-censorship."
 )
 

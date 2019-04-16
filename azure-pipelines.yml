@@ -94,7 +94,7 @@ jobs:
     displayName: 'Install Bazel'
   - script: |
       cd ./src/v2ray.com/core
-      $HOME/bin/bazel build --action_env=GOPATH=$GOPATH --action_env=PATH=$PATH --action_env=GPG_PASS=${SIGN_KEY_PASS} //release:all
+      $HOME/bin/bazel build --action_env=GOPATH=$GOPATH --action_env=PATH=$PATH --action_env=GPG_PASS=${SIGN_KEY_PASS} --action_env=SPWD=$PWD //release:all
     workingDirectory: '$(GOPATH)'
     displayName: 'Build Binaries'
   - script: |
