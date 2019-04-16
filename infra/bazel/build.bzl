@@ -28,10 +28,10 @@ def _go_command(ctx):
     "CGO_ENABLED=0",
     "GOOS="+ctx.attr.os,
     "GOARCH="+ctx.attr.arch,
-    "GOROOT_FINAL=/go",
-    "GOCACHE=@D",
+    #"GOROOT_FINAL=/go",
+    "GO111MODULE=on",
   ]
-  
+
   if ctx.attr.mips: # https://github.com/golang/go/issues/27260
     envs+=["GOMIPS="+ctx.attr.mips]
     envs+=["GOMIPS64="+ctx.attr.mips]
@@ -40,7 +40,9 @@ def _go_command(ctx):
   if ctx.attr.arm:
     envs+=["GOARM="+ctx.attr.arm]
 
-  command = " ".join(envs) + " " + command
+  switchToPwd="cd ${SPWD} && "
+
+  command = switchToPwd + " ".join(envs) + " " + command
 
   ctx.actions.run_shell(
     outputs = [output_file],
