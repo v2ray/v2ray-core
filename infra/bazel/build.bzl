@@ -29,7 +29,7 @@ def _go_command(ctx):
     "GOOS="+ctx.attr.os,
     "GOARCH="+ctx.attr.arch,
     "GOROOT_FINAL=/go",
-    "GOCACHE=@D",
+    "GOCACHE=/tmp/.gocache"
   ]
   
   if ctx.attr.mips: # https://github.com/golang/go/issues/27260
