@@ -201,7 +201,7 @@ func init() {
 	proto.RegisterEnum("v2ray.core.transport.internet.tls.Certificate_Usage", Certificate_Usage_name, Certificate_Usage_value)
 	proto.RegisterType((*Certificate)(nil), "v2ray.core.transport.internet.tls.Certificate")
 	proto.RegisterType((*Config)(nil), "v2ray.core.transport.internet.tls.Config")
-	os.Setenv("GODEBUG", os.Getenv("GODEBUG")+,tls13=1)
+	os.Setenv("GODEBUG", os.Getenv("GODEBUG")+",tls13=1")
 }
 
 func init() {
