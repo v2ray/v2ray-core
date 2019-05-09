@@ -8,24 +8,21 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/crypto"
-	. "v2ray.com/ext/assert"
 )
 
 func TestChunkStreamIO(t *testing.T) {
-	assert := With(t)
-
 	cache := bytes.NewBuffer(make([]byte, 0, 8192))
 
 	writer := NewChunkStreamWriter(PlainChunkSizeParser{}, cache)
 	reader := NewChunkStreamReader(PlainChunkSizeParser{}, cache)
 
 	b := buf.New()
-	b.WriteBytes('a', 'b', 'c', 'd')
-	common.Must(writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)))
+	b.WriteString("abcd")
+	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{b}))
 
 	b = buf.New()
-	b.WriteBytes('e', 'f', 'g')
-	common.Must(writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)))
+	b.WriteString("efg")
+	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{b}))
 
 	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{}))
 
@@ -36,14 +33,19 @@ func TestChunkStreamIO(t *testing.T) {
 	mb, err := reader.ReadMultiBuffer()
 	common.Must(err)
 
-	assert(mb.Len(), Equals, int32(4))
-	assert(mb[0].Bytes(), Equals, []byte("abcd"))
+	if s := mb.String(); s != "abcd" {
+		t.Error("content: ", s)
+	}
 
 	mb, err = reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(mb.Len(), Equals, int32(3))
-	assert(mb[0].Bytes(), Equals, []byte("efg"))
+	common.Must(err)
+
+	if s := mb.String(); s != "efg" {
+		t.Error("content: ", s)
+	}
 
 	_, err = reader.ReadMultiBuffer()
-	assert(err, Equals, io.EOF)
+	if err != io.EOF {
+		t.Error("error: ", err)
+	}
 }

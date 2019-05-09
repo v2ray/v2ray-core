@@ -1,3 +1,5 @@
+// +build !confonly
+
 package net
 
 import (
@@ -45,6 +47,15 @@ func ConnectionOutput(reader io.Reader) ConnectionOption {
 func ConnectionOutputMulti(reader buf.Reader) ConnectionOption {
 	return func(c *connection) {
 		c.reader = &buf.BufferedReader{Reader: reader}
+	}
+}
+
+func ConnectionOutputMultiUDP(reader buf.Reader) ConnectionOption {
+	return func(c *connection) {
+		c.reader = &buf.BufferedReader{
+			Reader:  reader,
+			Spliter: buf.SplitFirstBytes,
+		}
 	}
 }
 
@@ -99,13 +110,14 @@ func (c *connection) Write(b []byte) (int, error) {
 	}
 
 	l := len(b)
-	mb := buf.NewMultiBufferCap(int32(l)/buf.Size + 1)
-	common.Must2(mb.Write(b))
+	mb := make(buf.MultiBuffer, 0, l/buf.Size+1)
+	mb = buf.MergeBytes(mb, b)
 	return l, c.writer.WriteMultiBuffer(mb)
 }
 
 func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if c.done.Done() {
+		buf.ReleaseMulti(mb)
 		return io.ErrClosedPipe
 	}
 
@@ -115,7 +127,7 @@ func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 // Close implements net.Conn.Close().
 func (c *connection) Close() error {
 	common.Must(c.done.Close())
-	common.Close(c.reader)
+	common.Interrupt(c.reader)
 	common.Close(c.writer)
 	if c.onClose != nil {
 		return c.onClose.Close()

@@ -4,7 +4,6 @@ import (
 	"crypto/cipher"
 	"io"
 	"math/rand"
-	"time"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -177,7 +176,7 @@ func (r *AuthenticationReader) readInternal(soft bool, mb *buf.MultiBuffer) erro
 		if err != nil {
 			return nil
 		}
-		mb.Append(b)
+		*mb = append(*mb, b)
 		return nil
 	}
 
@@ -195,15 +194,15 @@ func (r *AuthenticationReader) readInternal(soft bool, mb *buf.MultiBuffer) erro
 		return err
 	}
 
-	common.Must2(mb.Write(rb))
+	*mb = buf.MergeBytes(*mb, rb)
 	return nil
 }
 
 func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	const readSize = 16
-	mb := buf.NewMultiBufferCap(readSize)
+	mb := make(buf.MultiBuffer, 0, readSize)
 	if err := r.readInternal(false, &mb); err != nil {
-		mb.Release()
+		buf.ReleaseMulti(mb)
 		return nil, err
 	}
 
@@ -213,7 +212,7 @@ func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 			break
 		}
 		if err != nil {
-			mb.Release()
+			buf.ReleaseMulti(mb)
 			return nil, err
 		}
 	}
@@ -227,7 +226,6 @@ type AuthenticationWriter struct {
 	sizeParser   ChunkSizeEncoder
 	transferType protocol.TransferType
 	padding      PaddingLengthGenerator
-	randReader   *rand.Rand
 }
 
 func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, writer io.Writer, transferType protocol.TransferType, padding PaddingLengthGenerator) *AuthenticationWriter {
@@ -239,13 +237,12 @@ func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, wr
 	}
 	if padding != nil {
 		w.padding = padding
-		w.randReader = rand.New(rand.NewSource(time.Now().Unix()))
 	}
 	return w
 }
 
-func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
-	encryptedSize := b.Len() + int32(w.auth.Overhead())
+func (w *AuthenticationWriter) seal(b []byte) (*buf.Buffer, error) {
+	encryptedSize := int32(len(b) + w.auth.Overhead())
 	var paddingSize int32
 	if w.padding != nil {
 		paddingSize = int32(w.padding.NextPaddingLen())
@@ -258,20 +255,21 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 
 	eb := buf.New()
 	w.sizeParser.Encode(uint16(encryptedSize+paddingSize), eb.Extend(w.sizeParser.SizeBytes()))
-	if _, err := w.auth.Seal(eb.Extend(encryptedSize)[:0], b.Bytes()); err != nil {
+	if _, err := w.auth.Seal(eb.Extend(encryptedSize)[:0], b); err != nil {
 		eb.Release()
 		return nil, err
 	}
 	if paddingSize > 0 {
 		// With size of the chunk and padding length encrypted, the content of padding doesn't matter much.
-		common.Must2(eb.ReadFullFrom(w.randReader, int32(paddingSize)))
+		paddingBytes := eb.Extend(paddingSize)
+		common.Must2(rand.Read(paddingBytes))
 	}
 
 	return eb, nil
 }
 
 func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
-	defer mb.Release()
+	defer buf.ReleaseMulti(mb)
 
 	var maxPadding int32
 	if w.padding != nil {
@@ -279,19 +277,24 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 	}
 
 	payloadSize := buf.Size - int32(w.auth.Overhead()) - w.sizeParser.SizeBytes() - maxPadding
-	mb2Write := buf.NewMultiBufferCap(int32(len(mb) + 10))
+	mb2Write := make(buf.MultiBuffer, 0, len(mb)+10)
+
+	temp := buf.New()
+	defer temp.Release()
+
+	rawBytes := temp.Extend(payloadSize)
 
 	for {
-		b := buf.New()
-		common.Must2(b.ReadFrom(io.LimitReader(&mb, int64(payloadSize))))
-		eb, err := w.seal(b)
-		b.Release()
+		nb, nBytes := buf.SplitBytes(mb, rawBytes)
+		mb = nb
+
+		eb, err := w.seal(rawBytes[:nBytes])
 
 		if err != nil {
-			mb2Write.Release()
+			buf.ReleaseMulti(mb2Write)
 			return err
 		}
-		mb2Write.Append(eb)
+		mb2Write = append(mb2Write, eb)
 		if mb.IsEmpty() {
 			break
 		}
@@ -301,21 +304,21 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 }
 
 func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
-	defer mb.Release()
+	defer buf.ReleaseMulti(mb)
 
-	mb2Write := buf.NewMultiBufferCap(int32(len(mb)) + 1)
+	mb2Write := make(buf.MultiBuffer, 0, len(mb)+1)
 
 	for _, b := range mb {
 		if b.IsEmpty() {
 			continue
 		}
 
-		eb, err := w.seal(b)
+		eb, err := w.seal(b.Bytes())
 		if err != nil {
 			continue
 		}
 
-		mb2Write.Append(eb)
+		mb2Write = append(mb2Write, eb)
 	}
 
 	if mb2Write.IsEmpty() {
@@ -328,12 +331,9 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 // WriteMultiBuffer implements buf.Writer.
 func (w *AuthenticationWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if mb.IsEmpty() {
-		b := buf.New()
-		defer b.Release()
-
-		eb, err := w.seal(b)
+		eb, err := w.seal([]byte{})
 		common.Must(err)
-		return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(eb))
+		return w.writer.WriteMultiBuffer(buf.MultiBuffer{eb})
 	}
 
 	if w.transferType == protocol.TransferTypeStream {

@@ -35,6 +35,7 @@ func (m *DNSClient) EXPECT() *DNSClientMockRecorder {
 
 // Close mocks base method
 func (m *DNSClient) Close() error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -42,11 +43,13 @@ func (m *DNSClient) Close() error {
 
 // Close indicates an expected call of Close
 func (mr *DNSClientMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*DNSClient)(nil).Close))
 }
 
 // LookupIP mocks base method
 func (m *DNSClient) LookupIP(arg0 string) ([]net.IP, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LookupIP", arg0)
 	ret0, _ := ret[0].([]net.IP)
 	ret1, _ := ret[1].(error)
@@ -55,11 +58,13 @@ func (m *DNSClient) LookupIP(arg0 string) ([]net.IP, error) {
 
 // LookupIP indicates an expected call of LookupIP
 func (mr *DNSClientMockRecorder) LookupIP(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LookupIP", reflect.TypeOf((*DNSClient)(nil).LookupIP), arg0)
 }
 
 // Start mocks base method
 func (m *DNSClient) Start() error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Start")
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -67,11 +72,13 @@ func (m *DNSClient) Start() error {
 
 // Start indicates an expected call of Start
 func (mr *DNSClientMockRecorder) Start() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*DNSClient)(nil).Start))
 }
 
 // Type mocks base method
 func (m *DNSClient) Type() interface{} {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Type")
 	ret0, _ := ret[0].(interface{})
 	return ret0
@@ -79,5 +86,6 @@ func (m *DNSClient) Type() interface{} {
 
 // Type indicates an expected call of Type
 func (mr *DNSClientMockRecorder) Type() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Type", reflect.TypeOf((*DNSClient)(nil).Type))
 }

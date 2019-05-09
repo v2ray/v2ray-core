@@ -1,9 +1,10 @@
+// +build !confonly
+
 package kcp
 
 import (
 	"sync"
 
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 )
 
@@ -151,7 +152,8 @@ func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
 
 func (w *ReceivingWorker) Release() {
 	w.Lock()
-	w.leftOver.Release()
+	buf.ReleaseMulti(w.leftOver)
+	w.leftOver = nil
 	w.Unlock()
 }
 
@@ -186,7 +188,7 @@ func (w *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 		return mb
 	}
 
-	mb := buf.NewMultiBufferCap(32)
+	mb := make(buf.MultiBuffer, 0, 32)
 
 	w.Lock()
 	defer w.Unlock()
@@ -196,7 +198,7 @@ func (w *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 			break
 		}
 		w.nextNumber++
-		mb.Append(seg.Detach())
+		mb = append(mb, seg.Detach())
 		seg.Release()
 	}
 
@@ -208,8 +210,7 @@ func (w *ReceivingWorker) Read(b []byte) int {
 	if mb.IsEmpty() {
 		return 0
 	}
-	nBytes, err := mb.Read(b)
-	common.Must(err)
+	mb, nBytes := buf.SplitBytes(mb, b)
 	if !mb.IsEmpty() {
 		w.leftOver = mb
 	}

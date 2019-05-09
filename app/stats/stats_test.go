@@ -7,26 +7,29 @@ import (
 	. "v2ray.com/core/app/stats"
 	"v2ray.com/core/common"
 	"v2ray.com/core/features/stats"
-	. "v2ray.com/ext/assert"
 )
 
 func TestInternface(t *testing.T) {
-	assert := With(t)
-
-	assert((*Manager)(nil), Implements, (*stats.Manager)(nil))
+	_ = (stats.Manager)(new(Manager))
 }
 
 func TestStatsCounter(t *testing.T) {
-	assert := With(t)
-
 	raw, err := common.CreateObject(context.Background(), &Config{})
-	assert(err, IsNil)
+	common.Must(err)
 
 	m := raw.(stats.Manager)
 	c, err := m.RegisterCounter("test.counter")
-	assert(err, IsNil)
+	common.Must(err)
 
-	assert(c.Add(1), Equals, int64(1))
-	assert(c.Set(0), Equals, int64(1))
-	assert(c.Value(), Equals, int64(0))
+	if v := c.Add(1); v != 1 {
+		t.Fatal("unpexcted Add(1) return: ", v, ", wanted ", 1)
+	}
+
+	if v := c.Set(0); v != 1 {
+		t.Fatal("unexpected Set(0) return: ", v, ", wanted ", 1)
+	}
+
+	if v := c.Value(); v != 0 {
+		t.Fatal("unexpected Value() return: ", v, ", wanted ", 0)
+	}
 }

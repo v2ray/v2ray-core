@@ -2,6 +2,7 @@ package buf_test
 
 import (
 	"crypto/rand"
+	"io"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -50,5 +51,21 @@ func TestWriteError(t *testing.T) {
 
 	if err.Error() != "error" {
 		t.Fatal("unexpected error message: ", err.Error())
+	}
+}
+
+type TestReader struct{}
+
+func (TestReader) Read(b []byte) (int, error) {
+	return len(b), nil
+}
+
+func BenchmarkCopy(b *testing.B) {
+	reader := buf.NewReader(io.LimitReader(TestReader{}, 10240))
+	writer := buf.Discard
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = buf.Copy(reader, writer)
 	}
 }

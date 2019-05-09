@@ -12,15 +12,6 @@ import (
 
 //go:generate errorgen
 
-type ClosableMultiBuffer struct {
-	buf.MultiBuffer
-}
-
-func (c *ClosableMultiBuffer) Close() error {
-	c.MultiBuffer.Release()
-	return nil
-}
-
 func loadConfigFile(configFile string) (io.ReadCloser, error) {
 	if configFile == "stdin:" {
 		return os.Stdin, nil
@@ -31,7 +22,9 @@ func loadConfigFile(configFile string) (io.ReadCloser, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &ClosableMultiBuffer{content}, nil
+		return &buf.MultiBufferContainer{
+			MultiBuffer: content,
+		}, nil
 	}
 
 	fixedFile := os.ExpandEnv(configFile)
@@ -41,12 +34,13 @@ func loadConfigFile(configFile string) (io.ReadCloser, error) {
 	}
 	defer file.Close()
 
-	content, err := buf.ReadAllToMultiBuffer(file)
+	content, err := buf.ReadFrom(file)
 	if err != nil {
 		return nil, newError("failed to load config file: ", fixedFile).Base(err).AtWarning()
 	}
-	return &ClosableMultiBuffer{content}, nil
-
+	return &buf.MultiBufferContainer{
+		MultiBuffer: content,
+	}, nil
 }
 
 func init() {

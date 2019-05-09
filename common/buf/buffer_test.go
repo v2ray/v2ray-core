@@ -5,43 +5,45 @@ import (
 	"crypto/rand"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
-	"v2ray.com/core/common/compare"
-	. "v2ray.com/ext/assert"
 )
 
 func TestBufferClear(t *testing.T) {
-	assert := With(t)
-
 	buffer := New()
 	defer buffer.Release()
 
 	payload := "Bytes"
 	buffer.Write([]byte(payload))
-	assert(buffer.Len(), Equals, int32(len(payload)))
+	if diff := cmp.Diff(buffer.Bytes(), []byte(payload)); diff != "" {
+		t.Error(diff)
+	}
 
 	buffer.Clear()
-	assert(buffer.Len(), Equals, int32(0))
+	if buffer.Len() != 0 {
+		t.Error("expect 0 lenght, but got ", buffer.Len())
+	}
 }
 
 func TestBufferIsEmpty(t *testing.T) {
-	assert := With(t)
-
 	buffer := New()
 	defer buffer.Release()
 
-	assert(buffer.IsEmpty(), IsTrue)
+	if buffer.IsEmpty() != true {
+		t.Error("expect empty buffer, but not")
+	}
 }
 
 func TestBufferString(t *testing.T) {
-	assert := With(t)
-
 	buffer := New()
 	defer buffer.Release()
 
-	common.Must2(buffer.WriteString("Test String"))
-	assert(buffer.String(), Equals, "Test String")
+	const payload = "Test String"
+	common.Must2(buffer.WriteString(payload))
+	if buffer.String() != payload {
+		t.Error("expect buffer content as ", payload, " but actually ", buffer.String())
+	}
 }
 
 func TestBufferSlice(t *testing.T) {
@@ -49,8 +51,8 @@ func TestBufferSlice(t *testing.T) {
 		b := New()
 		common.Must2(b.Write([]byte("abcd")))
 		bytes := b.BytesFrom(-2)
-		if err := compare.BytesEqualWithDetail(bytes, []byte{'c', 'd'}); err != nil {
-			t.Error(err)
+		if diff := cmp.Diff(bytes, []byte{'c', 'd'}); diff != "" {
+			t.Error(diff)
 		}
 	}
 
@@ -58,8 +60,8 @@ func TestBufferSlice(t *testing.T) {
 		b := New()
 		common.Must2(b.Write([]byte("abcd")))
 		bytes := b.BytesTo(-2)
-		if err := compare.BytesEqualWithDetail(bytes, []byte{'a', 'b'}); err != nil {
-			t.Error(err)
+		if diff := cmp.Diff(bytes, []byte{'a', 'b'}); diff != "" {
+			t.Error(diff)
 		}
 	}
 
@@ -67,8 +69,8 @@ func TestBufferSlice(t *testing.T) {
 		b := New()
 		common.Must2(b.Write([]byte("abcd")))
 		bytes := b.BytesRange(-3, -1)
-		if err := compare.BytesEqualWithDetail(bytes, []byte{'b', 'c'}); err != nil {
-			t.Error(err)
+		if diff := cmp.Diff(bytes, []byte{'b', 'c'}); diff != "" {
+			t.Error(diff)
 		}
 	}
 }
@@ -85,8 +87,8 @@ func TestBufferReadFullFrom(t *testing.T) {
 		t.Error("expect reading 1024 bytes, but actually ", n)
 	}
 
-	if err := compare.BytesEqualWithDetail(payload, b.Bytes()); err != nil {
-		t.Error(err)
+	if diff := cmp.Diff(payload, b.Bytes()); diff != "" {
+		t.Error(diff)
 	}
 }
 
@@ -94,5 +96,72 @@ func BenchmarkNewBuffer(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		buffer := New()
 		buffer.Release()
+	}
+}
+
+func BenchmarkNewBufferStack(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		buffer := StackNew()
+		buffer.Release()
+	}
+}
+
+func BenchmarkWrite2(b *testing.B) {
+	buffer := New()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = buffer.Write([]byte{'a', 'b'})
+		buffer.Clear()
+	}
+}
+
+func BenchmarkWrite8(b *testing.B) {
+	buffer := New()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = buffer.Write([]byte{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'})
+		buffer.Clear()
+	}
+}
+
+func BenchmarkWrite32(b *testing.B) {
+	buffer := New()
+	payload := make([]byte, 32)
+	rand.Read(payload)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = buffer.Write(payload)
+		buffer.Clear()
+	}
+}
+
+func BenchmarkWriteByte2(b *testing.B) {
+	buffer := New()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = buffer.WriteByte('a')
+		_ = buffer.WriteByte('b')
+		buffer.Clear()
+	}
+}
+
+func BenchmarkWriteByte8(b *testing.B) {
+	buffer := New()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = buffer.WriteByte('a')
+		_ = buffer.WriteByte('b')
+		_ = buffer.WriteByte('c')
+		_ = buffer.WriteByte('d')
+		_ = buffer.WriteByte('e')
+		_ = buffer.WriteByte('f')
+		_ = buffer.WriteByte('g')
+		_ = buffer.WriteByte('h')
+		buffer.Clear()
 	}
 }

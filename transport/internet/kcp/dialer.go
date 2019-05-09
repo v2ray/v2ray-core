@@ -1,3 +1,5 @@
+// +build !confonly
+
 package kcp
 
 import (
@@ -45,16 +47,17 @@ func fetchInput(ctx context.Context, input io.Reader, reader PacketReader, conn 
 	}
 }
 
-func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, error) {
+// DialKCP dials a new KCP connections to the specific destination.
+func DialKCP(ctx context.Context, dest net.Destination, streamSettings *internet.MemoryStreamConfig) (internet.Connection, error) {
 	dest.Network = net.Network_UDP
 	newError("dialing mKCP to ", dest).WriteToLog()
 
-	rawConn, err := internet.DialSystem(ctx, dest)
+	rawConn, err := internet.DialSystem(ctx, dest, streamSettings.SocketSettings)
 	if err != nil {
 		return nil, newError("failed to dial to dest: ", err).AtWarning().Base(err)
 	}
 
-	kcpSettings := internet.StreamSettingsFromContext(ctx).ProtocolSettings.(*Config)
+	kcpSettings := streamSettings.ProtocolSettings.(*Config)
 
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
@@ -85,7 +88,7 @@ func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, er
 
 	var iConn internet.Connection = session
 
-	if config := v2tls.ConfigFromContext(ctx); config != nil {
+	if config := v2tls.ConfigFromStreamSettings(streamSettings); config != nil {
 		tlsConn := tls.Client(iConn, config.GetTLSConfig(v2tls.WithDestination(dest)))
 		iConn = tlsConn
 	}

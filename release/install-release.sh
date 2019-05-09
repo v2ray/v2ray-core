@@ -18,6 +18,7 @@ V2RAY_RUNNING=0
 VSRC_ROOT="/tmp/v2ray"
 EXTRACT_ONLY=0
 ERROR_IF_UPTODATE=0
+DIST_SRC="github"
 
 CMD_INSTALL=""
 CMD_UPDATE=""
@@ -73,6 +74,10 @@ while [[ $# > 0 ]];do
         LOCAL_INSTALL="1"
         shift
         ;;
+        --source)
+        DIST_SRC="$2"
+        shift
+        ;;
         --errifuptodate)
         ERROR_IF_UPTODATE="1"
         ;;
@@ -118,8 +123,12 @@ sysArch(){
 downloadV2Ray(){
     rm -rf /tmp/v2ray
     mkdir -p /tmp/v2ray
-    colorEcho ${BLUE} "Downloading V2Ray."
-    DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
+    if [[ "${DIST_SRC}" == "jsdelivr" ]]; then
+        DOWNLOAD_LINK="https://cdn.jsdelivr.net/gh/v2ray/dist/v2ray-linux-${VDIS}.zip"
+    else
+        DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
+    fi
+    colorEcho ${BLUE} "Downloading V2Ray: ${DOWNLOAD_LINK}"
     curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
     if [ $? != 0 ];then
         colorEcho ${RED} "Failed to download! Please check your network or try again."
@@ -197,7 +206,7 @@ getVersion(){
     else
         VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
         RETVAL="$?"
-        CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2 | cut -d. -f-2`
+        CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2`
         if [[ ${CUR_VER} != v* ]]; then
             CUR_VER=v${CUR_VER}
         fi
@@ -211,7 +220,7 @@ getVersion(){
             return 3
         elif [[ $RETVAL -ne 0 ]];then
             return 2
-        elif [[ "$NEW_VER" != "$CUR_VER" ]];then
+        elif [[ `echo $NEW_VER | cut -d. -f-2` != `echo $CUR_VER | cut -d. -f-2` ]];then
             return 1
         fi
         return 0

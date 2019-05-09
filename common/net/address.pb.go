@@ -15,7 +15,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Address of a network host. It may be either an IP address or a domain address.
 type IPOrDomain struct {
@@ -90,70 +90,12 @@ func (m *IPOrDomain) GetDomain() string {
 	return ""
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*IPOrDomain) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _IPOrDomain_OneofMarshaler, _IPOrDomain_OneofUnmarshaler, _IPOrDomain_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*IPOrDomain) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*IPOrDomain_Ip)(nil),
 		(*IPOrDomain_Domain)(nil),
 	}
-}
-
-func _IPOrDomain_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*IPOrDomain)
-	// address
-	switch x := m.Address.(type) {
-	case *IPOrDomain_Ip:
-		b.EncodeVarint(1<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.Ip)
-	case *IPOrDomain_Domain:
-		b.EncodeVarint(2<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.Domain)
-	case nil:
-	default:
-		return fmt.Errorf("IPOrDomain.Address has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _IPOrDomain_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*IPOrDomain)
-	switch tag {
-	case 1: // address.ip
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Address = &IPOrDomain_Ip{x}
-		return true, err
-	case 2: // address.domain
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Address = &IPOrDomain_Domain{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _IPOrDomain_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*IPOrDomain)
-	// address
-	switch x := m.Address.(type) {
-	case *IPOrDomain_Ip:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.Ip)))
-		n += len(x.Ip)
-	case *IPOrDomain_Domain:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.Domain)))
-		n += len(x.Domain)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 func init() {

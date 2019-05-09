@@ -21,10 +21,10 @@ import (
 )
 
 func hashTimestamp(h hash.Hash, t protocol.Timestamp) []byte {
-	serial.WriteUint64(h, uint64(t))
-	serial.WriteUint64(h, uint64(t))
-	serial.WriteUint64(h, uint64(t))
-	serial.WriteUint64(h, uint64(t))
+	common.Must2(serial.WriteUint64(h, uint64(t)))
+	common.Must2(serial.WriteUint64(h, uint64(t)))
+	common.Must2(serial.WriteUint64(h, uint64(t)))
+	common.Must2(serial.WriteUint64(h, uint64(t)))
 	return h.Sum(nil)
 }
 
@@ -65,14 +65,15 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	buffer := buf.New()
 	defer buffer.Release()
 
-	common.Must2(buffer.WriteBytes(Version))
+	common.Must(buffer.WriteByte(Version))
 	common.Must2(buffer.Write(c.requestBodyIV[:]))
 	common.Must2(buffer.Write(c.requestBodyKey[:]))
-	common.Must2(buffer.WriteBytes(c.responseHeader, byte(header.Option)))
+	common.Must(buffer.WriteByte(c.responseHeader))
+	common.Must(buffer.WriteByte(byte(header.Option)))
 
 	padingLen := dice.Roll(16)
 	security := byte(padingLen<<4) | byte(header.Security)
-	common.Must2(buffer.WriteBytes(security, byte(0), byte(header.Command)))
+	common.Must2(buffer.Write([]byte{security, byte(0), byte(header.Command)}))
 
 	if header.Command != protocol.RequestCommandMux {
 		if err := addrParser.WriteAddressPort(buffer, header.Address, header.Port); err != nil {
@@ -103,7 +104,7 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
 		sizeParser = NewShakeSizeParser(c.requestBodyIV[:])
 	}
-	var padding crypto.PaddingLengthGenerator = nil
+	var padding crypto.PaddingLengthGenerator
 	if request.Option.Has(protocol.RequestOptionGlobalPadding) {
 		padding = sizeParser.(crypto.PaddingLengthGenerator)
 	}
@@ -163,7 +164,7 @@ func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	aesStream := crypto.NewAesDecryptionStream(c.responseBodyKey[:], c.responseBodyIV[:])
 	c.responseReader = crypto.NewCryptionReader(aesStream, reader)
 
-	buffer := buf.New()
+	buffer := buf.StackNew()
 	defer buffer.Release()
 
 	if _, err := buffer.ReadFullFrom(c.responseReader, 4); err != nil {
@@ -200,7 +201,7 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
 		sizeParser = NewShakeSizeParser(c.responseBodyIV[:])
 	}
-	var padding crypto.PaddingLengthGenerator = nil
+	var padding crypto.PaddingLengthGenerator
 	if request.Option.Has(protocol.RequestOptionGlobalPadding) {
 		padding = sizeParser.(crypto.PaddingLengthGenerator)
 	}

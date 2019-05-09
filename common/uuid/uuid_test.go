@@ -3,10 +3,10 @@ package uuid_test
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/compare"
 	. "v2ray.com/core/common/uuid"
-	. "v2ray.com/ext/assert"
 )
 
 func TestParseBytes(t *testing.T) {
@@ -15,8 +15,8 @@ func TestParseBytes(t *testing.T) {
 
 	uuid, err := ParseBytes(bytes)
 	common.Must(err)
-	if err := compare.StringEqualWithDetail(uuid.String(), str); err != nil {
-		t.Fatal(err)
+	if diff := cmp.Diff(uuid.String(), str); diff != "" {
+		t.Error(diff)
 	}
 
 	_, err = ParseBytes([]byte{1, 3, 2, 4})
@@ -31,8 +31,8 @@ func TestParseString(t *testing.T) {
 
 	uuid, err := ParseString(str)
 	common.Must(err)
-	if err := compare.BytesEqualWithDetail(expectedBytes, uuid.Bytes()); err != nil {
-		t.Fatal(err)
+	if r := cmp.Diff(expectedBytes, uuid.Bytes()); r != "" {
+		t.Fatal(r)
 	}
 
 	_, err = ParseString("2418d087")
@@ -47,33 +47,36 @@ func TestParseString(t *testing.T) {
 }
 
 func TestNewUUID(t *testing.T) {
-	assert := With(t)
-
 	uuid := New()
 	uuid2, err := ParseString(uuid.String())
 
-	assert(err, IsNil)
-	assert(uuid.String(), Equals, uuid2.String())
-	assert(uuid.Bytes(), Equals, uuid2.Bytes())
+	common.Must(err)
+	if uuid.String() != uuid2.String() {
+		t.Error("uuid string: ", uuid.String(), " != ", uuid2.String())
+	}
+	if r := cmp.Diff(uuid.Bytes(), uuid2.Bytes()); r != "" {
+		t.Error(r)
+	}
 }
 
 func TestRandom(t *testing.T) {
-	assert := With(t)
-
 	uuid := New()
 	uuid2 := New()
 
-	assert(uuid.String(), NotEquals, uuid2.String())
-	assert(uuid.Bytes(), NotEquals, uuid2.Bytes())
+	if uuid.String() == uuid2.String() {
+		t.Error("duplicated uuid")
+	}
 }
 
 func TestEquals(t *testing.T) {
-	assert := With(t)
-
-	var uuid *UUID = nil
-	var uuid2 *UUID = nil
-	assert(uuid.Equals(uuid2), IsTrue)
+	var uuid *UUID
+	var uuid2 *UUID
+	if !uuid.Equals(uuid2) {
+		t.Error("empty uuid should equal")
+	}
 
 	uuid3 := New()
-	assert(uuid.Equals(&uuid3), IsFalse)
+	if uuid.Equals(&uuid3) {
+		t.Error("nil uuid equals non-nil uuid")
+	}
 }

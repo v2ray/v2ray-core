@@ -3,6 +3,7 @@ package pipe
 import (
 	"errors"
 	"io"
+	"runtime"
 	"sync"
 	"time"
 
@@ -20,23 +21,32 @@ const (
 	errord
 )
 
-type pipe struct {
-	sync.Mutex
-	data            buf.MultiBuffer
-	readSignal      *signal.Notifier
-	writeSignal     *signal.Notifier
-	done            *done.Instance
-	limit           int32
-	state           state
+type pipeOption struct {
+	limit           int32 // maximum buffer size in bytes
 	discardOverflow bool
 }
 
+func (o *pipeOption) isFull(curSize int32) bool {
+	return o.limit >= 0 && curSize > o.limit
+}
+
+type pipe struct {
+	sync.Mutex
+	data        buf.MultiBuffer
+	readSignal  *signal.Notifier
+	writeSignal *signal.Notifier
+	done        *done.Instance
+	option      pipeOption
+	state       state
+}
+
 var errBufferFull = errors.New("buffer full")
+var errSlowDown = errors.New("slow down")
 
 func (p *pipe) getState(forRead bool) error {
 	switch p.state {
 	case open:
-		if !forRead && p.limit >= 0 && p.data.Len() > p.limit {
+		if !forRead && p.option.isFull(p.data.Len()) {
 			return errBufferFull
 		}
 		return nil
@@ -111,8 +121,13 @@ func (p *pipe) writeMultiBufferInternal(mb buf.MultiBuffer) error {
 		return err
 	}
 
-	p.data.AppendMulti(mb)
-	return nil
+	if p.data == nil {
+		p.data = mb
+		return nil
+	}
+
+	p.data, _ = buf.MergeMulti(p.data, mb)
+	return errSlowDown
 }
 
 func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
@@ -122,15 +137,26 @@ func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
 
 	for {
 		err := p.writeMultiBufferInternal(mb)
-		switch {
-		case err == nil:
+		if err == nil {
 			p.readSignal.Signal()
 			return nil
-		case err == errBufferFull && p.discardOverflow:
-			mb.Release()
+		}
+
+		if err == errSlowDown {
+			p.readSignal.Signal()
+
+			// Yield current goroutine. Hopefully the reading counterpart can pick up the payload.
+			runtime.Gosched()
 			return nil
-		case err != errBufferFull:
-			mb.Release()
+		}
+
+		if err == errBufferFull && p.option.discardOverflow {
+			buf.ReleaseMulti(mb)
+			return nil
+		}
+
+		if err != errBufferFull {
+			buf.ReleaseMulti(mb)
 			p.readSignal.Signal()
 			return err
 		}
@@ -156,7 +182,8 @@ func (p *pipe) Close() error {
 	return nil
 }
 
-func (p *pipe) CloseError() {
+// Interrupt implements common.Interruptible.
+func (p *pipe) Interrupt() {
 	p.Lock()
 	defer p.Unlock()
 
@@ -167,7 +194,7 @@ func (p *pipe) CloseError() {
 	p.state = errord
 
 	if !p.data.IsEmpty() {
-		p.data.Release()
+		buf.ReleaseMulti(p.data)
 		p.data = nil
 	}
 

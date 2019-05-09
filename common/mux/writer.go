@@ -58,7 +58,7 @@ func (w *Writer) writeMetaOnly() error {
 	if err := meta.WriteTo(b); err != nil {
 		return err
 	}
-	return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+	return w.writer.WriteMultiBuffer(buf.MultiBuffer{b})
 }
 
 func writeMetaWithFrame(writer buf.Writer, meta FrameMetadata, data buf.MultiBuffer) error {
@@ -70,9 +70,9 @@ func writeMetaWithFrame(writer buf.Writer, meta FrameMetadata, data buf.MultiBuf
 		return err
 	}
 
-	mb2 := buf.NewMultiBufferCap(int32(len(data)) + 1)
-	mb2.Append(frame)
-	mb2.AppendMulti(data)
+	mb2 := make(buf.MultiBuffer, 0, len(data)+1)
+	mb2 = append(mb2, frame)
+	mb2 = append(mb2, data...)
 	return writer.WriteMultiBuffer(mb2)
 }
 
@@ -85,7 +85,7 @@ func (w *Writer) writeData(mb buf.MultiBuffer) error {
 
 // WriteMultiBuffer implements buf.Writer.
 func (w *Writer) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	defer mb.Release()
+	defer buf.ReleaseMulti(mb)
 
 	if mb.IsEmpty() {
 		return w.writeMetaOnly()
@@ -94,9 +94,11 @@ func (w *Writer) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	for !mb.IsEmpty() {
 		var chunk buf.MultiBuffer
 		if w.transferType == protocol.TransferTypeStream {
-			chunk = mb.SliceBySize(8 * 1024)
+			mb, chunk = buf.SplitSize(mb, 8*1024)
 		} else {
-			chunk = buf.NewMultiBufferValue(mb.SplitFirst())
+			mb2, b := buf.SplitFirst(mb)
+			mb = mb2
+			chunk = buf.MultiBuffer{b}
 		}
 		if err := w.writeData(chunk); err != nil {
 			return err
@@ -119,6 +121,6 @@ func (w *Writer) Close() error {
 	frame := buf.New()
 	common.Must(meta.WriteTo(frame))
 
-	w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(frame)) // nolint: errcheck
+	w.writer.WriteMultiBuffer(buf.MultiBuffer{frame}) // nolint: errcheck
 	return nil
 }

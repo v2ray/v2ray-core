@@ -22,10 +22,10 @@ type Server struct {
 }
 
 func (server *Server) Start() (net.Destination, error) {
-	return server.StartContext(context.Background())
+	return server.StartContext(context.Background(), nil)
 }
 
-func (server *Server) StartContext(ctx context.Context) (net.Destination, error) {
+func (server *Server) StartContext(ctx context.Context, sockopt *internet.SocketConfig) (net.Destination, error) {
 	listenerAddr := server.Listen
 	if listenerAddr == nil {
 		listenerAddr = net.LocalHostIP
@@ -33,7 +33,7 @@ func (server *Server) StartContext(ctx context.Context) (net.Destination, error)
 	listener, err := internet.ListenSystem(ctx, &net.TCPAddr{
 		IP:   listenerAddr.IP(),
 		Port: int(server.Port),
-	})
+	}, sockopt)
 	if err != nil {
 		return net.Destination{}, err
 	}
@@ -64,7 +64,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 	}
 
 	pReader, pWriter := pipe.New(pipe.WithoutSizeLimit())
-	err := task.Run(task.Parallel(func() error {
+	err := task.Run(context.Background(), func() error {
 		defer pWriter.Close() // nolint: errcheck
 
 		for {
@@ -76,12 +76,12 @@ func (server *Server) handleConnection(conn net.Conn) {
 				return err
 			}
 			copy(b.Bytes(), server.MsgProcessor(b.Bytes()))
-			if err := pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b)); err != nil {
+			if err := pWriter.WriteMultiBuffer(buf.MultiBuffer{b}); err != nil {
 				return err
 			}
 		}
 	}, func() error {
-		defer pReader.CloseError()
+		defer pReader.Interrupt()
 
 		w := buf.NewWriter(conn)
 		for {
@@ -96,7 +96,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 				return err
 			}
 		}
-	}))()
+	})
 
 	if err != nil {
 		fmt.Println("failed to transfer data: ", err.Error())

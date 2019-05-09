@@ -1,9 +1,11 @@
+// +build !confonly
+
 package tls
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +18,8 @@ var (
 	globalSessionCache = tls.NewLRUClientSessionCache(128)
 )
 
+const exp8357 = "experiment:8357"
+
 // ParseCertificate converts a cert.Certificate to Certificate.
 func ParseCertificate(c *cert.Certificate) *Certificate {
 	certPEM, keyPEM := c.ToPEM()
@@ -23,6 +27,16 @@ func ParseCertificate(c *cert.Certificate) *Certificate {
 		Certificate: certPEM,
 		Key:         keyPEM,
 	}
+}
+
+func (c *Config) loadSelfCertPool() (*x509.CertPool, error) {
+	root := x509.NewCertPool()
+	for _, cert := range c.Certificate {
+		if !root.AppendCertsFromPEM(cert.Certificate) {
+			return nil, newError("failed to append cert").AtWarning()
+		}
+	}
+	return root, nil
 }
 
 // BuildCertificates builds a list of TLS certificates from proto definition.
@@ -140,11 +154,28 @@ func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.Cli
 	}
 }
 
+func (c *Config) IsExperiment8357() bool {
+	return strings.HasPrefix(c.ServerName, exp8357)
+}
+
+func (c *Config) parseServerName() string {
+	if c.IsExperiment8357() {
+		return c.ServerName[len(exp8357):]
+	}
+
+	return c.ServerName
+}
+
 // GetTLSConfig converts this Config into tls.Config.
 func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
+	root, err := c.getCertPool()
+	if err != nil {
+		newError("failed to load system root certificate").AtError().Base(err).WriteToLog()
+	}
+
 	config := &tls.Config{
 		ClientSessionCache:     globalSessionCache,
-		RootCAs:                c.getCertPool(),
+		RootCAs:                root,
 		SessionTicketsDisabled: c.DisableSessionResumption,
 	}
 	if c == nil {
@@ -181,9 +212,10 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 		config.GetCertificate = getGetCertificateFunc(config, caCerts)
 	}
 
-	if len(c.ServerName) > 0 {
-		config.ServerName = c.ServerName
+	if sn := c.parseServerName(); len(sn) > 0 {
+		config.ServerName = sn
 	}
+
 	if len(c.NextProtocol) > 0 {
 		config.NextProtos = c.NextProtocol
 	}
@@ -215,13 +247,12 @@ func WithNextProto(protocol ...string) Option {
 	}
 }
 
-// ConfigFromContext fetches Config from context. Nil if not found.
-func ConfigFromContext(ctx context.Context) *Config {
-	streamSettings := internet.StreamSettingsFromContext(ctx)
-	if streamSettings == nil {
+// ConfigFromStreamSettings fetches Config from stream settings. Nil if not found.
+func ConfigFromStreamSettings(settings *internet.MemoryStreamConfig) *Config {
+	if settings == nil {
 		return nil
 	}
-	config, ok := streamSettings.SecuritySettings.(*Config)
+	config, ok := settings.SecuritySettings.(*Config)
 	if !ok {
 		return nil
 	}

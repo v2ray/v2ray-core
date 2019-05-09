@@ -25,10 +25,12 @@ func NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) ciph
 	return f(aesBlock, iv)
 }
 
+// NewAesCTRStream creates a stream cipher based on AES-CTR.
 func NewAesCTRStream(key []byte, iv []byte) cipher.Stream {
 	return NewAesStreamMethod(key, iv, cipher.NewCTR)
 }
 
+// NewAesGcm creates a AEAD cipher based on AES-GCM.
 func NewAesGcm(key []byte) cipher.AEAD {
 	block, err := aes.NewCipher(key)
 	common.Must(err)

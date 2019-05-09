@@ -8,33 +8,10 @@ import (
 	"v2ray.com/core/common/signal"
 )
 
-type errorHandler func(error) error
 type dataHandler func(MultiBuffer)
 
 type copyHandler struct {
-	onReadError  []errorHandler
-	onData       []dataHandler
-	onWriteError []errorHandler
-}
-
-func (h *copyHandler) readFrom(reader Reader) (MultiBuffer, error) {
-	mb, err := reader.ReadMultiBuffer()
-	if err != nil {
-		for _, handler := range h.onReadError {
-			err = handler(err)
-		}
-	}
-	return mb, err
-}
-
-func (h *copyHandler) writeTo(writer Writer, mb MultiBuffer) error {
-	err := writer.WriteMultiBuffer(mb)
-	if err != nil {
-		for _, handler := range h.onWriteError {
-			err = handler(err)
-		}
-	}
-	return err
+	onData []dataHandler
 }
 
 // SizeCounter is for counting bytes copied by Copy().
@@ -75,6 +52,7 @@ func (e readError) Inner() error {
 	return e.error
 }
 
+// IsReadError returns true if the error in Copy() comes from reading.
 func IsReadError(err error) bool {
 	_, ok := err.(readError)
 	return ok
@@ -92,6 +70,7 @@ func (e writeError) Inner() error {
 	return e.error
 }
 
+// IsWriteError returns true if the error in Copy() comes from writing.
 func IsWriteError(err error) bool {
 	_, ok := err.(writeError)
 	return ok
@@ -99,13 +78,13 @@ func IsWriteError(err error) bool {
 
 func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 	for {
-		buffer, err := handler.readFrom(reader)
+		buffer, err := reader.ReadMultiBuffer()
 		if !buffer.IsEmpty() {
 			for _, handler := range handler.onData {
 				handler(buffer)
 			}
 
-			if werr := handler.writeTo(writer, buffer); werr != nil {
+			if werr := writer.WriteMultiBuffer(buffer); werr != nil {
 				return writeError{werr}
 			}
 		}

@@ -24,14 +24,8 @@ func TestSockOptMark(t *testing.T) {
 	defer tcpServer.Close()
 
 	const mark = 1
-	ctx := context.Background()
-	ctx = ContextWithStreamSettings(ctx, &MemoryStreamConfig{
-		SocketSettings: &SocketConfig{
-			Mark: mark,
-		},
-	})
 	dialer := DefaultSystemDialer{}
-	conn, err := dialer.Dial(ctx, nil, dest)
+	conn, err := dialer.Dial(context.Background(), nil, dest, &SocketConfig{Mark: mark})
 	common.Must(err)
 	defer conn.Close()
 

@@ -38,19 +38,22 @@ func (m *ProxyInbound) EXPECT() *ProxyInboundMockRecorder {
 }
 
 // Network mocks base method
-func (m *ProxyInbound) Network() net.NetworkList {
+func (m *ProxyInbound) Network() []net.Network {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Network")
-	ret0, _ := ret[0].(net.NetworkList)
+	ret0, _ := ret[0].([]net.Network)
 	return ret0
 }
 
 // Network indicates an expected call of Network
 func (mr *ProxyInboundMockRecorder) Network() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Network", reflect.TypeOf((*ProxyInbound)(nil).Network))
 }
 
 // Process mocks base method
 func (m *ProxyInbound) Process(arg0 context.Context, arg1 net.Network, arg2 internet.Connection, arg3 routing.Dispatcher) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Process", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -58,6 +61,7 @@ func (m *ProxyInbound) Process(arg0 context.Context, arg1 net.Network, arg2 inte
 
 // Process indicates an expected call of Process
 func (mr *ProxyInboundMockRecorder) Process(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Process", reflect.TypeOf((*ProxyInbound)(nil).Process), arg0, arg1, arg2, arg3)
 }
 
@@ -86,6 +90,7 @@ func (m *ProxyOutbound) EXPECT() *ProxyOutboundMockRecorder {
 
 // Process mocks base method
 func (m *ProxyOutbound) Process(arg0 context.Context, arg1 *transport.Link, arg2 internet.Dialer) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Process", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -93,5 +98,6 @@ func (m *ProxyOutbound) Process(arg0 context.Context, arg1 *transport.Link, arg2
 
 // Process indicates an expected call of Process
 func (mr *ProxyOutboundMockRecorder) Process(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Process", reflect.TypeOf((*ProxyOutbound)(nil).Process), arg0, arg1, arg2)
 }

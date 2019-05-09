@@ -32,12 +32,10 @@ func TestStatsWriter(t *testing.T) {
 		Writer:  buf.Discard,
 	}
 
-	var mb buf.MultiBuffer
-	common.Must2(mb.Write([]byte("abcd")))
+	mb := buf.MergeBytes(nil, []byte("abcd"))
 	common.Must(writer.WriteMultiBuffer(mb))
 
-	mb.Release()
-	common.Must2(mb.Write([]byte("efg")))
+	mb = buf.MergeBytes(nil, []byte("efg"))
 	common.Must(writer.WriteMultiBuffer(mb))
 
 	if c.Value() != 7 {

@@ -25,16 +25,11 @@ func ToString(v interface{}) string {
 	}
 }
 
+// Concat concatenates all input into a single string.
 func Concat(v ...interface{}) string {
 	builder := strings.Builder{}
 	for _, value := range v {
 		builder.WriteString(ToString(value))
 	}
 	return builder.String()
-}
-
-func WriteString(s string) func([]byte) (int, error) {
-	return func(b []byte) (int, error) {
-		return copy(b, []byte(s)), nil
-	}
 }

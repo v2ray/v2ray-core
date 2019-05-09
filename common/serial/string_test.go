@@ -4,13 +4,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	. "v2ray.com/core/common/serial"
-	. "v2ray.com/ext/assert"
 )
 
 func TestToString(t *testing.T) {
-	assert := With(t)
-
 	s := "a"
 	data := []struct {
 		Value  interface{}
@@ -23,7 +22,9 @@ func TestToString(t *testing.T) {
 	}
 
 	for _, c := range data {
-		assert(ToString(c.Value), Equals, c.String)
+		if r := cmp.Diff(ToString(c.Value), c.String); r != "" {
+			t.Error(r)
+		}
 	}
 }
 

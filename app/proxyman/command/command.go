@@ -1,3 +1,5 @@
+// +build !confonly
+
 package command
 
 import (
@@ -131,10 +133,10 @@ func (s *service) Register(server *grpc.Server) {
 	hs := &handlerServer{
 		s: s.v,
 	}
-	s.v.RequireFeatures(func(im inbound.Manager, om outbound.Manager) {
+	common.Must(s.v.RequireFeatures(func(im inbound.Manager, om outbound.Manager) {
 		hs.ihm = im
 		hs.ohm = om
-	})
+	}))
 	RegisterHandlerServiceServer(server, hs)
 }
 

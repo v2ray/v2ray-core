@@ -3,7 +3,6 @@ name: Crash report
 about: "Create a report for panics"
 ---
 
-Please read the [instruction](https://github.com/v2ray/v2ray-core/blob/master/.github/SUPPORT.md) and answer the following questions before submitting your issue. Thank you.
 Please answer all the questions with enough information. All issues not following this template will be closed immediately.
 If you are not sure if your question is truely a bug in V2Ray, please discuss it [here](https://github.com/v2ray/discussion/issues) first.
 
@@ -15,7 +14,7 @@ If you are not sure if your question is truely a bug in V2Ray, please discuss it
 
 You may get panic log using command `journalctl -u v2ray` if your system is Linux (systemd).
 
-5) Please attach your configuration file (**Mask IP addresses before submit this issue**).
+4) Please attach your configuration file (**Mask IP addresses before submit this issue**).
 
 ```javascript
     // Please attach your configuration here.

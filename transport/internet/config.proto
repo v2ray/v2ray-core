@@ -83,4 +83,8 @@ message SocketConfig {
   // ReceiveOriginalDestAddress is for enabling IP_RECVORIGDSTADDR socket option.
   // This option is for UDP only.
   bool receive_original_dest_address = 4;
+
+  bytes bind_address = 5;
+
+  uint32 bind_port = 6;
 }

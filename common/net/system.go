@@ -56,5 +56,6 @@ type TCPListener = net.TCPListener
 type UnixListener = net.UnixListener
 
 var ResolveUnixAddr = net.ResolveUnixAddr
+var ResolveUDPAddr = net.ResolveUDPAddr
 
 type Resolver = net.Resolver

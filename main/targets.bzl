@@ -1,5 +1,5 @@
-load("@v2ray_ext//bazel:build.bzl", "foreign_go_binary")
-load("@v2ray_ext//bazel:gpg.bzl", "gpg_sign")
+load("//infra/bazel:build.bzl", "foreign_go_binary")
+load("//infra/bazel:gpg.bzl", "gpg_sign")
 
 def gen_targets(matrix):
   pkg = "v2ray.com/core/main"

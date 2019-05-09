@@ -1,3 +1,5 @@
+// +build !confonly
+
 package shadowsocks
 
 import (
@@ -72,7 +74,7 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	size, err := serial.ReadUint16(v.reader)
 	if err != nil {
-		return nil, newError("failed to read size")
+		return nil, newError("failed to read size").Base(err)
 	}
 	size += AuthSize
 
@@ -92,8 +94,7 @@ func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		return nil, newError("invalid auth")
 	}
 
-	var mb buf.MultiBuffer
-	common.Must2(mb.Write(payload))
+	mb := buf.MergeBytes(nil, payload)
 
 	return mb, nil
 }
@@ -114,10 +115,10 @@ func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 
 // WriteMultiBuffer implements buf.Writer.
 func (w *ChunkWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	defer mb.Release()
+	defer buf.ReleaseMulti(mb)
 
 	for {
-		payloadLen, _ := mb.Read(w.buffer[2+AuthSize:])
+		mb, payloadLen := buf.SplitBytes(mb, w.buffer[2+AuthSize:])
 		binary.BigEndian.PutUint16(w.buffer, uint16(payloadLen))
 		w.auth.Authenticate(w.buffer[2+AuthSize:2+AuthSize+payloadLen], w.buffer[2:])
 		if err := buf.WriteAllBytes(w.writer, w.buffer[:2+AuthSize+payloadLen]); err != nil {

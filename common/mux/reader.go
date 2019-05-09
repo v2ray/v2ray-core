@@ -43,7 +43,7 @@ func (r *PacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		return nil, err
 	}
 	r.eof = true
-	return buf.NewMultiBufferValue(b), nil
+	return buf.MultiBuffer{b}, nil
 }
 
 // NewStreamReader creates a new StreamReader.

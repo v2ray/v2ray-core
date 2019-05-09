@@ -8,6 +8,7 @@ if [ "$DOTCNT" -gt 1 ]; then
   PRE="true"
 else
   PRE="false"
+  VER="${VER}.0"
 fi
 
 if [ -z "$PROJECT" ]; then
@@ -30,13 +31,6 @@ sed -i '' "s/\(version *= *\"\).*\(\"\)/\1$VERN\2/g" core.go
 echo "Committing core.go (may not necessary)"
 git commit core.go -S -m "Update version"
 echo "Pushing changes"
-git push --follow-tags
-popd
-
-pushd $GOPATH/src/v2ray.com/ext
-echo "Adding a new tag: " "v$VER" "to ext"
-git tag -s -a "v$VER" -m "Version ${VER}"
-echo "Pushing changes to ext"
 git push --follow-tags
 popd
 

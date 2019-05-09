@@ -24,6 +24,7 @@ import (
 
 	// Inbound and outbound proxies.
 	_ "v2ray.com/core/proxy/blackhole"
+	_ "v2ray.com/core/proxy/dns"
 	_ "v2ray.com/core/proxy/dokodemo"
 	_ "v2ray.com/core/proxy/freedom"
 	_ "v2ray.com/core/proxy/http"
@@ -37,6 +38,7 @@ import (
 	_ "v2ray.com/core/transport/internet/domainsocket"
 	_ "v2ray.com/core/transport/internet/http"
 	_ "v2ray.com/core/transport/internet/kcp"
+	_ "v2ray.com/core/transport/internet/quic"
 	_ "v2ray.com/core/transport/internet/tcp"
 	_ "v2ray.com/core/transport/internet/tls"
 	_ "v2ray.com/core/transport/internet/udp"

@@ -1,17 +1,13 @@
 #!/bin/bash
 
-if [ -n "${TRAVIS_TAG}" ]; then
-  exit 0
-fi
-
 FAIL=0
 
-V2RAY_OUT=${GOPATH}/out/v2ray
-V2RAY_COV=${V2RAY_OUT}/cov
+V2RAY_OUT=${PWD}/out/v2ray
+export V2RAY_COV=${V2RAY_OUT}/cov
 COVERAGE_FILE=${V2RAY_COV}/coverage.txt
 
 function test_package {
-  DIR="v2ray.com/core$1"
+  DIR=".$1"
   DEP=$(go list -f '{{ join .Deps "\n" }}' $DIR | grep v2ray | tr '\n' ',')
   DEP=${DEP}$DIR
   RND_NAME=$(openssl rand -hex 16)
@@ -28,7 +24,7 @@ if [ -f ${TEST_FILES[0]} ]; then
   test_package ""
 fi
 
-for DIR in $(find * -type d ! -path "*.git*" ! -path "*vendor*"); do
+for DIR in $(find * -type d ! -path "*.git*" ! -path "*vendor*" ! -path "*external*"); do
   TEST_FILES=($DIR/*_test.go)
   if [ -f ${TEST_FILES[0]} ]; then
     test_package "/$DIR"
@@ -41,7 +37,7 @@ for OUT_FILE in $(find ${V2RAY_COV} -name "*.out"); do
 done
 
 COV_SORTED=${V2RAY_COV}/coverallsorted.out
-cat ${COVERAGE_FILE} | sort -t: -k1 | grep -vw "testing" | grep -v ".pb.go" | grep -vw "vendor" > ${COV_SORTED}
+cat ${COVERAGE_FILE} | sort -t: -k1 | grep -vw "testing" | grep -v ".pb.go" | grep -vw "vendor" | grep -vw "external" > ${COV_SORTED}
 echo "mode: set" | cat - ${COV_SORTED} > ${COVERAGE_FILE}
 
 if [ "$FAIL" -eq 0 ]; then

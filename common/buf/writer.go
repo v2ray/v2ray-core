@@ -18,7 +18,7 @@ type BufferToBytesWriter struct {
 
 // WriteMultiBuffer implements Writer. This method takes ownership of the given buffer.
 func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
-	defer mb.Release()
+	defer ReleaseMulti(mb)
 
 	size := mb.Len()
 	if size == 0 {
@@ -29,17 +29,19 @@ func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 		return WriteAllBytes(w.Writer, mb[0].Bytes())
 	}
 
+	if cap(w.cache) < len(mb) {
+		w.cache = make([][]byte, 0, len(mb))
+	}
+
 	bs := w.cache
 	for _, b := range mb {
 		bs = append(bs, b.Bytes())
 	}
-	w.cache = bs
 
 	defer func() {
-		for idx := range w.cache {
-			w.cache[idx] = nil
+		for idx := range bs {
+			bs[idx] = nil
 		}
-		w.cache = w.cache[:0]
 	}()
 
 	nb := net.Buffers(bs)
@@ -134,15 +136,16 @@ func (w *BufferedWriter) WriteMultiBuffer(b MultiBuffer) error {
 		return w.writer.WriteMultiBuffer(b)
 	}
 
-	defer b.Release()
+	reader := MultiBufferContainer{
+		MultiBuffer: b,
+	}
+	defer reader.Close()
 
-	for !b.IsEmpty() {
+	for !reader.MultiBuffer.IsEmpty() {
 		if w.buffer == nil {
 			w.buffer = New()
 		}
-		if _, err := w.buffer.ReadFrom(&b); err != nil {
-			return err
-		}
+		common.Must2(w.buffer.ReadFrom(&reader))
 		if w.buffer.IsFull() {
 			if err := w.flushInternal(); err != nil {
 				return err
@@ -175,7 +178,7 @@ func (w *BufferedWriter) flushInternal() error {
 		return err
 	}
 
-	return w.writer.WriteMultiBuffer(NewMultiBufferValue(b))
+	return w.writer.WriteMultiBuffer(MultiBuffer{b})
 }
 
 // SetBuffered sets whether the internal buffer is used. If set to false, Flush() will be called to clear the buffer.
@@ -216,25 +219,15 @@ type SequentialWriter struct {
 
 // WriteMultiBuffer implements Writer.
 func (w *SequentialWriter) WriteMultiBuffer(mb MultiBuffer) error {
-	defer mb.Release()
-
-	for _, b := range mb {
-		if b.IsEmpty() {
-			continue
-		}
-
-		if err := WriteAllBytes(w.Writer, b.Bytes()); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	mb, err := WriteMultiBuffer(w.Writer, mb)
+	ReleaseMulti(mb)
+	return err
 }
 
 type noOpWriter byte
 
 func (noOpWriter) WriteMultiBuffer(b MultiBuffer) error {
-	b.Release()
+	ReleaseMulti(b)
 	return nil
 }
 

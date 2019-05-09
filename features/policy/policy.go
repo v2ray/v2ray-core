@@ -57,6 +57,8 @@ type Session struct {
 }
 
 // Manager is a feature that provides Policy for the given user by its id or level.
+//
+// v2ray:api:stable
 type Manager interface {
 	features.Feature
 
@@ -68,6 +70,8 @@ type Manager interface {
 }
 
 // ManagerType returns the type of Manager interface. Can be used to implement common.HasType.
+//
+// v2ray:api:stable
 func ManagerType() interface{} {
 	return (*Manager)(nil)
 }
@@ -87,10 +91,12 @@ func init() {
 		defaultBufferSize = -1 // For pipe to use unlimited size
 	case defaultValue: // Env flag not defined. Use default values per CPU-arch.
 		switch runtime.GOARCH {
-		case "arm", "arm64", "mips", "mipsle", "mips64", "mips64le":
-			defaultBufferSize = 16 * 1024 // 16k cache for low-end devices
+		case "arm", "mips", "mipsle":
+			defaultBufferSize = 0
+		case "arm64", "mips64", "mips64le":
+			defaultBufferSize = 4 * 1024 // 4k cache for low-end devices
 		default:
-			defaultBufferSize = 2 * 1024 * 1024
+			defaultBufferSize = 512 * 1024
 		}
 	default:
 		defaultBufferSize = int32(size) * 1024 * 1024
@@ -109,8 +115,8 @@ func SessionDefault() Session {
 		Timeouts: Timeout{
 			Handshake:      time.Second * 4,
 			ConnectionIdle: time.Second * 300,
-			UplinkOnly:     time.Second * 2,
-			DownlinkOnly:   time.Second * 5,
+			UplinkOnly:     time.Second * 1,
+			DownlinkOnly:   time.Second * 1,
 		},
 		Stats: Stats{
 			UserUplink:   false,

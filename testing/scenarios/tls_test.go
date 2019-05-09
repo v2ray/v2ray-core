@@ -1,12 +1,12 @@
 package scenarios
 
 import (
-	"crypto/rand"
 	"crypto/x509"
 	"runtime"
-	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
@@ -27,12 +27,9 @@ import (
 	"v2ray.com/core/transport/internet/http"
 	"v2ray.com/core/transport/internet/tls"
 	"v2ray.com/core/transport/internet/websocket"
-	. "v2ray.com/ext/assert"
 )
 
 func TestSimpleTLSConnection(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
@@ -127,21 +124,8 @@ func TestSimpleTLSConnection(t *testing.T) {
 	common.Must(err)
 	defer CloseAllServers(servers)
 
-	{
-		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-			IP:   []byte{127, 0, 0, 1},
-			Port: int(clientPort),
-		})
-		assert(err, IsNil)
-
-		payload := "dokodemo request."
-		nBytes, err := conn.Write([]byte(payload))
-		assert(err, IsNil)
-		assert(nBytes, Equals, len(payload))
-
-		response := readFrom(conn, time.Second*2, len(payload))
-		assert(response, Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+	if err := testTCPConn(clientPort, 1024, time.Second*2)(); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -155,17 +139,15 @@ func TestAutoIssuingCertificate(t *testing.T) {
 		return
 	}
 
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	caCert, err := cert.Generate(nil, cert.Authority(true), cert.KeyUsage(x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment|x509.KeyUsageCertSign))
-	assert(err, IsNil)
+	common.Must(err)
 	certPEM, keyPEM := caCert.ToPEM()
 
 	userID := protocol.NewID(uuid.New())
@@ -260,36 +242,22 @@ func TestAutoIssuingCertificate(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
 	for i := 0; i < 10; i++ {
-		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-			IP:   []byte{127, 0, 0, 1},
-			Port: int(clientPort),
-		})
-		assert(err, IsNil)
-
-		payload := "dokodemo request."
-		nBytes, err := conn.Write([]byte(payload))
-		assert(err, IsNil)
-		assert(nBytes, Equals, len(payload))
-
-		response := readFrom(conn, time.Second*2, len(payload))
-		assert(response, Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+		if err := testTCPConn(clientPort, 1024, time.Second*2)(); err != nil {
+			t.Error(err)
+		}
 	}
-
-	CloseAllServers(servers)
 }
 
 func TestTLSOverKCP(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -378,34 +346,20 @@ func TestTLSOverKCP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   []byte{127, 0, 0, 1},
-		Port: int(clientPort),
-	})
-	assert(err, IsNil)
-
-	payload := "dokodemo request."
-	nBytes, err := conn.Write([]byte(payload))
-	assert(err, IsNil)
-	assert(nBytes, Equals, len(payload))
-
-	response := readFrom(conn, time.Second*2, len(payload))
-	assert(response, Equals, xor([]byte(payload)))
-	assert(conn.Close(), IsNil)
-
-	CloseAllServers(servers)
+	if err := testTCPConn(clientPort, 1024, time.Second*2)(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestTLSOverWebSocket(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -500,35 +454,24 @@ func TestTLSOverWebSocket(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   []byte{127, 0, 0, 1},
-		Port: int(clientPort),
-	})
-	assert(err, IsNil)
-
-	payload := make([]byte, 10240*1024)
-	rand.Read(payload)
-	nBytes, err := conn.Write([]byte(payload))
-	assert(err, IsNil)
-	assert(nBytes, Equals, len(payload))
-
-	response := readFrom(conn, time.Second*20, len(payload))
-	assert(response, Equals, xor([]byte(payload)))
-	assert(conn.Close(), IsNil)
-
-	CloseAllServers(servers)
+	var errg errgroup.Group
+	for i := 0; i < 10; i++ {
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
+	}
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestHTTP2(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -635,32 +578,14 @@ func TestHTTP2(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			assert(err, IsNil)
-
-			payload := make([]byte, 10240*1024)
-			rand.Read(payload)
-			nBytes, err := conn.Write([]byte(payload))
-			assert(err, IsNil)
-			assert(nBytes, Equals, len(payload))
-
-			response := readFrom(conn, time.Second*20, len(payload))
-			assert(response, Equals, xor([]byte(payload)))
-			assert(conn.Close(), IsNil)
-		}()
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*40))
 	}
-	wg.Wait()
-
-	CloseAllServers(servers)
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }

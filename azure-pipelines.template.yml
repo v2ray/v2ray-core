@@ -1,0 +1,16 @@
+jobs:
+- job: ${{ parameters.name }}
+  timeoutInMinutes: 30
+
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+
+  steps:
+  - checkout: self
+  - task: GoTool@0
+    inputs:
+      version: '1.12'
+  - script: |
+      go test -p 1 -v -timeout 30m ./...
+    workingDirectory: '$(Build.SourcesDirectory)'
+    displayName: 'Test'

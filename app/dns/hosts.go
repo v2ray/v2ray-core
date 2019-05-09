@@ -1,3 +1,5 @@
+// +build !confonly
+
 package dns
 
 import (
@@ -7,8 +9,9 @@ import (
 	"v2ray.com/core/features"
 )
 
+// StaticHosts represents static domain-ip mapping in DNS server.
 type StaticHosts struct {
-	ips      map[uint32][]net.IP
+	ips      [][]net.Address
 	matchers *strmatcher.MatcherGroup
 }
 
@@ -31,10 +34,11 @@ func toStrMatcher(t DomainMatchingType, domain string) (strmatcher.Matcher, erro
 	return matcher, nil
 }
 
+// NewStaticHosts creates a new StaticHosts instance.
 func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain) (*StaticHosts, error) {
 	g := new(strmatcher.MatcherGroup)
 	sh := &StaticHosts{
-		ips:      make(map[uint32][]net.IP),
+		ips:      make([][]net.Address, len(hosts)+len(legacy)+16),
 		matchers: g,
 	}
 
@@ -48,10 +52,10 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 
 			address := ip.AsAddress()
 			if address.Family().IsDomain() {
-				return nil, newError("ignoring domain address in static hosts: ", address.Domain()).AtWarning()
+				return nil, newError("invalid domain address in static hosts: ", address.Domain()).AtWarning()
 			}
 
-			sh.ips[id] = []net.IP{address.IP()}
+			sh.ips[id] = []net.Address{address}
 		}
 	}
 
@@ -61,20 +65,54 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 			return nil, newError("failed to create domain matcher").Base(err)
 		}
 		id := g.Add(matcher)
-		ips := make([]net.IP, len(mapping.Ip))
-		for idx, ip := range mapping.Ip {
-			ips[idx] = net.IP(ip)
+		ips := make([]net.Address, 0, len(mapping.Ip)+1)
+		if len(mapping.Ip) > 0 {
+			for _, ip := range mapping.Ip {
+				addr := net.IPAddress(ip)
+				if addr == nil {
+					return nil, newError("invalid IP address in static hosts: ", ip).AtWarning()
+				}
+				ips = append(ips, addr)
+			}
+		} else if len(mapping.ProxiedDomain) > 0 {
+			ips = append(ips, net.DomainAddress(mapping.ProxiedDomain))
+		} else {
+			return nil, newError("neither IP address nor proxied domain specified for domain: ", mapping.Domain).AtWarning()
 		}
+
+		// Special handling for localhost IPv6. This is a dirty workaround as JSON config supports only single IP mapping.
+		if len(ips) == 1 && ips[0] == net.LocalHostIP {
+			ips = append(ips, net.LocalHostIPv6)
+		}
+
 		sh.ips[id] = ips
 	}
 
 	return sh, nil
 }
 
-func (h *StaticHosts) LookupIP(domain string) []net.IP {
+func filterIP(ips []net.Address, option IPOption) []net.Address {
+	filtered := make([]net.Address, 0, len(ips))
+	for _, ip := range ips {
+		if (ip.Family().IsIPv4() && option.IPv4Enable) || (ip.Family().IsIPv6() && option.IPv6Enable) {
+			filtered = append(filtered, ip)
+		}
+	}
+	if len(filtered) == 0 {
+		return nil
+	}
+	return filtered
+}
+
+// LookupIP returns IP address for the given domain, if exists in this StaticHosts.
+func (h *StaticHosts) LookupIP(domain string, option IPOption) []net.Address {
 	id := h.matchers.Match(domain)
 	if id == 0 {
 		return nil
 	}
-	return h.ips[id]
+	ips := h.ips[id]
+	if len(ips) == 1 && ips[0].Family().IsDomain() {
+		return ips
+	}
+	return filterIP(ips, option)
 }

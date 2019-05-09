@@ -2,30 +2,39 @@ package errors_test
 
 import (
 	"io"
+	"strings"
 	"testing"
 
-	"v2ray.com/core/common/compare"
+	"github.com/google/go-cmp/cmp"
+
 	. "v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	. "v2ray.com/ext/assert"
 )
 
 func TestError(t *testing.T) {
-	assert := With(t)
-
 	err := New("TestError")
-	assert(GetSeverity(err), Equals, log.Severity_Info)
+	if v := GetSeverity(err); v != log.Severity_Info {
+		t.Error("severity: ", v)
+	}
 
 	err = New("TestError2").Base(io.EOF)
-	assert(GetSeverity(err), Equals, log.Severity_Info)
+	if v := GetSeverity(err); v != log.Severity_Info {
+		t.Error("severity: ", v)
+	}
 
 	err = New("TestError3").Base(io.EOF).AtWarning()
-	assert(GetSeverity(err), Equals, log.Severity_Warning)
+	if v := GetSeverity(err); v != log.Severity_Warning {
+		t.Error("severity: ", v)
+	}
 
 	err = New("TestError4").Base(io.EOF).AtWarning()
 	err = New("TestError5").Base(err)
-	assert(GetSeverity(err), Equals, log.Severity_Warning)
-	assert(err.Error(), HasSubstring, "EOF")
+	if v := GetSeverity(err); v != log.Severity_Warning {
+		t.Error("severity: ", v)
+	}
+	if v := err.Error(); !strings.Contains(v, "EOF") {
+		t.Error("error: ", v)
+	}
 }
 
 type e struct{}
@@ -46,8 +55,8 @@ func TestErrorMessage(t *testing.T) {
 	}
 
 	for _, d := range data {
-		if err := compare.StringEqualWithDetail(d.msg, d.err.Error()); err != nil {
-			t.Fatal(err)
+		if diff := cmp.Diff(d.msg, d.err.Error()); diff != "" {
+			t.Error(diff)
 		}
 	}
 }

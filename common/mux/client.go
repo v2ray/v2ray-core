@@ -35,7 +35,7 @@ func (m *ClientManager) Dispatch(ctx context.Context, link *transport.Link) erro
 		}
 	}
 
-	return newError("unable to find an available mux client")
+	return newError("unable to find an available mux client").AtWarning()
 }
 
 type WorkerPicker interface {
@@ -213,8 +213,8 @@ func (m *ClientWorker) monitor() {
 		select {
 		case <-m.done.Wait():
 			m.sessionManager.Close()
-			common.Close(m.link.Writer)    // nolint: errcheck
-			pipe.CloseError(m.link.Reader) // nolint: errcheck
+			common.Close(m.link.Writer)     // nolint: errcheck
+			common.Interrupt(m.link.Reader) // nolint: errcheck
 			return
 		case <-timer.C:
 			size := m.sessionManager.Size()
@@ -253,14 +253,14 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	if err := writeFirstPayload(s.input, writer); err != nil {
 		newError("failed to write first payload").Base(err).WriteToLog(session.ExportIDToError(ctx))
 		writer.hasError = true
-		pipe.CloseError(s.input)
+		common.Interrupt(s.input)
 		return
 	}
 
 	if err := buf.Copy(s.input, writer); err != nil {
 		newError("failed to fetch all input").Base(err).WriteToLog(session.ExportIDToError(ctx))
 		writer.hasError = true
-		pipe.CloseError(s.input)
+		common.Interrupt(s.input)
 		return
 	}
 }
@@ -274,7 +274,7 @@ func (m *ClientWorker) IsClosing() bool {
 }
 
 func (m *ClientWorker) IsFull() bool {
-	if m.IsClosing() {
+	if m.IsClosing() || m.Closed() {
 		return true
 	}
 
@@ -339,7 +339,7 @@ func (m *ClientWorker) handleStatusKeep(meta *FrameMetadata, reader *buf.Buffere
 		closingWriter.Close()
 
 		drainErr := buf.Copy(rr, buf.Discard)
-		pipe.CloseError(s.input)
+		common.Interrupt(s.input)
 		s.Close()
 		return drainErr
 	}
@@ -350,8 +350,8 @@ func (m *ClientWorker) handleStatusKeep(meta *FrameMetadata, reader *buf.Buffere
 func (m *ClientWorker) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if s, found := m.sessionManager.Get(meta.SessionID); found {
 		if meta.Option.Has(OptionError) {
-			pipe.CloseError(s.input)
-			pipe.CloseError(s.output)
+			common.Interrupt(s.input)
+			common.Interrupt(s.output)
 		}
 		s.Close()
 	}

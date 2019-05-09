@@ -1,3 +1,5 @@
+// +build !confonly
+
 package shadowsocks
 
 import (
@@ -147,7 +149,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 		authenticator.Authenticate(authPayload, authBuffer)
 	}
 
-	if err := w.WriteMultiBuffer(buf.NewMultiBufferValue(header)); err != nil {
+	if err := w.WriteMultiBuffer(buf.MultiBuffer{header}); err != nil {
 		return nil, newError("failed to write header").Base(err)
 	}
 
@@ -301,7 +303,7 @@ func (v *UDPReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		buffer.Release()
 		return nil, err
 	}
-	return buf.NewMultiBufferValue(payload), nil
+	return buf.MultiBuffer{payload}, nil
 }
 
 type UDPWriter struct {

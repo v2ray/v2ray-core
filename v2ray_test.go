@@ -8,16 +8,17 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
 	"v2ray.com/core/features/dns"
+	"v2ray.com/core/features/dns/localdns"
 	_ "v2ray.com/core/main/distro/all"
 	"v2ray.com/core/proxy/dokodemo"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/outbound"
+	"v2ray.com/core/testing/servers/tcp"
 )
 
 func TestV2RayDependency(t *testing.T) {
@@ -30,12 +31,13 @@ func TestV2RayDependency(t *testing.T) {
 		}
 		wait <- true
 	})
-	instance.AddFeature(dns.LocalClient{})
+	instance.AddFeature(localdns.New())
 	<-wait
 }
 
 func TestV2RayClose(t *testing.T) {
-	port := net.Port(dice.RollUint16())
+	port := tcp.PickPort()
+
 	userId := uuid.New()
 	config := &Config{
 		App: []*serial.TypedMessage{

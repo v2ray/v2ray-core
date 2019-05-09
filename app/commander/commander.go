@@ -1,3 +1,5 @@
+// +build !confonly
+
 package commander
 
 //go:generate errorgen
@@ -30,9 +32,9 @@ func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
 		tag: config.Tag,
 	}
 
-	core.RequireFeatures(ctx, func(om outbound.Manager) {
+	common.Must(core.RequireFeatures(ctx, func(om outbound.Manager) {
 		c.ohm = om
-	})
+	}))
 
 	for _, rawConfig := range config.Service {
 		config, err := rawConfig.GetInstance()

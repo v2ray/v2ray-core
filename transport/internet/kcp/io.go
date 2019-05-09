@@ -1,3 +1,5 @@
+// +build !confonly
+
 package kcp
 
 import (
@@ -26,6 +28,9 @@ type KCPPacketReader struct {
 
 func (r *KCPPacketReader) Read(b []byte) []Segment {
 	if r.Header != nil {
+		if int32(len(b)) <= r.Header.Size() {
+			return nil
+		}
 		b = b[r.Header.Size():]
 	}
 	if r.Security != nil {
@@ -70,7 +75,7 @@ func (w *KCPPacketWriter) Overhead() int {
 }
 
 func (w *KCPPacketWriter) Write(b []byte) (int, error) {
-	bb := buf.New()
+	bb := buf.StackNew()
 	defer bb.Release()
 
 	if w.Header != nil {

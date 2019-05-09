@@ -7,7 +7,7 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
-func readOne(r io.Reader) (*Buffer, error) {
+func readOneUDP(r io.Reader) (*Buffer, error) {
 	b := New()
 	for i := 0; i < 64; i++ {
 		_, err := b.ReadFrom(r)
@@ -20,7 +20,25 @@ func readOne(r io.Reader) (*Buffer, error) {
 		}
 	}
 
+	b.Release()
 	return nil, newError("Reader returns too many empty payloads.")
+}
+
+// ReadBuffer reads a Buffer from the given reader, without allocating large buffer in advance.
+func ReadBuffer(r io.Reader) (*Buffer, error) {
+	// Use an one-byte buffer to wait for incoming payload.
+	var firstByte [1]byte
+	nBytes, err := r.Read(firstByte[:])
+	if err != nil {
+		return nil, err
+	}
+
+	b := New()
+	if nBytes > 0 {
+		common.Must(b.WriteByte(firstByte[0]))
+	}
+	b.ReadFrom(r)
+	return b, nil
 }
 
 // BufferedReader is a Reader that keeps its internal buffer.
@@ -29,6 +47,8 @@ type BufferedReader struct {
 	Reader Reader
 	// Buffer is the internal buffer to be read from first
 	Buffer MultiBuffer
+	// Spliter is a function to read bytes from MultiBuffer
+	Spliter func(MultiBuffer, []byte) (MultiBuffer, int)
 }
 
 // BufferedBytes returns the number of bytes that is cached in this reader.
@@ -45,11 +65,15 @@ func (r *BufferedReader) ReadByte() (byte, error) {
 
 // Read implements io.Reader. It reads from internal buffer first (if available) and then reads from the underlying reader.
 func (r *BufferedReader) Read(b []byte) (int, error) {
+	spliter := r.Spliter
+	if spliter == nil {
+		spliter = SplitBytes
+	}
+
 	if !r.Buffer.IsEmpty() {
-		nBytes, err := r.Buffer.Read(b)
-		common.Must(err)
+		buffer, nBytes := spliter(r.Buffer, b)
+		r.Buffer = buffer
 		if r.Buffer.IsEmpty() {
-			r.Buffer.Release()
 			r.Buffer = nil
 		}
 		return nBytes, nil
@@ -60,12 +84,11 @@ func (r *BufferedReader) Read(b []byte) (int, error) {
 		return 0, err
 	}
 
-	nBytes, err := mb.Read(b)
-	common.Must(err)
+	mb, nBytes := spliter(mb, b)
 	if !mb.IsEmpty() {
 		r.Buffer = mb
 	}
-	return nBytes, err
+	return nBytes, nil
 }
 
 // ReadMultiBuffer implements Reader.
@@ -89,7 +112,8 @@ func (r *BufferedReader) ReadAtMost(size int32) (MultiBuffer, error) {
 		r.Buffer = mb
 	}
 
-	mb := r.Buffer.SliceBySize(size)
+	rb, mb := SplitSize(r.Buffer, size)
+	r.Buffer = rb
 	if r.Buffer.IsEmpty() {
 		r.Buffer = nil
 	}
@@ -120,11 +144,13 @@ func (r *BufferedReader) WriteTo(writer io.Writer) (int64, error) {
 	return nBytes, err
 }
 
+// Interrupt implements common.Interruptible.
+func (r *BufferedReader) Interrupt() {
+	common.Interrupt(r.Reader)
+}
+
 // Close implements io.Closer.
 func (r *BufferedReader) Close() error {
-	if !r.Buffer.IsEmpty() {
-		r.Buffer.Release()
-	}
 	return common.Close(r.Reader)
 }
 
@@ -135,9 +161,23 @@ type SingleReader struct {
 
 // ReadMultiBuffer implements Reader.
 func (r *SingleReader) ReadMultiBuffer() (MultiBuffer, error) {
-	b, err := readOne(r.Reader)
+	b, err := ReadBuffer(r.Reader)
 	if err != nil {
 		return nil, err
 	}
-	return NewMultiBufferValue(b), nil
+	return MultiBuffer{b}, nil
+}
+
+// PacketReader is a Reader that read one Buffer every time.
+type PacketReader struct {
+	io.Reader
+}
+
+// ReadMultiBuffer implements Reader.
+func (r *PacketReader) ReadMultiBuffer() (MultiBuffer, error) {
+	b, err := readOneUDP(r.Reader)
+	if err != nil {
+		return nil, err
+	}
+	return MultiBuffer{b}, nil
 }

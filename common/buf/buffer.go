@@ -25,9 +25,11 @@ func (b *Buffer) Release() {
 	if b == nil || b.v == nil {
 		return
 	}
-	pool.Put(b.v)
+
+	p := b.v
 	b.v = nil
 	b.Clear()
+	pool.Put(p)
 }
 
 // Clear clears the content of the buffer, results an empty buffer with
@@ -57,7 +59,7 @@ func (b *Buffer) Bytes() []byte {
 func (b *Buffer) Extend(n int32) []byte {
 	end := b.end + n
 	if end > int32(len(b.v)) {
-		panic(newError("out of bound: ", end))
+		panic("extending out of bound")
 	}
 	ext := b.v[b.end:end]
 	b.end = end
@@ -139,9 +141,14 @@ func (b *Buffer) Write(data []byte) (int, error) {
 	return nBytes, nil
 }
 
-// WriteBytes appends one or more bytes to the end of the buffer.
-func (b *Buffer) WriteBytes(bytes ...byte) (int, error) {
-	return b.Write(bytes)
+// WriteByte writes a single byte into the buffer.
+func (b *Buffer) WriteByte(v byte) error {
+	if b.IsFull() {
+		return newError("buffer full")
+	}
+	b.v[b.end] = v
+	b.end++
+	return nil
 }
 
 // WriteString implements io.StringWriter.
@@ -174,7 +181,8 @@ func (b *Buffer) ReadFrom(reader io.Reader) (int64, error) {
 func (b *Buffer) ReadFullFrom(reader io.Reader, size int32) (int64, error) {
 	end := b.end + size
 	if end > int32(len(b.v)) {
-		return 0, newError("out of bound: ", end)
+		v := end
+		return 0, newError("out of bound: ", v)
 	}
 	n, err := io.ReadFull(reader, b.v[b.end:end])
 	b.end += int32(n)
@@ -191,6 +199,14 @@ var pool = bytespool.GetPool(Size)
 // New creates a Buffer with 0 length and 2K capacity.
 func New() *Buffer {
 	return &Buffer{
+		v: pool.Get().([]byte),
+	}
+}
+
+// StackNew creates a new Buffer object on stack.
+// This method is for buffers that is released in the same function.
+func StackNew() Buffer {
+	return Buffer{
 		v: pool.Get().([]byte),
 	}
 }

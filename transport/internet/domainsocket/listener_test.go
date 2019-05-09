@@ -12,41 +12,42 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	. "v2ray.com/core/transport/internet/domainsocket"
-	. "v2ray.com/ext/assert"
 )
 
 func TestListen(t *testing.T) {
-	assert := With(t)
-
-	ctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+	ctx := context.Background()
+	streamSettings := &internet.MemoryStreamConfig{
 		ProtocolName: "domainsocket",
 		ProtocolSettings: &Config{
 			Path: "/tmp/ts3",
 		},
-	})
-	listener, err := Listen(ctx, nil, net.Port(0), func(conn internet.Connection) {
+	}
+	listener, err := Listen(ctx, nil, net.Port(0), streamSettings, func(conn internet.Connection) {
 		defer conn.Close()
 
 		b := buf.New()
+		defer b.Release()
 		common.Must2(b.ReadFrom(conn))
-		assert(b.String(), Equals, "Request")
+		b.WriteString("Response")
 
-		common.Must2(conn.Write([]byte("Response")))
+		common.Must2(conn.Write(b.Bytes()))
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	defer listener.Close()
 
-	conn, err := Dial(ctx, net.Destination{})
-	assert(err, IsNil)
+	conn, err := Dial(ctx, net.Destination{}, streamSettings)
+	common.Must(err)
 	defer conn.Close()
 
-	_, err = conn.Write([]byte("Request"))
-	assert(err, IsNil)
+	common.Must2(conn.Write([]byte("Request")))
 
 	b := buf.New()
+	defer b.Release()
 	common.Must2(b.ReadFrom(conn))
 
-	assert(b.String(), Equals, "Response")
+	if b.String() != "RequestResponse" {
+		t.Error("expected response as 'RequestResponse' but got ", b.String())
+	}
 }
 
 func TestListenAbstract(t *testing.T) {
@@ -54,36 +55,38 @@ func TestListenAbstract(t *testing.T) {
 		return
 	}
 
-	assert := With(t)
-
-	ctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+	ctx := context.Background()
+	streamSettings := &internet.MemoryStreamConfig{
 		ProtocolName: "domainsocket",
 		ProtocolSettings: &Config{
 			Path:     "/tmp/ts3",
 			Abstract: true,
 		},
-	})
-	listener, err := Listen(ctx, nil, net.Port(0), func(conn internet.Connection) {
+	}
+	listener, err := Listen(ctx, nil, net.Port(0), streamSettings, func(conn internet.Connection) {
 		defer conn.Close()
 
 		b := buf.New()
+		defer b.Release()
 		common.Must2(b.ReadFrom(conn))
-		assert(b.String(), Equals, "Request")
+		b.WriteString("Response")
 
-		common.Must2(conn.Write([]byte("Response")))
+		common.Must2(conn.Write(b.Bytes()))
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	defer listener.Close()
 
-	conn, err := Dial(ctx, net.Destination{})
-	assert(err, IsNil)
+	conn, err := Dial(ctx, net.Destination{}, streamSettings)
+	common.Must(err)
 	defer conn.Close()
 
-	_, err = conn.Write([]byte("Request"))
-	assert(err, IsNil)
+	common.Must2(conn.Write([]byte("Request")))
 
 	b := buf.New()
+	defer b.Release()
 	common.Must2(b.ReadFrom(conn))
 
-	assert(b.String(), Equals, "Response")
+	if b.String() != "RequestResponse" {
+		t.Error("expected response as 'RequestResponse' but got ", b.String())
+	}
 }
