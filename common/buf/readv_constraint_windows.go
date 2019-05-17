@@ -13,7 +13,7 @@ func checkReadVConstraint(conn syscall.RawConn) (bool, error) {
 
 			It it required to check if the given fd is of a socket type
 
-		    Fix https://github.com/v2ray/v2ray-core/issues/1666
+			Fix https://github.com/v2ray/v2ray-core/issues/1666
 
 			Additional Information:
 			https://docs.microsoft.com/en-us/windows/desktop/api/winsock2/nf-winsock2-wsarecv
