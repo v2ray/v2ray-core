@@ -1,37 +1,48 @@
 package tcp
 
 import (
+	"context"
 	"fmt"
 	"io"
 
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/task"
+	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/pipe"
 )
 
 type Server struct {
 	Port         net.Port
 	MsgProcessor func(msg []byte) []byte
+	ShouldClose  bool
 	SendFirst    []byte
 	Listen       net.Address
-	listener     *net.TCPListener
+	listener     net.Listener
 }
 
 func (server *Server) Start() (net.Destination, error) {
+	return server.StartContext(context.Background(), nil)
+}
+
+func (server *Server) StartContext(ctx context.Context, sockopt *internet.SocketConfig) (net.Destination, error) {
 	listenerAddr := server.Listen
 	if listenerAddr == nil {
 		listenerAddr = net.LocalHostIP
 	}
-	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
+	listener, err := internet.ListenSystem(ctx, &net.TCPAddr{
 		IP:   listenerAddr.IP(),
 		Port: int(server.Port),
-		Zone: "",
-	})
+	}, sockopt)
 	if err != nil {
 		return net.Destination{}, err
 	}
-	server.Port = net.Port(listener.Addr().(*net.TCPAddr).Port)
-	server.listener = listener
-	go server.acceptConnections(listener)
+
 	localAddr := listener.Addr().(*net.TCPAddr)
+	server.Port = net.Port(localAddr.Port)
+	server.listener = listener
+	go server.acceptConnections(listener.(*net.TCPListener))
+
 	return net.TCPDestination(net.IPAddress(localAddr.IP), net.Port(localAddr.Port)), nil
 }
 
@@ -51,24 +62,49 @@ func (server *Server) handleConnection(conn net.Conn) {
 	if len(server.SendFirst) > 0 {
 		conn.Write(server.SendFirst)
 	}
-	request := make([]byte, 4096)
-	for {
-		nBytes, err := conn.Read(request)
-		if err != nil {
-			if err != io.EOF {
-				fmt.Println("Failed to read request:", err)
+
+	pReader, pWriter := pipe.New(pipe.WithoutSizeLimit())
+	err := task.Run(context.Background(), func() error {
+		defer pWriter.Close() // nolint: errcheck
+
+		for {
+			b := buf.New()
+			if _, err := b.ReadFrom(conn); err != nil {
+				if err == io.EOF {
+					return nil
+				}
+				return err
 			}
-			break
+			copy(b.Bytes(), server.MsgProcessor(b.Bytes()))
+			if err := pWriter.WriteMultiBuffer(buf.MultiBuffer{b}); err != nil {
+				return err
+			}
 		}
-		response := server.MsgProcessor(request[:nBytes])
-		if _, err := conn.Write(response); err != nil {
-			fmt.Println("Failed to write response:", err)
-			break
+	}, func() error {
+		defer pReader.Interrupt()
+
+		w := buf.NewWriter(conn)
+		for {
+			mb, err := pReader.ReadMultiBuffer()
+			if err != nil {
+				if err == io.EOF {
+					return nil
+				}
+				return err
+			}
+			if err := w.WriteMultiBuffer(mb); err != nil {
+				return err
+			}
 		}
+	})
+
+	if err != nil {
+		fmt.Println("failed to transfer data: ", err.Error())
 	}
-	conn.Close()
+
+	conn.Close() // nolint: errcheck
 }
 
-func (server *Server) Close() {
-	server.listener.Close()
+func (server *Server) Close() error {
+	return server.listener.Close()
 }

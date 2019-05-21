@@ -1,22 +1,23 @@
-// Package buf provides a light-weight memory allocation mechanism.
 package buf
 
 import (
 	"io"
+
+	"v2ray.com/core/common/bytespool"
 )
 
-// Supplier is a writer that writes contents into the given buffer.
-type Supplier func([]byte) (int, error)
+const (
+	// Size of a regular buffer.
+	Size = 2048
+)
 
 // Buffer is a recyclable allocation of a byte array. Buffer.Release() recycles
 // the buffer into an internal buffer pool, in order to recreate a buffer more
 // quickly.
 type Buffer struct {
-	v    []byte
-	pool Pool
-
-	start int
-	end   int
+	v     []byte
+	start int32
+	end   int32
 }
 
 // Release recycles the buffer into an internal buffer pool.
@@ -24,13 +25,11 @@ func (b *Buffer) Release() {
 	if b == nil || b.v == nil {
 		return
 	}
-	if b.pool != nil {
-		b.pool.Free(b)
-	}
+
+	p := b.v
 	b.v = nil
-	b.pool = nil
-	b.start = 0
-	b.end = 0
+	b.Clear()
+	pool.Put(p)
 }
 
 // Clear clears the content of the buffer, results an empty buffer with
@@ -40,32 +39,13 @@ func (b *Buffer) Clear() {
 	b.end = 0
 }
 
-// AppendBytes appends one or more bytes to the end of the buffer.
-func (b *Buffer) AppendBytes(bytes ...byte) int {
-	return b.Append(bytes)
-}
-
-// Append appends a byte array to the end of the buffer.
-func (b *Buffer) Append(data []byte) int {
-	nBytes := copy(b.v[b.end:], data)
-	b.end += nBytes
-	return nBytes
-}
-
-// AppendSupplier appends the content of a BytesWriter to the buffer.
-func (b *Buffer) AppendSupplier(writer Supplier) error {
-	nBytes, err := writer(b.v[b.end:])
-	b.end += nBytes
-	return err
-}
-
 // Byte returns the bytes at index.
-func (b *Buffer) Byte(index int) byte {
+func (b *Buffer) Byte(index int32) byte {
 	return b.v[b.start+index]
 }
 
 // SetByte sets the byte value at index.
-func (b *Buffer) SetByte(index int, value byte) {
+func (b *Buffer) SetByte(index int32, value byte) {
 	b.v[b.start+index] = value
 }
 
@@ -74,16 +54,20 @@ func (b *Buffer) Bytes() []byte {
 	return b.v[b.start:b.end]
 }
 
-// Reset resets the content of the Buffer with a supplier.
-func (b *Buffer) Reset(writer Supplier) error {
-	nBytes, err := writer(b.v)
-	b.start = 0
-	b.end = nBytes
-	return err
+// Extend increases the buffer size by n bytes, and returns the extended part.
+// It panics if result size is larger than buf.Size.
+func (b *Buffer) Extend(n int32) []byte {
+	end := b.end + n
+	if end > int32(len(b.v)) {
+		panic("extending out of bound")
+	}
+	ext := b.v[b.end:end]
+	b.end = end
+	return ext
 }
 
-// BytesRange returns a slice of this buffer with given from and to bounary.
-func (b *Buffer) BytesRange(from, to int) []byte {
+// BytesRange returns a slice of this buffer with given from and to boundary.
+func (b *Buffer) BytesRange(from, to int32) []byte {
 	if from < 0 {
 		from += b.Len()
 	}
@@ -94,7 +78,7 @@ func (b *Buffer) BytesRange(from, to int) []byte {
 }
 
 // BytesFrom returns a slice of this Buffer starting from the given position.
-func (b *Buffer) BytesFrom(from int) []byte {
+func (b *Buffer) BytesFrom(from int32) []byte {
 	if from < 0 {
 		from += b.Len()
 	}
@@ -102,15 +86,15 @@ func (b *Buffer) BytesFrom(from int) []byte {
 }
 
 // BytesTo returns a slice of this Buffer from start to the given position.
-func (b *Buffer) BytesTo(to int) []byte {
+func (b *Buffer) BytesTo(to int32) []byte {
 	if to < 0 {
 		to += b.Len()
 	}
 	return b.v[b.start : b.start+to]
 }
 
-// Slice cuts the buffer at the given position.
-func (b *Buffer) Slice(from, to int) {
+// Resize cuts the buffer at the given position.
+func (b *Buffer) Resize(from, to int32) {
 	if from < 0 {
 		from += b.Len()
 	}
@@ -124,8 +108,8 @@ func (b *Buffer) Slice(from, to int) {
 	b.start += from
 }
 
-// SliceFrom cuts the buffer at the given position.
-func (b *Buffer) SliceFrom(from int) {
+// Advance cuts the buffer at the given position.
+func (b *Buffer) Advance(from int32) {
 	if from < 0 {
 		from += b.Len()
 	}
@@ -133,7 +117,7 @@ func (b *Buffer) SliceFrom(from int) {
 }
 
 // Len returns the length of the buffer content.
-func (b *Buffer) Len() int {
+func (b *Buffer) Len() int32 {
 	if b == nil {
 		return 0
 	}
@@ -147,14 +131,29 @@ func (b *Buffer) IsEmpty() bool {
 
 // IsFull returns true if the buffer has no more room to grow.
 func (b *Buffer) IsFull() bool {
-	return b.end == len(b.v)
+	return b.end == int32(len(b.v))
 }
 
 // Write implements Write method in io.Writer.
 func (b *Buffer) Write(data []byte) (int, error) {
 	nBytes := copy(b.v[b.end:], data)
-	b.end += nBytes
+	b.end += int32(nBytes)
 	return nBytes, nil
+}
+
+// WriteByte writes a single byte into the buffer.
+func (b *Buffer) WriteByte(v byte) error {
+	if b.IsFull() {
+		return newError("buffer full")
+	}
+	b.v[b.end] = v
+	b.end++
+	return nil
+}
+
+// WriteString implements io.StringWriter.
+func (b *Buffer) WriteString(s string) (int, error) {
+	return b.Write([]byte(s))
 }
 
 // Read implements io.Reader.Read().
@@ -163,12 +162,31 @@ func (b *Buffer) Read(data []byte) (int, error) {
 		return 0, io.EOF
 	}
 	nBytes := copy(data, b.v[b.start:b.end])
-	if nBytes == b.Len() {
+	if int32(nBytes) == b.Len() {
 		b.Clear()
 	} else {
-		b.start += nBytes
+		b.start += int32(nBytes)
 	}
 	return nBytes, nil
+}
+
+// ReadFrom implements io.ReaderFrom.
+func (b *Buffer) ReadFrom(reader io.Reader) (int64, error) {
+	n, err := reader.Read(b.v[b.end:])
+	b.end += int32(n)
+	return int64(n), err
+}
+
+// ReadFullFrom reads exact size of bytes from given reader, or until error occurs.
+func (b *Buffer) ReadFullFrom(reader io.Reader, size int32) (int64, error) {
+	end := b.end + size
+	if end > int32(len(b.v)) {
+		v := end
+		return 0, newError("out of bound: ", v)
+	}
+	n, err := io.ReadFull(reader, b.v[b.end:end])
+	b.end += int32(n)
+	return int64(n), err
 }
 
 // String returns the string form of this Buffer.
@@ -176,15 +194,19 @@ func (b *Buffer) String() string {
 	return string(b.Bytes())
 }
 
-// New creates a Buffer with 0 length and 8K capacity.
+var pool = bytespool.GetPool(Size)
+
+// New creates a Buffer with 0 length and 2K capacity.
 func New() *Buffer {
-	return mediumPool.Allocate()
+	return &Buffer{
+		v: pool.Get().([]byte),
+	}
 }
 
-// NewLocal creates and returns a buffer with 0 length and given capacity on current thread.
-func NewLocal(size int) *Buffer {
-	return &Buffer{
-		v:    make([]byte, size),
-		pool: nil,
+// StackNew creates a new Buffer object on stack.
+// This method is for buffers that is released in the same function.
+func StackNew() Buffer {
+	return Buffer{
+		v: pool.Get().([]byte),
 	}
 }

@@ -1,22 +1,26 @@
 package utp_test
 
 import (
+	"context"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/transport/internet/headers/utp"
-	. "v2ray.com/ext/assert"
 )
 
 func TestUTPWrite(t *testing.T) {
-	assert := With(t)
-
 	content := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	utp := UTP{}
+	utpRaw, err := New(context.Background(), &Config{})
+	common.Must(err)
 
-	payload := buf.NewLocal(2048)
-	payload.AppendSupplier(utp.Write)
-	payload.Append(content)
+	utp := utpRaw.(*UTP)
 
-	assert(payload.Len(), Equals, len(content)+utp.Size())
+	payload := buf.New()
+	utp.Serialize(payload.Extend(utp.Size()))
+	payload.Write(content)
+
+	if payload.Len() != int32(len(content))+utp.Size() {
+		t.Error("unexpected payload length: ", payload.Len())
+	}
 }

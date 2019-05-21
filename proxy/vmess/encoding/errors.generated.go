@@ -2,6 +2,8 @@ package encoding
 
 import "v2ray.com/core/common/errors"
 
+type errPathObjHolder struct{}
+
 func newError(values ...interface{}) *errors.Error {
-	return errors.New(values...).Path("Proxy", "VMess", "Encoding")
+	return errors.New(values...).WithPathObj(errPathObjHolder{})
 }

@@ -1,88 +1,84 @@
 package buf_test
 
 import (
-	"bytes"
-	"context"
 	"io"
+	"strings"
 	"testing"
 
+	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
-	"v2ray.com/core/transport/ray"
-	. "v2ray.com/ext/assert"
+	"v2ray.com/core/transport/pipe"
 )
 
-func TestAdaptiveReader(t *testing.T) {
-	assert := With(t)
-
-	reader := NewReader(bytes.NewReader(make([]byte, 1024*1024)))
-	b, err := reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(b.Len(), Equals, 2*1024)
-
-	b, err = reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(b.Len(), Equals, 8*1024)
-
-	b, err = reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(b.Len(), Equals, 64*1024)
-}
-
 func TestBytesReaderWriteTo(t *testing.T) {
-	assert := With(t)
-
-	stream := ray.NewStream(context.Background())
-	reader := NewBufferedReader(stream)
+	pReader, pWriter := pipe.New(pipe.WithSizeLimit(1024))
+	reader := &BufferedReader{Reader: pReader}
 	b1 := New()
-	b1.AppendBytes('a', 'b', 'c')
+	b1.WriteString("abc")
 	b2 := New()
-	b2.AppendBytes('e', 'f', 'g')
-	assert(stream.WriteMultiBuffer(NewMultiBufferValue(b1, b2)), IsNil)
-	stream.Close()
+	b2.WriteString("efg")
+	common.Must(pWriter.WriteMultiBuffer(MultiBuffer{b1, b2}))
+	pWriter.Close()
 
-	stream2 := ray.NewStream(context.Background())
-	writer := NewBufferedWriter(stream2)
+	pReader2, pWriter2 := pipe.New(pipe.WithSizeLimit(1024))
+	writer := NewBufferedWriter(pWriter2)
 	writer.SetBuffered(false)
 
 	nBytes, err := io.Copy(writer, reader)
-	assert(err, IsNil)
-	assert(nBytes, Equals, int64(6))
+	common.Must(err)
+	if nBytes != 6 {
+		t.Error("copy: ", nBytes)
+	}
 
-	mb, err := stream2.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(len(mb), Equals, 2)
-	assert(mb[0].String(), Equals, "abc")
-	assert(mb[1].String(), Equals, "efg")
+	mb, err := pReader2.ReadMultiBuffer()
+	common.Must(err)
+	if s := mb.String(); s != "abcefg" {
+		t.Error("content: ", s)
+	}
 }
 
 func TestBytesReaderMultiBuffer(t *testing.T) {
-	assert := With(t)
-
-	stream := ray.NewStream(context.Background())
-	reader := NewBufferedReader(stream)
+	pReader, pWriter := pipe.New(pipe.WithSizeLimit(1024))
+	reader := &BufferedReader{Reader: pReader}
 	b1 := New()
-	b1.AppendBytes('a', 'b', 'c')
+	b1.WriteString("abc")
 	b2 := New()
-	b2.AppendBytes('e', 'f', 'g')
-	assert(stream.WriteMultiBuffer(NewMultiBufferValue(b1, b2)), IsNil)
-	stream.Close()
+	b2.WriteString("efg")
+	common.Must(pWriter.WriteMultiBuffer(MultiBuffer{b1, b2}))
+	pWriter.Close()
 
 	mbReader := NewReader(reader)
 	mb, err := mbReader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(len(mb), Equals, 2)
-	assert(mb[0].String(), Equals, "abc")
-	assert(mb[1].String(), Equals, "efg")
+	common.Must(err)
+	if s := mb.String(); s != "abcefg" {
+		t.Error("content: ", s)
+	}
+}
+
+func TestReadByte(t *testing.T) {
+	sr := strings.NewReader("abcd")
+	reader := &BufferedReader{
+		Reader: NewReader(sr),
+	}
+	b, err := reader.ReadByte()
+	common.Must(err)
+	if b != 'a' {
+		t.Error("unexpected byte: ", b, " want a")
+	}
+
+	nBytes, err := reader.WriteTo(DiscardBytes)
+	common.Must(err)
+	if nBytes != 3 {
+		t.Error("unexpect bytes written: ", nBytes)
+	}
 }
 
 func TestReaderInterface(t *testing.T) {
-	assert := With(t)
+	_ = (io.Reader)(new(ReadVReader))
+	_ = (Reader)(new(ReadVReader))
 
-	assert((*BytesToBufferReader)(nil), Implements, (*io.Reader)(nil))
-	assert((*BytesToBufferReader)(nil), Implements, (*Reader)(nil))
-
-	assert((*BufferedReader)(nil), Implements, (*Reader)(nil))
-	assert((*BufferedReader)(nil), Implements, (*io.Reader)(nil))
-	assert((*BufferedReader)(nil), Implements, (*io.ByteReader)(nil))
-	assert((*BufferedReader)(nil), Implements, (*io.WriterTo)(nil))
+	_ = (Reader)(new(BufferedReader))
+	_ = (io.Reader)(new(BufferedReader))
+	_ = (io.ByteReader)(new(BufferedReader))
+	_ = (io.WriterTo)(new(BufferedReader))
 }

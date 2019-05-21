@@ -1,16 +1,19 @@
+// +build !confonly
+
 package kcp
 
 import (
+	"bytes"
 	"io"
 	"net"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"v2ray.com/core/app/log"
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/predicate"
+	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/semaphore"
 )
 
 var (
@@ -119,43 +122,43 @@ func (info *RoundTripInfo) SmoothedTime() uint32 {
 
 type Updater struct {
 	interval        int64
-	shouldContinue  predicate.Predicate
-	shouldTerminate predicate.Predicate
+	shouldContinue  func() bool
+	shouldTerminate func() bool
 	updateFunc      func()
-	notifier        chan bool
+	notifier        *semaphore.Instance
 }
 
-func NewUpdater(interval uint32, shouldContinue predicate.Predicate, shouldTerminate predicate.Predicate, updateFunc func()) *Updater {
+func NewUpdater(interval uint32, shouldContinue func() bool, shouldTerminate func() bool, updateFunc func()) *Updater {
 	u := &Updater{
 		interval:        int64(time.Duration(interval) * time.Millisecond),
 		shouldContinue:  shouldContinue,
 		shouldTerminate: shouldTerminate,
 		updateFunc:      updateFunc,
-		notifier:        make(chan bool, 1),
+		notifier:        semaphore.New(1),
 	}
-	go u.Run()
 	return u
 }
 
 func (u *Updater) WakeUp() {
 	select {
-	case u.notifier <- true:
+	case <-u.notifier.Wait():
+		go u.run()
 	default:
 	}
 }
 
-func (u *Updater) Run() {
-	for <-u.notifier {
-		if u.shouldTerminate() {
-			return
-		}
-		ticker := time.NewTicker(u.Interval())
-		for u.shouldContinue() {
-			u.updateFunc()
-			<-ticker.C
-		}
-		ticker.Stop()
+func (u *Updater) run() {
+	defer u.notifier.Signal()
+
+	if u.shouldTerminate() {
+		return
 	}
+	ticker := time.NewTicker(u.Interval())
+	for u.shouldContinue() {
+		u.updateFunc()
+		<-ticker.C
+	}
+	ticker.Stop()
 }
 
 func (u *Updater) Interval() time.Duration {
@@ -179,8 +182,8 @@ type Connection struct {
 	rd         time.Time
 	wd         time.Time // write deadline
 	since      int64
-	dataInput  chan bool
-	dataOutput chan bool
+	dataInput  *signal.Notifier
+	dataOutput *signal.Notifier
 	Config     *Config
 
 	state            State
@@ -202,14 +205,14 @@ type Connection struct {
 
 // NewConnection create a new KCP connection between local and remote.
 func NewConnection(meta ConnMetadata, writer PacketWriter, closer io.Closer, config *Config) *Connection {
-	log.Trace(newError("creating connection ", meta.Conversation))
+	newError("#", meta.Conversation, " creating connection to ", meta.RemoteAddr).WriteToLog()
 
 	conn := &Connection{
 		meta:       meta,
 		closer:     closer,
 		since:      nowMillisec(),
-		dataInput:  make(chan bool, 1),
-		dataOutput: make(chan bool, 1),
+		dataInput:  signal.NewNotifier(),
+		dataOutput: signal.NewNotifier(),
 		Config:     config,
 		output:     NewRetryableWriter(NewSegmentWriter(writer)),
 		mss:        config.GetMTUValue() - uint32(writer.Overhead()) - DataSegmentOverhead,
@@ -230,12 +233,14 @@ func NewConnection(meta ConnMetadata, writer PacketWriter, closer io.Closer, con
 	}
 	conn.dataUpdater = NewUpdater(
 		config.GetTTIValue(),
-		predicate.Not(isTerminating).And(predicate.Any(conn.sendingWorker.UpdateNecessary, conn.receivingWorker.UpdateNecessary)),
+		func() bool {
+			return !isTerminating() && (conn.sendingWorker.UpdateNecessary() || conn.receivingWorker.UpdateNecessary())
+		},
 		isTerminating,
 		conn.updateTask)
 	conn.pingUpdater = NewUpdater(
 		5000, // 5 seconds
-		predicate.Not(isTerminated),
+		func() bool { return !isTerminated() },
 		isTerminated,
 		conn.updateTask)
 	conn.pingUpdater.WakeUp()
@@ -243,66 +248,61 @@ func NewConnection(meta ConnMetadata, writer PacketWriter, closer io.Closer, con
 	return conn
 }
 
-func (v *Connection) Elapsed() uint32 {
-	return uint32(nowMillisec() - v.since)
-}
-
-func (v *Connection) OnDataInput() {
-	select {
-	case v.dataInput <- true:
-	default:
-	}
-}
-
-func (v *Connection) OnDataOutput() {
-	select {
-	case v.dataOutput <- true:
-	default:
-	}
+func (c *Connection) Elapsed() uint32 {
+	return uint32(nowMillisec() - c.since)
 }
 
 // ReadMultiBuffer implements buf.Reader.
-func (v *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	if v == nil {
+func (c *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
+	if c == nil {
 		return nil, io.EOF
 	}
 
 	for {
-		if v.State().Is(StateReadyToClose, StateTerminating, StateTerminated) {
+		if c.State().Is(StateReadyToClose, StateTerminating, StateTerminated) {
 			return nil, io.EOF
 		}
-		mb := v.receivingWorker.ReadMultiBuffer()
+		mb := c.receivingWorker.ReadMultiBuffer()
 		if !mb.IsEmpty() {
+			c.dataUpdater.WakeUp()
 			return mb, nil
 		}
 
-		if v.State() == StatePeerTerminating {
+		if c.State() == StatePeerTerminating {
 			return nil, io.EOF
 		}
 
-		if err := v.waitForDataInput(); err != nil {
+		if err := c.waitForDataInput(); err != nil {
 			return nil, err
 		}
 	}
 }
 
-func (v *Connection) waitForDataInput() error {
-	if v.State() == StatePeerTerminating {
-		return io.EOF
+func (c *Connection) waitForDataInput() error {
+	for i := 0; i < 16; i++ {
+		select {
+		case <-c.dataInput.Wait():
+			return nil
+		default:
+			runtime.Gosched()
+		}
 	}
 
-	duration := time.Minute
-	if !v.rd.IsZero() {
-		duration = time.Until(v.rd)
+	duration := time.Second * 16
+	if !c.rd.IsZero() {
+		duration = time.Until(c.rd)
 		if duration < 0 {
 			return ErrIOTimeout
 		}
 	}
 
+	timeout := time.NewTimer(duration)
+	defer timeout.Stop()
+
 	select {
-	case <-v.dataInput:
-	case <-time.After(duration):
-		if !v.rd.IsZero() && v.rd.Before(time.Now()) {
+	case <-c.dataInput.Wait():
+	case <-timeout.C:
+		if !c.rd.IsZero() && c.rd.Before(time.Now()) {
 			return ErrIOTimeout
 		}
 	}
@@ -311,39 +311,52 @@ func (v *Connection) waitForDataInput() error {
 }
 
 // Read implements the Conn Read method.
-func (v *Connection) Read(b []byte) (int, error) {
-	if v == nil {
+func (c *Connection) Read(b []byte) (int, error) {
+	if c == nil {
 		return 0, io.EOF
 	}
 
 	for {
-		if v.State().Is(StateReadyToClose, StateTerminating, StateTerminated) {
+		if c.State().Is(StateReadyToClose, StateTerminating, StateTerminated) {
 			return 0, io.EOF
 		}
-		nBytes := v.receivingWorker.Read(b)
+		nBytes := c.receivingWorker.Read(b)
 		if nBytes > 0 {
+			c.dataUpdater.WakeUp()
 			return nBytes, nil
 		}
 
-		if err := v.waitForDataInput(); err != nil {
+		if err := c.waitForDataInput(); err != nil {
 			return 0, err
 		}
 	}
 }
 
-func (v *Connection) waitForDataOutput() error {
-	duration := time.Minute
-	if !v.wd.IsZero() {
-		duration = time.Until(v.wd)
+func (c *Connection) waitForDataOutput() error {
+	for i := 0; i < 16; i++ {
+		select {
+		case <-c.dataOutput.Wait():
+			return nil
+		default:
+			runtime.Gosched()
+		}
+	}
+
+	duration := time.Second * 16
+	if !c.wd.IsZero() {
+		duration = time.Until(c.wd)
 		if duration < 0 {
 			return ErrIOTimeout
 		}
 	}
 
+	timeout := time.NewTimer(duration)
+	defer timeout.Stop()
+
 	select {
-	case <-v.dataOutput:
-	case <-time.After(duration):
-		if !v.wd.IsZero() && v.wd.Before(time.Now()) {
+	case <-c.dataOutput.Wait():
+	case <-timeout.C:
+		if !c.wd.IsZero() && c.wd.Before(time.Now()) {
 			return ErrIOTimeout
 		}
 	}
@@ -352,304 +365,299 @@ func (v *Connection) waitForDataOutput() error {
 }
 
 // Write implements io.Writer.
-func (v *Connection) Write(b []byte) (int, error) {
-	totalWritten := 0
-
-	for {
-		if v == nil || v.State() != StateActive {
-			return totalWritten, io.ErrClosedPipe
-		}
-
-		for {
-			rb := v.sendingWorker.Push()
-			if rb == nil {
-				break
-			}
-			common.Must(rb.Reset(func(bb []byte) (int, error) {
-				return copy(bb[:v.mss], b[totalWritten:]), nil
-			}))
-			v.dataUpdater.WakeUp()
-			totalWritten += rb.Len()
-			if totalWritten == len(b) {
-				return totalWritten, nil
-			}
-		}
-
-		if err := v.waitForDataOutput(); err != nil {
-			return totalWritten, err
-		}
+func (c *Connection) Write(b []byte) (int, error) {
+	reader := bytes.NewReader(b)
+	if err := c.writeMultiBufferInternal(reader); err != nil {
+		return 0, err
 	}
+	return len(b), nil
 }
 
 // WriteMultiBuffer implements buf.Writer.
-func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	defer mb.Release()
+func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
+	reader := &buf.MultiBufferContainer{
+		MultiBuffer: mb,
+	}
+	defer reader.Close()
+
+	return c.writeMultiBufferInternal(reader)
+}
+
+func (c *Connection) writeMultiBufferInternal(reader io.Reader) error {
+	updatePending := false
+	defer func() {
+		if updatePending {
+			c.dataUpdater.WakeUp()
+		}
+	}()
+
+	var b *buf.Buffer
+	defer b.Release()
 
 	for {
-		if v == nil || v.State() != StateActive {
-			return io.ErrClosedPipe
-		}
-
 		for {
-			rb := v.sendingWorker.Push()
-			if rb == nil {
+			if c == nil || c.State() != StateActive {
+				return io.ErrClosedPipe
+			}
+
+			if b == nil {
+				b = buf.New()
+				_, err := b.ReadFrom(io.LimitReader(reader, int64(c.mss)))
+				if err != nil {
+					return nil
+				}
+			}
+
+			if !c.sendingWorker.Push(b) {
 				break
 			}
-			common.Must(rb.Reset(func(bb []byte) (int, error) {
-				return mb.Read(bb[:v.mss])
-			}))
-			v.dataUpdater.WakeUp()
-			if mb.IsEmpty() {
-				return nil
-			}
+			updatePending = true
+			b = nil
 		}
 
-		if err := v.waitForDataOutput(); err != nil {
+		if updatePending {
+			c.dataUpdater.WakeUp()
+			updatePending = false
+		}
+
+		if err := c.waitForDataOutput(); err != nil {
 			return err
 		}
 	}
 }
 
-func (v *Connection) SetState(state State) {
-	current := v.Elapsed()
-	atomic.StoreInt32((*int32)(&v.state), int32(state))
-	atomic.StoreUint32(&v.stateBeginTime, current)
-	log.Trace(newError("#", v.meta.Conversation, " entering state ", state, " at ", current).AtDebug())
+func (c *Connection) SetState(state State) {
+	current := c.Elapsed()
+	atomic.StoreInt32((*int32)(&c.state), int32(state))
+	atomic.StoreUint32(&c.stateBeginTime, current)
+	newError("#", c.meta.Conversation, " entering state ", state, " at ", current).AtDebug().WriteToLog()
 
 	switch state {
 	case StateReadyToClose:
-		v.receivingWorker.CloseRead()
+		c.receivingWorker.CloseRead()
 	case StatePeerClosed:
-		v.sendingWorker.CloseWrite()
+		c.sendingWorker.CloseWrite()
 	case StateTerminating:
-		v.receivingWorker.CloseRead()
-		v.sendingWorker.CloseWrite()
-		v.pingUpdater.SetInterval(time.Second)
+		c.receivingWorker.CloseRead()
+		c.sendingWorker.CloseWrite()
+		c.pingUpdater.SetInterval(time.Second)
 	case StatePeerTerminating:
-		v.sendingWorker.CloseWrite()
-		v.pingUpdater.SetInterval(time.Second)
+		c.sendingWorker.CloseWrite()
+		c.pingUpdater.SetInterval(time.Second)
 	case StateTerminated:
-		v.receivingWorker.CloseRead()
-		v.sendingWorker.CloseWrite()
-		v.pingUpdater.SetInterval(time.Second)
-		v.dataUpdater.WakeUp()
-		v.pingUpdater.WakeUp()
-		go v.Terminate()
+		c.receivingWorker.CloseRead()
+		c.sendingWorker.CloseWrite()
+		c.pingUpdater.SetInterval(time.Second)
+		c.dataUpdater.WakeUp()
+		c.pingUpdater.WakeUp()
+		go c.Terminate()
 	}
 }
 
 // Close closes the connection.
-func (v *Connection) Close() error {
-	if v == nil {
+func (c *Connection) Close() error {
+	if c == nil {
 		return ErrClosedConnection
 	}
 
-	v.OnDataInput()
-	v.OnDataOutput()
+	c.dataInput.Signal()
+	c.dataOutput.Signal()
 
-	state := v.State()
-	if state.Is(StateReadyToClose, StateTerminating, StateTerminated) {
+	switch c.State() {
+	case StateReadyToClose, StateTerminating, StateTerminated:
 		return ErrClosedConnection
+	case StateActive:
+		c.SetState(StateReadyToClose)
+	case StatePeerClosed:
+		c.SetState(StateTerminating)
+	case StatePeerTerminating:
+		c.SetState(StateTerminated)
 	}
-	log.Trace(newError("closing connection to ", v.meta.RemoteAddr))
 
-	if state == StateActive {
-		v.SetState(StateReadyToClose)
-	}
-	if state == StatePeerClosed {
-		v.SetState(StateTerminating)
-	}
-	if state == StatePeerTerminating {
-		v.SetState(StateTerminated)
-	}
+	newError("#", c.meta.Conversation, " closing connection to ", c.meta.RemoteAddr).WriteToLog()
 
 	return nil
 }
 
 // LocalAddr returns the local network address. The Addr returned is shared by all invocations of LocalAddr, so do not modify it.
-func (v *Connection) LocalAddr() net.Addr {
-	if v == nil {
+func (c *Connection) LocalAddr() net.Addr {
+	if c == nil {
 		return nil
 	}
-	return v.meta.LocalAddr
+	return c.meta.LocalAddr
 }
 
 // RemoteAddr returns the remote network address. The Addr returned is shared by all invocations of RemoteAddr, so do not modify it.
-func (v *Connection) RemoteAddr() net.Addr {
-	if v == nil {
+func (c *Connection) RemoteAddr() net.Addr {
+	if c == nil {
 		return nil
 	}
-	return v.meta.RemoteAddr
+	return c.meta.RemoteAddr
 }
 
 // SetDeadline sets the deadline associated with the listener. A zero time value disables the deadline.
-func (v *Connection) SetDeadline(t time.Time) error {
-	if err := v.SetReadDeadline(t); err != nil {
+func (c *Connection) SetDeadline(t time.Time) error {
+	if err := c.SetReadDeadline(t); err != nil {
 		return err
 	}
-	if err := v.SetWriteDeadline(t); err != nil {
-		return err
-	}
-	return nil
+	return c.SetWriteDeadline(t)
 }
 
 // SetReadDeadline implements the Conn SetReadDeadline method.
-func (v *Connection) SetReadDeadline(t time.Time) error {
-	if v == nil || v.State() != StateActive {
+func (c *Connection) SetReadDeadline(t time.Time) error {
+	if c == nil || c.State() != StateActive {
 		return ErrClosedConnection
 	}
-	v.rd = t
+	c.rd = t
 	return nil
 }
 
 // SetWriteDeadline implements the Conn SetWriteDeadline method.
-func (v *Connection) SetWriteDeadline(t time.Time) error {
-	if v == nil || v.State() != StateActive {
+func (c *Connection) SetWriteDeadline(t time.Time) error {
+	if c == nil || c.State() != StateActive {
 		return ErrClosedConnection
 	}
-	v.wd = t
+	c.wd = t
 	return nil
 }
 
 // kcp update, input loop
-func (v *Connection) updateTask() {
-	v.flush()
+func (c *Connection) updateTask() {
+	c.flush()
 }
 
-func (v *Connection) Terminate() {
-	if v == nil {
+func (c *Connection) Terminate() {
+	if c == nil {
 		return
 	}
-	log.Trace(newError("terminating connection to ", v.RemoteAddr()))
+	newError("#", c.meta.Conversation, " terminating connection to ", c.RemoteAddr()).WriteToLog()
 
 	//v.SetState(StateTerminated)
-	v.OnDataInput()
-	v.OnDataOutput()
+	c.dataInput.Signal()
+	c.dataOutput.Signal()
 
-	v.closer.Close()
-	v.sendingWorker.Release()
-	v.receivingWorker.Release()
+	c.closer.Close()
+	c.sendingWorker.Release()
+	c.receivingWorker.Release()
 }
 
-func (v *Connection) HandleOption(opt SegmentOption) {
+func (c *Connection) HandleOption(opt SegmentOption) {
 	if (opt & SegmentOptionClose) == SegmentOptionClose {
-		v.OnPeerClosed()
+		c.OnPeerClosed()
 	}
 }
 
-func (v *Connection) OnPeerClosed() {
-	state := v.State()
-	if state == StateReadyToClose {
-		v.SetState(StateTerminating)
-	}
-	if state == StateActive {
-		v.SetState(StatePeerClosed)
+func (c *Connection) OnPeerClosed() {
+	switch c.State() {
+	case StateReadyToClose:
+		c.SetState(StateTerminating)
+	case StateActive:
+		c.SetState(StatePeerClosed)
 	}
 }
 
 // Input when you received a low level packet (eg. UDP packet), call it
-func (v *Connection) Input(segments []Segment) {
-	current := v.Elapsed()
-	atomic.StoreUint32(&v.lastIncomingTime, current)
+func (c *Connection) Input(segments []Segment) {
+	current := c.Elapsed()
+	atomic.StoreUint32(&c.lastIncomingTime, current)
 
 	for _, seg := range segments {
-		if seg.Conversation() != v.meta.Conversation {
+		if seg.Conversation() != c.meta.Conversation {
 			break
 		}
 
 		switch seg := seg.(type) {
 		case *DataSegment:
-			v.HandleOption(seg.Option)
-			v.receivingWorker.ProcessSegment(seg)
-			if v.receivingWorker.IsDataAvailable() {
-				v.OnDataInput()
+			c.HandleOption(seg.Option)
+			c.receivingWorker.ProcessSegment(seg)
+			if c.receivingWorker.IsDataAvailable() {
+				c.dataInput.Signal()
 			}
-			v.dataUpdater.WakeUp()
+			c.dataUpdater.WakeUp()
 		case *AckSegment:
-			v.HandleOption(seg.Option)
-			v.sendingWorker.ProcessSegment(current, seg, v.roundTrip.Timeout())
-			v.OnDataOutput()
-			v.dataUpdater.WakeUp()
+			c.HandleOption(seg.Option)
+			c.sendingWorker.ProcessSegment(current, seg, c.roundTrip.Timeout())
+			c.dataOutput.Signal()
+			c.dataUpdater.WakeUp()
 		case *CmdOnlySegment:
-			v.HandleOption(seg.Option)
+			c.HandleOption(seg.Option)
 			if seg.Command() == CommandTerminate {
-				state := v.State()
-				if state == StateActive ||
-					state == StatePeerClosed {
-					v.SetState(StatePeerTerminating)
-				} else if state == StateReadyToClose {
-					v.SetState(StateTerminating)
-				} else if state == StateTerminating {
-					v.SetState(StateTerminated)
+				switch c.State() {
+				case StateActive, StatePeerClosed:
+					c.SetState(StatePeerTerminating)
+				case StateReadyToClose:
+					c.SetState(StateTerminating)
+				case StateTerminating:
+					c.SetState(StateTerminated)
 				}
 			}
 			if seg.Option == SegmentOptionClose || seg.Command() == CommandTerminate {
-				v.OnDataInput()
-				v.OnDataOutput()
+				c.dataInput.Signal()
+				c.dataOutput.Signal()
 			}
-			v.sendingWorker.ProcessReceivingNext(seg.ReceivinNext)
-			v.receivingWorker.ProcessSendingNext(seg.SendingNext)
-			v.roundTrip.UpdatePeerRTO(seg.PeerRTO, current)
+			c.sendingWorker.ProcessReceivingNext(seg.ReceivingNext)
+			c.receivingWorker.ProcessSendingNext(seg.SendingNext)
+			c.roundTrip.UpdatePeerRTO(seg.PeerRTO, current)
 			seg.Release()
 		default:
 		}
 	}
 }
 
-func (v *Connection) flush() {
-	current := v.Elapsed()
+func (c *Connection) flush() {
+	current := c.Elapsed()
 
-	if v.State() == StateTerminated {
+	if c.State() == StateTerminated {
 		return
 	}
-	if v.State() == StateActive && current-atomic.LoadUint32(&v.lastIncomingTime) >= 30000 {
-		v.Close()
+	if c.State() == StateActive && current-atomic.LoadUint32(&c.lastIncomingTime) >= 30000 {
+		c.Close()
 	}
-	if v.State() == StateReadyToClose && v.sendingWorker.IsEmpty() {
-		v.SetState(StateTerminating)
+	if c.State() == StateReadyToClose && c.sendingWorker.IsEmpty() {
+		c.SetState(StateTerminating)
 	}
 
-	if v.State() == StateTerminating {
-		log.Trace(newError("#", v.meta.Conversation, " sending terminating cmd.").AtDebug())
-		v.Ping(current, CommandTerminate)
+	if c.State() == StateTerminating {
+		newError("#", c.meta.Conversation, " sending terminating cmd.").AtDebug().WriteToLog()
+		c.Ping(current, CommandTerminate)
 
-		if current-atomic.LoadUint32(&v.stateBeginTime) > 8000 {
-			v.SetState(StateTerminated)
+		if current-atomic.LoadUint32(&c.stateBeginTime) > 8000 {
+			c.SetState(StateTerminated)
 		}
 		return
 	}
-	if v.State() == StatePeerTerminating && current-atomic.LoadUint32(&v.stateBeginTime) > 4000 {
-		v.SetState(StateTerminating)
+	if c.State() == StatePeerTerminating && current-atomic.LoadUint32(&c.stateBeginTime) > 4000 {
+		c.SetState(StateTerminating)
 	}
 
-	if v.State() == StateReadyToClose && current-atomic.LoadUint32(&v.stateBeginTime) > 15000 {
-		v.SetState(StateTerminating)
+	if c.State() == StateReadyToClose && current-atomic.LoadUint32(&c.stateBeginTime) > 15000 {
+		c.SetState(StateTerminating)
 	}
 
 	// flush acknowledges
-	v.receivingWorker.Flush(current)
-	v.sendingWorker.Flush(current)
+	c.receivingWorker.Flush(current)
+	c.sendingWorker.Flush(current)
 
-	if current-atomic.LoadUint32(&v.lastPingTime) >= 3000 {
-		v.Ping(current, CommandPing)
+	if current-atomic.LoadUint32(&c.lastPingTime) >= 3000 {
+		c.Ping(current, CommandPing)
 	}
 }
 
-func (v *Connection) State() State {
-	return State(atomic.LoadInt32((*int32)(&v.state)))
+func (c *Connection) State() State {
+	return State(atomic.LoadInt32((*int32)(&c.state)))
 }
 
-func (v *Connection) Ping(current uint32, cmd Command) {
+func (c *Connection) Ping(current uint32, cmd Command) {
 	seg := NewCmdOnlySegment()
-	seg.Conv = v.meta.Conversation
+	seg.Conv = c.meta.Conversation
 	seg.Cmd = cmd
-	seg.ReceivinNext = v.receivingWorker.NextNumber()
-	seg.SendingNext = v.sendingWorker.FirstUnacknowledged()
-	seg.PeerRTO = v.roundTrip.Timeout()
-	if v.State() == StateReadyToClose {
+	seg.ReceivingNext = c.receivingWorker.NextNumber()
+	seg.SendingNext = c.sendingWorker.FirstUnacknowledged()
+	seg.PeerRTO = c.roundTrip.Timeout()
+	if c.State() == StateReadyToClose {
 		seg.Option = SegmentOptionClose
 	}
-	v.output.Write(seg)
-	atomic.StoreUint32(&v.lastPingTime, current)
+	c.output.Write(seg)
+	atomic.StoreUint32(&c.lastPingTime, current)
 	seg.Release()
 }

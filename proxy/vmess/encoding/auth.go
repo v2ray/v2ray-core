@@ -2,10 +2,10 @@ package encoding
 
 import (
 	"crypto/md5"
+	"encoding/binary"
 	"hash/fnv"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/serial"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -53,13 +53,14 @@ func (*FnvAuthenticator) Overhead() int {
 
 // Seal implements AEAD.Seal().
 func (*FnvAuthenticator) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
-	dst = serial.Uint32ToBytes(Authenticate(plaintext), dst)
+	dst = append(dst, 0, 0, 0, 0)
+	binary.BigEndian.PutUint32(dst, Authenticate(plaintext))
 	return append(dst, plaintext...)
 }
 
 // Open implements AEAD.Open().
 func (*FnvAuthenticator) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
-	if serial.BytesToUint32(ciphertext[:4]) != Authenticate(ciphertext[4:]) {
+	if binary.BigEndian.Uint32(ciphertext[:4]) != Authenticate(ciphertext[4:]) {
 		return dst, newError("invalid authentication")
 	}
 	return append(dst, ciphertext[4:]...), nil
@@ -88,22 +89,31 @@ func NewShakeSizeParser(nonce []byte) *ShakeSizeParser {
 	}
 }
 
-func (*ShakeSizeParser) SizeBytes() int {
+func (*ShakeSizeParser) SizeBytes() int32 {
 	return 2
 }
 
 func (s *ShakeSizeParser) next() uint16 {
 	common.Must2(s.shake.Read(s.buffer[:]))
-	return serial.BytesToUint16(s.buffer[:])
+	return binary.BigEndian.Uint16(s.buffer[:])
 }
 
 func (s *ShakeSizeParser) Decode(b []byte) (uint16, error) {
 	mask := s.next()
-	size := serial.BytesToUint16(b)
+	size := binary.BigEndian.Uint16(b)
 	return mask ^ size, nil
 }
 
 func (s *ShakeSizeParser) Encode(size uint16, b []byte) []byte {
 	mask := s.next()
-	return serial.Uint16ToBytes(mask^size, b[:0])
+	binary.BigEndian.PutUint16(b, mask^size)
+	return b[:2]
+}
+
+func (s *ShakeSizeParser) NextPaddingLen() uint16 {
+	return s.next() % 64
+}
+
+func (s *ShakeSizeParser) MaxPaddingLen() uint16 {
+	return 64
 }

@@ -3,9 +3,10 @@ package log_test
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
-	. "v2ray.com/ext/assert"
 )
 
 type testLogger struct {
@@ -17,8 +18,6 @@ func (l *testLogger) Handle(msg log.Message) {
 }
 
 func TestLogRecord(t *testing.T) {
-	assert := With(t)
-
 	var logger testLogger
 	log.RegisterHandler(&logger)
 
@@ -28,5 +27,7 @@ func TestLogRecord(t *testing.T) {
 		Content:  net.ParseAddress(ip),
 	})
 
-	assert(logger.value, Equals, "[Error]: "+ip)
+	if diff := cmp.Diff("[Error] "+ip, logger.value); diff != "" {
+		t.Error(diff)
+	}
 }

@@ -2,16 +2,15 @@ package internet
 
 import (
 	"context"
-	"time"
 
 	"v2ray.com/core/common/net"
 )
 
 var (
-	transportListenerCache = make(map[TransportProtocol]ListenFunc)
+	transportListenerCache = make(map[string]ListenFunc)
 )
 
-func RegisterTransportListener(protocol TransportProtocol, listener ListenFunc) error {
+func RegisterTransportListener(protocol string, listener ListenFunc) error {
 	if _, found := transportListenerCache[protocol]; found {
 		return newError(protocol, " listener already registered.").AtError()
 	}
@@ -19,56 +18,54 @@ func RegisterTransportListener(protocol TransportProtocol, listener ListenFunc) 
 	return nil
 }
 
-type AddConnection func(context.Context, Connection) bool
+type ConnHandler func(Connection)
 
-type ListenFunc func(ctx context.Context, address net.Address, port net.Port, addConn AddConnection) (Listener, error)
+type ListenFunc func(ctx context.Context, address net.Address, port net.Port, settings *MemoryStreamConfig, handler ConnHandler) (Listener, error)
 
 type Listener interface {
 	Close() error
 	Addr() net.Addr
 }
 
-func ListenTCP(ctx context.Context, address net.Address, port net.Port, conns chan<- Connection) (Listener, error) {
-	settings := StreamSettingsFromContext(ctx)
-	protocol := settings.GetEffectiveProtocol()
-	transportSettings, err := settings.GetEffectiveTransportSettings()
-	if err != nil {
-		return nil, err
-	}
-	ctx = ContextWithTransportSettings(ctx, transportSettings)
-	if settings != nil && settings.HasSecuritySettings() {
-		securitySettings, err := settings.GetEffectiveSecuritySettings()
+func ListenTCP(ctx context.Context, address net.Address, port net.Port, settings *MemoryStreamConfig, handler ConnHandler) (Listener, error) {
+	if settings == nil {
+		s, err := ToMemoryStreamConfig(nil)
 		if err != nil {
-			return nil, err
+			return nil, newError("failed to create default stream settings").Base(err)
 		}
-		ctx = ContextWithSecuritySettings(ctx, securitySettings)
+		settings = s
 	}
+
+	if address.Family().IsDomain() && address.Domain() == "localhost" {
+		address = net.LocalHostIP
+	}
+
+	if address.Family().IsDomain() {
+		return nil, newError("domain address is not allowed for listening: ", address.Domain())
+	}
+
+	protocol := settings.ProtocolName
 	listenFunc := transportListenerCache[protocol]
 	if listenFunc == nil {
 		return nil, newError(protocol, " listener not registered.").AtError()
 	}
-	listener, err := listenFunc(ctx, address, port, func(ctx context.Context, conn Connection) bool {
-		select {
-		case <-ctx.Done():
-			conn.Close()
-			return false
-		case conns <- conn:
-			return true
-		default:
-			select {
-			case <-ctx.Done():
-				conn.Close()
-				return false
-			case conns <- conn:
-				return true
-			case <-time.After(time.Second * 5):
-				conn.Close()
-				return false
-			}
-		}
-	})
+	listener, err := listenFunc(ctx, address, port, settings, handler)
 	if err != nil {
 		return nil, newError("failed to listen on address: ", address, ":", port).Base(err)
 	}
 	return listener, nil
+}
+
+// ListenSystem listens on a local address for incoming TCP connections.
+//
+// v2ray:api:beta
+func ListenSystem(ctx context.Context, addr net.Addr, sockopt *SocketConfig) (net.Listener, error) {
+	return effectiveListener.Listen(ctx, addr, sockopt)
+}
+
+// ListenSystemPacket listens on a local address for incoming UDP connections.
+//
+// v2ray:api:beta
+func ListenSystemPacket(ctx context.Context, addr net.Addr, sockopt *SocketConfig) (net.PacketConn, error) {
+	return effectiveListener.ListenPacket(ctx, addr, sockopt)
 }

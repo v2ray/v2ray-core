@@ -1,3 +1,5 @@
+// +build !confonly
+
 package kcp
 
 import (
@@ -5,6 +7,8 @@ import (
 	"crypto/rand"
 	"io"
 
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -24,10 +28,17 @@ type KCPPacketReader struct {
 
 func (r *KCPPacketReader) Read(b []byte) []Segment {
 	if r.Header != nil {
+		if int32(len(b)) <= r.Header.Size() {
+			return nil
+		}
 		b = b[r.Header.Size():]
 	}
 	if r.Security != nil {
 		nonceSize := r.Security.NonceSize()
+		overhead := r.Security.Overhead()
+		if len(b) <= nonceSize+overhead {
+			return nil
+		}
 		out, err := r.Security.Open(b[nonceSize:nonceSize], b[:nonceSize], b[nonceSize:], nil)
 		if err != nil {
 			return nil
@@ -50,14 +61,12 @@ type KCPPacketWriter struct {
 	Header   internet.PacketHeader
 	Security cipher.AEAD
 	Writer   io.Writer
-
-	buffer [2048]byte
 }
 
 func (w *KCPPacketWriter) Overhead() int {
 	overhead := 0
 	if w.Header != nil {
-		overhead += w.Header.Size()
+		overhead += int(w.Header.Size())
 	}
 	if w.Security != nil {
 		overhead += w.Security.Overhead()
@@ -66,27 +75,23 @@ func (w *KCPPacketWriter) Overhead() int {
 }
 
 func (w *KCPPacketWriter) Write(b []byte) (int, error) {
-	x := w.buffer[:]
-	size := 0
+	bb := buf.StackNew()
+	defer bb.Release()
+
 	if w.Header != nil {
-		nBytes, _ := w.Header.Write(x)
-		size += nBytes
-		x = x[nBytes:]
+		w.Header.Serialize(bb.Extend(w.Header.Size()))
 	}
 	if w.Security != nil {
 		nonceSize := w.Security.NonceSize()
-		var nonce []byte
-		if nonceSize > 0 {
-			nonce = x[:nonceSize]
-			rand.Read(nonce)
-			x = x[nonceSize:]
-		}
-		x = w.Security.Seal(x[:0], nonce, b, nil)
-		size += nonceSize + len(x)
+		common.Must2(bb.ReadFullFrom(rand.Reader, int32(nonceSize)))
+		nonce := bb.BytesFrom(int32(-nonceSize))
+
+		encrypted := bb.Extend(int32(w.Security.Overhead() + len(b)))
+		w.Security.Seal(encrypted[:0], nonce, b, nil)
 	} else {
-		size += copy(x, b)
+		bb.Write(b)
 	}
 
-	_, err := w.Writer.Write(w.buffer[:size])
+	_, err := w.Writer.Write(bb.Bytes())
 	return len(b), err
 }

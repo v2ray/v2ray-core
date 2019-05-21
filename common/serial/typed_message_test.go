@@ -4,13 +4,21 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/serial"
-	. "v2ray.com/ext/assert"
 )
 
 func TestGetInstance(t *testing.T) {
-	assert := With(t)
-
 	p, err := GetInstance("")
-	assert(p, IsNil)
-	assert(err, IsNotNil)
+	if p != nil {
+		t.Error("expected nil instance, but got ", p)
+	}
+	if err == nil {
+		t.Error("expect non-nil error, but got nil")
+	}
+}
+
+func TestConvertingNilMessage(t *testing.T) {
+	x := ToTypedMessage(nil)
+	if x != nil {
+		t.Error("expect nil, but actually not")
+	}
 }

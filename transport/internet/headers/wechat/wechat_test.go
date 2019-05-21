@@ -1,20 +1,24 @@
 package wechat_test
 
 import (
+	"context"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/transport/internet/headers/wechat"
-	. "v2ray.com/ext/assert"
 )
 
 func TestUTPWrite(t *testing.T) {
-	assert := With(t)
+	videoRaw, err := NewVideoChat(context.Background(), &VideoConfig{})
+	common.Must(err)
 
-	video := VideoChat{}
+	video := videoRaw.(*VideoChat)
 
-	payload := buf.NewLocal(2048)
-	payload.AppendSupplier(video.Write)
+	payload := buf.New()
+	video.Serialize(payload.Extend(video.Size()))
 
-	assert(payload.Len(), Equals, video.Size())
+	if payload.Len() != video.Size() {
+		t.Error("expected payload size ", video.Size(), " but got ", payload.Len())
+	}
 }

@@ -6,60 +6,81 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol/udp"
+	"v2ray.com/core/features/routing"
+	"v2ray.com/core/transport"
 	. "v2ray.com/core/transport/internet/udp"
-	"v2ray.com/core/transport/ray"
-	. "v2ray.com/ext/assert"
+	"v2ray.com/core/transport/pipe"
 )
 
 type TestDispatcher struct {
-	OnDispatch func(ctx context.Context, dest net.Destination) (ray.InboundRay, error)
+	OnDispatch func(ctx context.Context, dest net.Destination) (*transport.Link, error)
 }
 
-func (d *TestDispatcher) Dispatch(ctx context.Context, dest net.Destination) (ray.InboundRay, error) {
+func (d *TestDispatcher) Dispatch(ctx context.Context, dest net.Destination) (*transport.Link, error) {
 	return d.OnDispatch(ctx, dest)
 }
 
-func TestSameDestinationDispatching(t *testing.T) {
-	assert := With(t)
+func (d *TestDispatcher) Start() error {
+	return nil
+}
 
+func (d *TestDispatcher) Close() error {
+	return nil
+}
+
+func (*TestDispatcher) Type() interface{} {
+	return routing.DispatcherType()
+}
+
+func TestSameDestinationDispatching(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	link := ray.NewRay(ctx)
+	uplinkReader, uplinkWriter := pipe.New(pipe.WithSizeLimit(1024))
+	downlinkReader, downlinkWriter := pipe.New(pipe.WithSizeLimit(1024))
+
 	go func() {
 		for {
-			data, err := link.OutboundInput().ReadMultiBuffer()
+			data, err := uplinkReader.ReadMultiBuffer()
 			if err != nil {
 				break
 			}
-			err = link.OutboundOutput().WriteMultiBuffer(data)
-			assert(err, IsNil)
+			err = downlinkWriter.WriteMultiBuffer(data)
+			common.Must(err)
 		}
 	}()
 
 	var count uint32
 	td := &TestDispatcher{
-		OnDispatch: func(ctx context.Context, dest net.Destination) (ray.InboundRay, error) {
+		OnDispatch: func(ctx context.Context, dest net.Destination) (*transport.Link, error) {
 			atomic.AddUint32(&count, 1)
-			return link, nil
+			return &transport.Link{Reader: downlinkReader, Writer: uplinkWriter}, nil
 		},
 	}
 	dest := net.UDPDestination(net.LocalHostIP, 53)
 
 	b := buf.New()
-	b.AppendBytes('a', 'b', 'c', 'd')
-	dispatcher := NewDispatcher(td)
+	b.WriteString("abcd")
+
 	var msgCount uint32
-	dispatcher.Dispatch(ctx, dest, b, func(payload *buf.Buffer) {
+	dispatcher := NewDispatcher(td, func(ctx context.Context, packet *udp.Packet) {
 		atomic.AddUint32(&msgCount, 1)
 	})
+
+	dispatcher.Dispatch(ctx, dest, b)
 	for i := 0; i < 5; i++ {
-		dispatcher.Dispatch(ctx, dest, b, func(payload *buf.Buffer) {})
+		dispatcher.Dispatch(ctx, dest, b)
 	}
 
 	time.Sleep(time.Second)
 	cancel()
 
-	assert(count, Equals, uint32(1))
-	assert(msgCount, Equals, uint32(6))
+	if count != 1 {
+		t.Error("count: ", count)
+	}
+	if v := atomic.LoadUint32(&msgCount); v != 6 {
+		t.Error("msgCount: ", v)
+	}
 }

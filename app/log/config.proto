@@ -6,6 +6,8 @@ option go_package = "log";
 option java_package = "com.v2ray.core.app.log";
 option java_multiple_files = true;
 
+import "v2ray.com/core/common/log/log.proto";
+
 enum LogType {
   None = 0;
   Console = 1;
@@ -13,17 +15,9 @@ enum LogType {
   Event = 3;
 }
 
-enum LogLevel {
-  Disabled = 0;
-  Error = 1;
-  Warning = 2;
-  Info = 3;
-  Debug = 4;
-}
-
 message Config {
   LogType error_log_type = 1;
-  LogLevel error_log_level = 2;
+  v2ray.core.common.log.Severity error_log_level = 2;
   string error_log_path = 3;
 
   LogType access_log_type = 4;

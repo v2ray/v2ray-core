@@ -3,15 +3,14 @@ package platform_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
+	"v2ray.com/core/common"
 	. "v2ray.com/core/common/platform"
-	. "v2ray.com/ext/assert"
 )
 
 func TestNormalizeEnvName(t *testing.T) {
-	assert := With(t)
-
 	cases := []struct {
 		input  string
 		output string
@@ -30,27 +29,37 @@ func TestNormalizeEnvName(t *testing.T) {
 		},
 	}
 	for _, test := range cases {
-		assert(NormalizeEnvName(test.input), Equals, test.output)
+		if v := NormalizeEnvName(test.input); v != test.output {
+			t.Error("unexpected output: ", v, " want ", test.output)
+		}
 	}
 }
 
 func TestEnvFlag(t *testing.T) {
-	assert := With(t)
-
-	assert(EnvFlag{
+	if v := (EnvFlag{
 		Name: "xxxxx.y",
-	}.GetValueAsInt(10), Equals, 10)
+	}.GetValueAsInt(10)); v != 10 {
+		t.Error("env value: ", v)
+	}
 }
 
 func TestGetAssetLocation(t *testing.T) {
-	assert := With(t)
-
 	exec, err := os.Executable()
-	assert(err, IsNil)
+	common.Must(err)
 
 	loc := GetAssetLocation("t")
-	assert(filepath.Dir(loc), Equals, filepath.Dir(exec))
+	if filepath.Dir(loc) != filepath.Dir(exec) {
+		t.Error("asset dir: ", loc, " not in ", exec)
+	}
 
 	os.Setenv("v2ray.location.asset", "/v2ray")
-	assert(GetAssetLocation("t"), Equals, "/v2ray/t")
+	if runtime.GOOS == "windows" {
+		if v := GetAssetLocation("t"); v != "\\v2ray\\t" {
+			t.Error("asset loc: ", v)
+		}
+	} else {
+		if v := GetAssetLocation("t"); v != "/v2ray/t" {
+			t.Error("asset loc: ", v)
+		}
+	}
 }

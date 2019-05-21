@@ -1,3 +1,5 @@
+// +build !confonly
+
 package tcp
 
 import (
@@ -5,8 +7,10 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
+const protocolName = "tcp"
+
 func init() {
-	common.Must(internet.RegisterProtocolConfigCreator(internet.TransportProtocol_TCP, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreator(protocolName, func() interface{} {
 		return new(Config)
 	}))
 }

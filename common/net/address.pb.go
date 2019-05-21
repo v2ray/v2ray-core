@@ -1,8 +1,10 @@
 package net
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -13,20 +15,43 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Address of a network host. It may be either an IP address or a domain address.
 type IPOrDomain struct {
 	// Types that are valid to be assigned to Address:
 	//	*IPOrDomain_Ip
 	//	*IPOrDomain_Domain
-	Address isIPOrDomain_Address `protobuf_oneof:"address"`
+	Address              isIPOrDomain_Address `protobuf_oneof:"address"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
-func (m *IPOrDomain) Reset()                    { *m = IPOrDomain{} }
-func (m *IPOrDomain) String() string            { return proto.CompactTextString(m) }
-func (*IPOrDomain) ProtoMessage()               {}
-func (*IPOrDomain) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *IPOrDomain) Reset()         { *m = IPOrDomain{} }
+func (m *IPOrDomain) String() string { return proto.CompactTextString(m) }
+func (*IPOrDomain) ProtoMessage()    {}
+func (*IPOrDomain) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4ba9b4a4304e7c1f, []int{0}
+}
+
+func (m *IPOrDomain) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_IPOrDomain.Unmarshal(m, b)
+}
+func (m *IPOrDomain) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_IPOrDomain.Marshal(b, m, deterministic)
+}
+func (m *IPOrDomain) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IPOrDomain.Merge(m, src)
+}
+func (m *IPOrDomain) XXX_Size() int {
+	return xxx_messageInfo_IPOrDomain.Size(m)
+}
+func (m *IPOrDomain) XXX_DiscardUnknown() {
+	xxx_messageInfo_IPOrDomain.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_IPOrDomain proto.InternalMessageInfo
 
 type isIPOrDomain_Address interface {
 	isIPOrDomain_Address()
@@ -35,11 +60,13 @@ type isIPOrDomain_Address interface {
 type IPOrDomain_Ip struct {
 	Ip []byte `protobuf:"bytes,1,opt,name=ip,proto3,oneof"`
 }
+
 type IPOrDomain_Domain struct {
-	Domain string `protobuf:"bytes,2,opt,name=domain,oneof"`
+	Domain string `protobuf:"bytes,2,opt,name=domain,proto3,oneof"`
 }
 
-func (*IPOrDomain_Ip) isIPOrDomain_Address()     {}
+func (*IPOrDomain_Ip) isIPOrDomain_Address() {}
+
 func (*IPOrDomain_Domain) isIPOrDomain_Address() {}
 
 func (m *IPOrDomain) GetAddress() isIPOrDomain_Address {
@@ -63,79 +90,23 @@ func (m *IPOrDomain) GetDomain() string {
 	return ""
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*IPOrDomain) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _IPOrDomain_OneofMarshaler, _IPOrDomain_OneofUnmarshaler, _IPOrDomain_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*IPOrDomain) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*IPOrDomain_Ip)(nil),
 		(*IPOrDomain_Domain)(nil),
 	}
-}
-
-func _IPOrDomain_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*IPOrDomain)
-	// address
-	switch x := m.Address.(type) {
-	case *IPOrDomain_Ip:
-		b.EncodeVarint(1<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.Ip)
-	case *IPOrDomain_Domain:
-		b.EncodeVarint(2<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.Domain)
-	case nil:
-	default:
-		return fmt.Errorf("IPOrDomain.Address has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _IPOrDomain_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*IPOrDomain)
-	switch tag {
-	case 1: // address.ip
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Address = &IPOrDomain_Ip{x}
-		return true, err
-	case 2: // address.domain
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Address = &IPOrDomain_Domain{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _IPOrDomain_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*IPOrDomain)
-	// address
-	switch x := m.Address.(type) {
-	case *IPOrDomain_Ip:
-		n += proto.SizeVarint(1<<3 | proto.WireBytes)
-		n += proto.SizeVarint(uint64(len(x.Ip)))
-		n += len(x.Ip)
-	case *IPOrDomain_Domain:
-		n += proto.SizeVarint(2<<3 | proto.WireBytes)
-		n += proto.SizeVarint(uint64(len(x.Domain)))
-		n += len(x.Domain)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 func init() {
 	proto.RegisterType((*IPOrDomain)(nil), "v2ray.core.common.net.IPOrDomain")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/net/address.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/common/net/address.proto", fileDescriptor_4ba9b4a4304e7c1f)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_4ba9b4a4304e7c1f = []byte{
 	// 174 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x2f, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,

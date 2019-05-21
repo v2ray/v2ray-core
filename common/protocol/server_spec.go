@@ -46,11 +46,11 @@ func (s *timeoutValidStrategy) Invalidate() {
 type ServerSpec struct {
 	sync.RWMutex
 	dest  net.Destination
-	users []*User
+	users []*MemoryUser
 	valid ValidationStrategy
 }
 
-func NewServerSpec(dest net.Destination, valid ValidationStrategy, users ...*User) *ServerSpec {
+func NewServerSpec(dest net.Destination, valid ValidationStrategy, users ...*MemoryUser) *ServerSpec {
 	return &ServerSpec{
 		dest:  dest,
 		users: users,
@@ -58,33 +58,36 @@ func NewServerSpec(dest net.Destination, valid ValidationStrategy, users ...*Use
 	}
 }
 
-func NewServerSpecFromPB(spec ServerEndpoint) *ServerSpec {
+func NewServerSpecFromPB(spec ServerEndpoint) (*ServerSpec, error) {
 	dest := net.TCPDestination(spec.Address.AsAddress(), net.Port(spec.Port))
-	return NewServerSpec(dest, AlwaysValid(), spec.User...)
+	mUsers := make([]*MemoryUser, len(spec.User))
+	for idx, u := range spec.User {
+		mUser, err := u.ToMemoryUser()
+		if err != nil {
+			return nil, err
+		}
+		mUsers[idx] = mUser
+	}
+	return NewServerSpec(dest, AlwaysValid(), mUsers...), nil
 }
 
 func (s *ServerSpec) Destination() net.Destination {
 	return s.dest
 }
 
-func (s *ServerSpec) HasUser(user *User) bool {
+func (s *ServerSpec) HasUser(user *MemoryUser) bool {
 	s.RLock()
 	defer s.RUnlock()
 
-	accountA, err := user.GetTypedAccount()
-	if err != nil {
-		return false
-	}
 	for _, u := range s.users {
-		accountB, err := u.GetTypedAccount()
-		if err == nil && accountA.Equals(accountB) {
+		if u.Account.Equals(user.Account) {
 			return true
 		}
 	}
 	return false
 }
 
-func (s *ServerSpec) AddUser(user *User) {
+func (s *ServerSpec) AddUser(user *MemoryUser) {
 	if s.HasUser(user) {
 		return
 	}
@@ -95,7 +98,7 @@ func (s *ServerSpec) AddUser(user *User) {
 	s.users = append(s.users, user)
 }
 
-func (s *ServerSpec) PickUser() *User {
+func (s *ServerSpec) PickUser() *MemoryUser {
 	s.RLock()
 	defer s.RUnlock()
 
@@ -110,10 +113,10 @@ func (s *ServerSpec) PickUser() *User {
 	}
 }
 
-func (v *ServerSpec) IsValid() bool {
-	return v.valid.IsValid()
+func (s *ServerSpec) IsValid() bool {
+	return s.valid.IsValid()
 }
 
-func (v *ServerSpec) Invalidate() {
-	v.valid.Invalidate()
+func (s *ServerSpec) Invalidate() {
+	s.valid.Invalidate()
 }

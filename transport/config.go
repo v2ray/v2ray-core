@@ -9,8 +9,5 @@ func (c *Config) Apply() error {
 	if c == nil {
 		return nil
 	}
-	if err := internet.ApplyGlobalTransportSettings(c.TransportSettings); err != nil {
-		return err
-	}
-	return nil
+	return internet.ApplyGlobalTransportSettings(c.TransportSettings)
 }

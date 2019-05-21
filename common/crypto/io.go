@@ -32,31 +32,35 @@ var (
 )
 
 type CryptionWriter struct {
-	stream cipher.Stream
-	writer io.Writer
+	stream    cipher.Stream
+	writer    io.Writer
+	bufWriter buf.Writer
 }
 
 // NewCryptionWriter creates a new CryptionWriter.
 func NewCryptionWriter(stream cipher.Stream, writer io.Writer) *CryptionWriter {
 	return &CryptionWriter{
-		stream: stream,
-		writer: writer,
+		stream:    stream,
+		writer:    writer,
+		bufWriter: buf.NewWriter(writer),
 	}
 }
 
 // Write implements io.Writer.Write().
 func (w *CryptionWriter) Write(data []byte) (int, error) {
 	w.stream.XORKeyStream(data, data)
-	return w.writer.Write(data)
+
+	if err := buf.WriteAllBytes(w.writer, data); err != nil {
+		return 0, err
+	}
+	return len(data), nil
 }
 
+// WriteMultiBuffer implements buf.Writer.
 func (w *CryptionWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	defer mb.Release()
-
-	bs := mb.ToNetBuffers()
-	for _, b := range bs {
-		w.stream.XORKeyStream(b, b)
+	for _, b := range mb {
+		w.stream.XORKeyStream(b.Bytes(), b.Bytes())
 	}
-	_, err := bs.WriteTo(w.writer)
-	return err
+
+	return w.bufWriter.WriteMultiBuffer(mb)
 }

@@ -4,20 +4,24 @@ import (
 	"context"
 	"crypto/rand"
 	"io"
-	"sync"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"golang.org/x/sync/errgroup"
+
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	. "v2ray.com/core/transport/internet/kcp"
-	. "v2ray.com/ext/assert"
 )
 
 func TestDialAndListen(t *testing.T) {
-	assert := With(t)
-
-	listerner, err := NewListener(internet.ContextWithTransportSettings(context.Background(), &Config{}), net.LocalHostIP, net.Port(0), func(ctx context.Context, conn internet.Connection) bool {
+	listerner, err := NewListener(context.Background(), net.LocalHostIP, net.Port(0), &internet.MemoryStreamConfig{
+		ProtocolName:     "mkcp",
+		ProtocolSettings: &Config{},
+	}, func(conn internet.Connection) {
 		go func(c internet.Connection) {
 			payload := make([]byte, 4096)
 			for {
@@ -32,43 +36,50 @@ func TestDialAndListen(t *testing.T) {
 			}
 			c.Close()
 		}(conn)
-		return true
 	})
-	assert(err, IsNil)
+	common.Must(err)
+	defer listerner.Close()
+
 	port := net.Port(listerner.Addr().(*net.UDPAddr).Port)
 
-	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{})
-	wg := new(sync.WaitGroup)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		clientConn, err := DialKCP(ctx, net.UDPDestination(net.LocalHostIP, port))
-		assert(err, IsNil)
-		wg.Add(1)
+		errg.Go(func() error {
+			clientConn, err := DialKCP(context.Background(), net.UDPDestination(net.LocalHostIP, port), &internet.MemoryStreamConfig{
+				ProtocolName:     "mkcp",
+				ProtocolSettings: &Config{},
+			})
+			if err != nil {
+				return err
+			}
+			defer clientConn.Close()
 
-		go func() {
 			clientSend := make([]byte, 1024*1024)
 			rand.Read(clientSend)
 			go clientConn.Write(clientSend)
 
 			clientReceived := make([]byte, 1024*1024)
-			nBytes, _ := io.ReadFull(clientConn, clientReceived)
-			assert(nBytes, Equals, len(clientReceived))
-			clientConn.Close()
+			common.Must2(io.ReadFull(clientConn, clientReceived))
 
 			clientExpected := make([]byte, 1024*1024)
 			for idx, b := range clientSend {
 				clientExpected[idx] = b ^ 'c'
 			}
-			assert(clientReceived, Equals, clientExpected)
-
-			wg.Done()
-		}()
+			if r := cmp.Diff(clientReceived, clientExpected); r != "" {
+				return errors.New(r)
+			}
+			return nil
+		})
 	}
 
-	wg.Wait()
+	if err := errg.Wait(); err != nil {
+		t.Fatal(err)
+	}
+
 	for i := 0; i < 60 && listerner.ActiveConnections() > 0; i++ {
 		time.Sleep(500 * time.Millisecond)
 	}
-	assert(listerner.ActiveConnections(), Equals, 0)
-
-	listerner.Close()
+	if v := listerner.ActiveConnections(); v != 0 {
+		t.Error("active connections: ", v)
+	}
 }

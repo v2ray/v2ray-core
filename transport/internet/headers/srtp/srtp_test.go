@@ -1,22 +1,27 @@
 package srtp_test
 
 import (
+	"context"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/transport/internet/headers/srtp"
-	. "v2ray.com/ext/assert"
 )
 
 func TestSRTPWrite(t *testing.T) {
-	assert := With(t)
-
 	content := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	srtp := SRTP{}
+	srtpRaw, err := New(context.Background(), &Config{})
+	common.Must(err)
 
-	payload := buf.NewLocal(2048)
-	payload.AppendSupplier(srtp.Write)
-	payload.Append(content)
+	srtp := srtpRaw.(*SRTP)
 
-	assert(payload.Len(), Equals, len(content)+srtp.Size())
+	payload := buf.New()
+	srtp.Serialize(payload.Extend(srtp.Size()))
+	payload.Write(content)
+
+	expectedLen := int32(len(content)) + srtp.Size()
+	if payload.Len() != expectedLen {
+		t.Error("expected ", expectedLen, " of bytes, but got ", payload.Len())
+	}
 }

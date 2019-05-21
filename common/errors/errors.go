@@ -1,7 +1,9 @@
 // Package errors is a drop-in replacement for Golang lib 'errors'.
-package errors
+package errors // import "v2ray.com/core/common/errors"
 
 import (
+	"os"
+	"reflect"
 	"strings"
 
 	"v2ray.com/core/common/log"
@@ -19,82 +21,132 @@ type hasSeverity interface {
 
 // Error is an error object with underlying error.
 type Error struct {
+	pathObj  interface{}
+	prefix   []interface{}
 	message  []interface{}
 	inner    error
 	severity log.Severity
-	path     []string
+}
+
+func (err *Error) WithPathObj(obj interface{}) *Error {
+	err.pathObj = obj
+	return err
+}
+
+func (err *Error) pkgPath() string {
+	if err.pathObj == nil {
+		return ""
+	}
+	return reflect.TypeOf(err.pathObj).PkgPath()
 }
 
 // Error implements error.Error().
-func (v *Error) Error() string {
-	msg := serial.Concat(v.message...)
-	if v.inner != nil {
-		msg += " > " + v.inner.Error()
+func (err *Error) Error() string {
+	builder := strings.Builder{}
+	for _, prefix := range err.prefix {
+		builder.WriteByte('[')
+		builder.WriteString(serial.ToString(prefix))
+		builder.WriteString("] ")
 	}
-	if len(v.path) > 0 {
-		msg = strings.Join(v.path, "|") + ": " + msg
+
+	path := err.pkgPath()
+	if len(path) > 0 {
+		builder.WriteString(path)
+		builder.WriteString(": ")
 	}
-	return msg
+
+	msg := serial.Concat(err.message...)
+	builder.WriteString(msg)
+
+	if err.inner != nil {
+		builder.WriteString(" > ")
+		builder.WriteString(err.inner.Error())
+	}
+
+	return builder.String()
 }
 
 // Inner implements hasInnerError.Inner()
-func (v *Error) Inner() error {
-	if v.inner == nil {
+func (err *Error) Inner() error {
+	if err.inner == nil {
 		return nil
 	}
-	return v.inner
+	return err.inner
 }
 
-func (v *Error) Base(err error) *Error {
-	v.inner = err
-	return v
+func (err *Error) Base(e error) *Error {
+	err.inner = e
+	return err
 }
 
-func (v *Error) atSeverity(s log.Severity) *Error {
-	v.severity = s
-	return v
+func (err *Error) atSeverity(s log.Severity) *Error {
+	err.severity = s
+	return err
 }
 
-func (v *Error) Severity() log.Severity {
-	if v.inner == nil {
-		return v.severity
+func (err *Error) Severity() log.Severity {
+	if err.inner == nil {
+		return err.severity
 	}
 
-	if s, ok := v.inner.(hasSeverity); ok {
+	if s, ok := err.inner.(hasSeverity); ok {
 		as := s.Severity()
-		if as < v.severity {
+		if as < err.severity {
 			return as
 		}
 	}
 
-	return v.severity
+	return err.severity
 }
 
 // AtDebug sets the severity to debug.
-func (v *Error) AtDebug() *Error {
-	return v.atSeverity(log.Severity_Debug)
+func (err *Error) AtDebug() *Error {
+	return err.atSeverity(log.Severity_Debug)
 }
 
 // AtInfo sets the severity to info.
-func (v *Error) AtInfo() *Error {
-	return v.atSeverity(log.Severity_Info)
+func (err *Error) AtInfo() *Error {
+	return err.atSeverity(log.Severity_Info)
 }
 
 // AtWarning sets the severity to warning.
-func (v *Error) AtWarning() *Error {
-	return v.atSeverity(log.Severity_Warning)
+func (err *Error) AtWarning() *Error {
+	return err.atSeverity(log.Severity_Warning)
 }
 
 // AtError sets the severity to error.
-func (v *Error) AtError() *Error {
-	return v.atSeverity(log.Severity_Error)
+func (err *Error) AtError() *Error {
+	return err.atSeverity(log.Severity_Error)
 }
 
-// Path sets the path to the location where this error happens.
-func (v *Error) Path(path ...string) *Error {
-	v.path = path
-	return v
+// String returns the string representation of this error.
+func (err *Error) String() string {
+	return err.Error()
 }
+
+// WriteToLog writes current error into log.
+func (err *Error) WriteToLog(opts ...ExportOption) {
+	var holder ExportOptionHolder
+
+	for _, opt := range opts {
+		opt(&holder)
+	}
+
+	if holder.SessionID > 0 {
+		err.prefix = append(err.prefix, holder.SessionID)
+	}
+
+	log.Record(&log.GeneralMessage{
+		Severity: GetSeverity(err),
+		Content:  err,
+	})
+}
+
+type ExportOptionHolder struct {
+	SessionID uint32
+}
+
+type ExportOption func(*ExportOptionHolder)
 
 // New returns a new error object with message formed from given arguments.
 func New(msg ...interface{}) *Error {
@@ -109,16 +161,32 @@ func Cause(err error) error {
 	if err == nil {
 		return nil
 	}
+L:
 	for {
-		inner, ok := err.(hasInnerError)
-		if !ok || inner.Inner() == nil {
-			break
+		switch inner := err.(type) {
+		case hasInnerError:
+			if inner.Inner() == nil {
+				break L
+			}
+			err = inner.Inner()
+		case *os.PathError:
+			if inner.Err == nil {
+				break L
+			}
+			err = inner.Err
+		case *os.SyscallError:
+			if inner.Err == nil {
+				break L
+			}
+			err = inner.Err
+		default:
+			break L
 		}
-		err = inner.Inner()
 	}
 	return err
 }
 
+// GetSeverity returns the actual severity of the error, including inner errors.
 func GetSeverity(err error) log.Severity {
 	if s, ok := err.(hasSeverity); ok {
 		return s.Severity()

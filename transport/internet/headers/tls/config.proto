@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package v2ray.core.transport.internet.headers.tls;
+option csharp_namespace = "V2Ray.Core.Transport.Internet.Headers.Tls";
+option go_package = "tls";
+option java_package = "com.v2ray.core.transport.internet.headers.tls";
+option java_multiple_files = true;
+
+message PacketConfig {
+}

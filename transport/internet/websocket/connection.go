@@ -1,3 +1,5 @@
+// +build !confonly
+
 package websocket
 
 import (
@@ -5,9 +7,10 @@ import (
 	"net"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/external/github.com/gorilla/websocket"
 )
 
 var (
@@ -16,15 +19,15 @@ var (
 
 // connection is a wrapper for net.Conn over WebSocket connection.
 type connection struct {
-	conn   *websocket.Conn
-	reader io.Reader
-
-	mergingWriter *buf.BufferedWriter
+	conn       *websocket.Conn
+	reader     io.Reader
+	remoteAddr net.Addr
 }
 
-func newConnection(conn *websocket.Conn) *connection {
+func newConnection(conn *websocket.Conn, remoteAddr net.Addr) *connection {
 	return &connection{
-		conn: conn,
+		conn:       conn,
+		remoteAddr: remoteAddr,
 	}
 }
 
@@ -67,18 +70,24 @@ func (c *connection) Write(b []byte) (int, error) {
 }
 
 func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	if c.mergingWriter == nil {
-		c.mergingWriter = buf.NewBufferedWriter(buf.NewBufferToBytesWriter(c))
-	}
-	if err := c.mergingWriter.WriteMultiBuffer(mb); err != nil {
-		return err
-	}
-	return c.mergingWriter.Flush()
+	mb = buf.Compact(mb)
+	mb, err := buf.WriteMultiBuffer(c, mb)
+	buf.ReleaseMulti(mb)
+	return err
 }
 
 func (c *connection) Close() error {
-	c.conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second*5))
-	return c.conn.Close()
+	var errors []interface{}
+	if err := c.conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second*5)); err != nil {
+		errors = append(errors, err)
+	}
+	if err := c.conn.Close(); err != nil {
+		errors = append(errors, err)
+	}
+	if len(errors) > 0 {
+		return newError("failed to close connection").Base(newError(serial.Concat(errors...)))
+	}
+	return nil
 }
 
 func (c *connection) LocalAddr() net.Addr {
@@ -86,7 +95,7 @@ func (c *connection) LocalAddr() net.Addr {
 }
 
 func (c *connection) RemoteAddr() net.Addr {
-	return c.conn.RemoteAddr()
+	return c.remoteAddr
 }
 
 func (c *connection) SetDeadline(t time.Time) error {

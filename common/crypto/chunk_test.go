@@ -1,44 +1,51 @@
 package crypto_test
 
 import (
+	"bytes"
 	"io"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/crypto"
-	. "v2ray.com/ext/assert"
 )
 
 func TestChunkStreamIO(t *testing.T) {
-	assert := With(t)
-
-	cache := buf.NewLocal(8192)
+	cache := bytes.NewBuffer(make([]byte, 0, 8192))
 
 	writer := NewChunkStreamWriter(PlainChunkSizeParser{}, cache)
 	reader := NewChunkStreamReader(PlainChunkSizeParser{}, cache)
 
 	b := buf.New()
-	b.AppendBytes('a', 'b', 'c', 'd')
-	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)), IsNil)
+	b.WriteString("abcd")
+	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{b}))
 
 	b = buf.New()
-	b.AppendBytes('e', 'f', 'g')
-	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)), IsNil)
+	b.WriteString("efg")
+	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{b}))
 
-	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
+	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{}))
 
-	assert(cache.Len(), Equals, 13)
+	if cache.Len() != 13 {
+		t.Fatalf("Cache length is %d, want 13", cache.Len())
+	}
 
 	mb, err := reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(mb.Len(), Equals, 4)
-	assert(mb[0].Bytes(), Equals, []byte("abcd"))
+	common.Must(err)
+
+	if s := mb.String(); s != "abcd" {
+		t.Error("content: ", s)
+	}
 
 	mb, err = reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(mb.Len(), Equals, 3)
-	assert(mb[0].Bytes(), Equals, []byte("efg"))
+	common.Must(err)
+
+	if s := mb.String(); s != "efg" {
+		t.Error("content: ", s)
+	}
 
 	_, err = reader.ReadMultiBuffer()
-	assert(err, Equals, io.EOF)
+	if err != io.EOF {
+		t.Error("error: ", err)
+	}
 }

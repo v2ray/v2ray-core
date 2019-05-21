@@ -1,19 +1,20 @@
 package main
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg main -path Main
+//go:generate errorgen
 
 import (
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common/platform"
+	"v2ray.com/core/main/confloader"
 	_ "v2ray.com/core/main/distro/all"
 )
 
@@ -22,7 +23,6 @@ var (
 	version    = flag.Bool("version", false, "Show current version of V2Ray.")
 	test       = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
 	format     = flag.String("format", "json", "Format of input file.")
-	plugin     = flag.Bool("plugin", false, "True to load plugins.")
 )
 
 func fileExists(file string) bool {
@@ -49,32 +49,24 @@ func getConfigFilePath() string {
 	return ""
 }
 
-func GetConfigFormat() core.ConfigFormat {
+func GetConfigFormat() string {
 	switch strings.ToLower(*format) {
-	case "json":
-		return core.ConfigFormat_JSON
 	case "pb", "protobuf":
-		return core.ConfigFormat_Protobuf
+		return "protobuf"
 	default:
-		return core.ConfigFormat_JSON
+		return "json"
 	}
 }
 
 func startV2Ray() (core.Server, error) {
 	configFile := getConfigFilePath()
-	var configInput io.Reader
-	if configFile == "stdin:" {
-		configInput = os.Stdin
-	} else {
-		fixedFile := os.ExpandEnv(configFile)
-		file, err := os.Open(fixedFile)
-		if err != nil {
-			return nil, newError("config file not readable").Base(err)
-		}
-		defer file.Close()
-		configInput = file
+	configInput, err := confloader.LoadConfig(configFile)
+	if err != nil {
+		return nil, newError("failed to load config: ", configFile).Base(err)
 	}
-	config, err := core.LoadConfig(GetConfigFormat(), configInput)
+	defer configInput.Close()
+
+	config, err := core.LoadConfig(GetConfigFormat(), configFile, configInput)
 	if err != nil {
 		return nil, newError("failed to read config file: ", configFile).Base(err)
 	}
@@ -87,26 +79,27 @@ func startV2Ray() (core.Server, error) {
 	return server, nil
 }
 
+func printVersion() {
+	version := core.VersionStatement()
+	for _, s := range version {
+		fmt.Println(s)
+	}
+}
+
 func main() {
 	flag.Parse()
 
-	core.PrintVersion()
+	printVersion()
 
 	if *version {
 		return
 	}
 
-	if *plugin {
-		if err := core.LoadPlugins(); err != nil {
-			fmt.Println("Failed to load plugins:", err.Error())
-			os.Exit(-1)
-		}
-	}
-
 	server, err := startV2Ray()
 	if err != nil {
 		fmt.Println(err.Error())
-		os.Exit(-1)
+		// Configuration error. Exit with a special value to prevent systemd from restarting.
+		os.Exit(23)
 	}
 
 	if *test {
@@ -118,10 +111,14 @@ func main() {
 		fmt.Println("Failed to start", err)
 		os.Exit(-1)
 	}
+	defer server.Close()
 
-	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
+	// Explicitly triggering GC to remove garbage from config loading.
+	runtime.GC()
 
-	<-osSignals
-	server.Close()
+	{
+		osSignals := make(chan os.Signal, 1)
+		signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
+		<-osSignals
+	}
 }

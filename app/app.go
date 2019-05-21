@@ -1,3 +1,2 @@
+// Package app contains feature implementations of V2Ray. The features may be enabled during runtime.
 package app
-
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg app -path App

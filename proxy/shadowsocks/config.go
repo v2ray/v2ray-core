@@ -96,8 +96,8 @@ func (a *Account) AsAccount() (protocol.Account, error) {
 
 // Cipher is an interface for all Shadowsocks ciphers.
 type Cipher interface {
-	KeySize() int
-	IVSize() int
+	KeySize() int32
+	IVSize() int32
 	NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) (buf.Writer, error)
 	NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error)
 	IsAEAD() bool
@@ -107,29 +107,31 @@ type Cipher interface {
 
 // AesCfb represents all AES-CFB ciphers.
 type AesCfb struct {
-	KeyBytes int
+	KeyBytes int32
 }
 
 func (*AesCfb) IsAEAD() bool {
 	return false
 }
 
-func (v *AesCfb) KeySize() int {
+func (v *AesCfb) KeySize() int32 {
 	return v.KeyBytes
 }
 
-func (v *AesCfb) IVSize() int {
+func (v *AesCfb) IVSize() int32 {
 	return 16
 }
 
 func (v *AesCfb) NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) (buf.Writer, error) {
 	stream := crypto.NewAesEncryptionStream(key, iv)
-	return buf.NewWriter(crypto.NewCryptionWriter(stream, writer)), nil
+	return &buf.SequentialWriter{Writer: crypto.NewCryptionWriter(stream, writer)}, nil
 }
 
 func (v *AesCfb) NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error) {
 	stream := crypto.NewAesDecryptionStream(key, iv)
-	return buf.NewReader(crypto.NewCryptionReader(stream, reader)), nil
+	return &buf.SingleReader{
+		Reader: crypto.NewCryptionReader(stream, reader),
+	}, nil
 }
 
 func (v *AesCfb) EncodePacket(key []byte, b *buf.Buffer) error {
@@ -140,16 +142,19 @@ func (v *AesCfb) EncodePacket(key []byte, b *buf.Buffer) error {
 }
 
 func (v *AesCfb) DecodePacket(key []byte, b *buf.Buffer) error {
+	if b.Len() <= v.IVSize() {
+		return newError("insufficient data: ", b.Len())
+	}
 	iv := b.BytesTo(v.IVSize())
 	stream := crypto.NewAesDecryptionStream(key, iv)
 	stream.XORKeyStream(b.BytesFrom(v.IVSize()), b.BytesFrom(v.IVSize()))
-	b.SliceFrom(v.IVSize())
+	b.Advance(v.IVSize())
 	return nil
 }
 
 type AEADCipher struct {
-	KeyBytes        int
-	IVBytes         int
+	KeyBytes        int32
+	IVBytes         int32
 	AEADAuthCreator func(key []byte) cipher.AEAD
 }
 
@@ -157,16 +162,16 @@ func (*AEADCipher) IsAEAD() bool {
 	return true
 }
 
-func (c *AEADCipher) KeySize() int {
+func (c *AEADCipher) KeySize() int32 {
 	return c.KeyBytes
 }
 
-func (c *AEADCipher) IVSize() int {
+func (c *AEADCipher) IVSize() int32 {
 	return c.IVBytes
 }
 
 func (c *AEADCipher) createAuthenticator(key []byte, iv []byte) *crypto.AEADAuthenticator {
-	nonce := crypto.NewIncreasingAEADNonceGenerator()
+	nonce := crypto.GenerateInitialAEADNonce()
 	subkey := make([]byte, c.KeyBytes)
 	hkdfSHA1(key, iv, subkey)
 	return &crypto.AEADAuthenticator{
@@ -179,70 +184,66 @@ func (c *AEADCipher) NewEncryptionWriter(key []byte, iv []byte, writer io.Writer
 	auth := c.createAuthenticator(key, iv)
 	return crypto.NewAuthenticationWriter(auth, &crypto.AEADChunkSizeParser{
 		Auth: auth,
-	}, writer, protocol.TransferTypeStream), nil
+	}, writer, protocol.TransferTypeStream, nil), nil
 }
 
 func (c *AEADCipher) NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error) {
 	auth := c.createAuthenticator(key, iv)
 	return crypto.NewAuthenticationReader(auth, &crypto.AEADChunkSizeParser{
 		Auth: auth,
-	}, reader, protocol.TransferTypeStream), nil
+	}, reader, protocol.TransferTypeStream, nil), nil
 }
 
 func (c *AEADCipher) EncodePacket(key []byte, b *buf.Buffer) error {
 	ivLen := c.IVSize()
 	payloadLen := b.Len()
 	auth := c.createAuthenticator(key, b.BytesTo(ivLen))
-	return b.Reset(func(bb []byte) (int, error) {
-		bbb, err := auth.Seal(bb[:ivLen], bb[ivLen:payloadLen])
-		if err != nil {
-			return 0, err
-		}
-		return len(bbb), nil
-	})
+
+	b.Extend(int32(auth.Overhead()))
+	_, err := auth.Seal(b.BytesTo(ivLen), b.BytesRange(ivLen, payloadLen))
+	return err
 }
 
 func (c *AEADCipher) DecodePacket(key []byte, b *buf.Buffer) error {
+	if b.Len() <= c.IVSize() {
+		return newError("insufficient data: ", b.Len())
+	}
 	ivLen := c.IVSize()
 	payloadLen := b.Len()
 	auth := c.createAuthenticator(key, b.BytesTo(ivLen))
-	if err := b.Reset(func(bb []byte) (int, error) {
-		bbb, err := auth.Open(bb[:ivLen], bb[ivLen:payloadLen])
-		if err != nil {
-			return 0, err
-		}
-		return len(bbb), nil
-	}); err != nil {
+
+	bbb, err := auth.Open(b.BytesTo(ivLen), b.BytesRange(ivLen, payloadLen))
+	if err != nil {
 		return err
 	}
-	b.SliceFrom(ivLen)
+	b.Resize(ivLen, int32(len(bbb)))
 	return nil
 }
 
 type ChaCha20 struct {
-	IVBytes int
+	IVBytes int32
 }
 
 func (*ChaCha20) IsAEAD() bool {
 	return false
 }
 
-func (v *ChaCha20) KeySize() int {
+func (v *ChaCha20) KeySize() int32 {
 	return 32
 }
 
-func (v *ChaCha20) IVSize() int {
+func (v *ChaCha20) IVSize() int32 {
 	return v.IVBytes
 }
 
 func (v *ChaCha20) NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) (buf.Writer, error) {
 	stream := crypto.NewChaCha20Stream(key, iv)
-	return buf.NewWriter(crypto.NewCryptionWriter(stream, writer)), nil
+	return &buf.SequentialWriter{Writer: crypto.NewCryptionWriter(stream, writer)}, nil
 }
 
 func (v *ChaCha20) NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error) {
 	stream := crypto.NewChaCha20Stream(key, iv)
-	return buf.NewReader(crypto.NewCryptionReader(stream, reader)), nil
+	return &buf.SingleReader{Reader: crypto.NewCryptionReader(stream, reader)}, nil
 }
 
 func (v *ChaCha20) EncodePacket(key []byte, b *buf.Buffer) error {
@@ -253,17 +254,20 @@ func (v *ChaCha20) EncodePacket(key []byte, b *buf.Buffer) error {
 }
 
 func (v *ChaCha20) DecodePacket(key []byte, b *buf.Buffer) error {
+	if b.Len() <= v.IVSize() {
+		return newError("insufficient data: ", b.Len())
+	}
 	iv := b.BytesTo(v.IVSize())
 	stream := crypto.NewChaCha20Stream(key, iv)
 	stream.XORKeyStream(b.BytesFrom(v.IVSize()), b.BytesFrom(v.IVSize()))
-	b.SliceFrom(v.IVSize())
+	b.Advance(v.IVSize())
 	return nil
 }
 
 type NoneCipher struct{}
 
-func (NoneCipher) KeySize() int { return 0 }
-func (NoneCipher) IVSize() int  { return 0 }
+func (NoneCipher) KeySize() int32 { return 0 }
+func (NoneCipher) IVSize() int32  { return 0 }
 func (NoneCipher) IsAEAD() bool {
 	return true // to avoid OTA
 }
@@ -284,13 +288,13 @@ func (NoneCipher) DecodePacket(key []byte, b *buf.Buffer) error {
 	return nil
 }
 
-func passwordToCipherKey(password []byte, keySize int) []byte {
+func passwordToCipherKey(password []byte, keySize int32) []byte {
 	key := make([]byte, 0, keySize)
 
 	md5Sum := md5.Sum(password)
 	key = append(key, md5Sum[:]...)
 
-	for len(key) < keySize {
+	for int32(len(key)) < keySize {
 		md5Hash := md5.New()
 		common.Must2(md5Hash.Write(md5Sum[:]))
 		common.Must2(md5Hash.Write(password))

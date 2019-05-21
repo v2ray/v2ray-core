@@ -1,8 +1,10 @@
 package log
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -13,7 +15,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type Severity int32
 
@@ -32,6 +34,7 @@ var Severity_name = map[int32]string{
 	3: "Info",
 	4: "Debug",
 }
+
 var Severity_value = map[string]int32{
 	"Unknown": 0,
 	"Error":   1,
@@ -43,15 +46,20 @@ var Severity_value = map[string]int32{
 func (x Severity) String() string {
 	return proto.EnumName(Severity_name, int32(x))
 }
-func (Severity) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (Severity) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_903ab33e40dced38, []int{0}
+}
 
 func init() {
 	proto.RegisterEnum("v2ray.core.common.log.Severity", Severity_name, Severity_value)
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/log/log.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/common/log/log.proto", fileDescriptor_903ab33e40dced38)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_903ab33e40dced38 = []byte{
 	// 178 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x2e, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,
