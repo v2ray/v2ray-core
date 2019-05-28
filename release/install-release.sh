@@ -430,7 +430,7 @@ main(){
         getVersion
         RETVAL="$?"
         if [[ $RETVAL == 0 ]] && [[ "$FORCE" != "1" ]]; then
-            colorEcho ${BLUE} "Latest version ${NEW_VER} is already installed."
+            colorEcho ${BLUE} "Latest version ${CUR_VER} is already installed."
             if [[ "${ERROR_IF_UPTODATE}" == "1" ]]; then
               return 10
             fi
