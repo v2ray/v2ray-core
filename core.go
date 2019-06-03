@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	version  = "4.19"
+	version  = "4.19.1"
 	build    = "Custom"
 	codename = "Let's Fly"
 	intro    = "A unified platform for anti-censorship."
