@@ -323,7 +323,7 @@ func toCidrList(ips StringList) ([]*router.GeoIP, error) {
 
 			filename := kv[0]
 			country := kv[1]
-			geoip, err := loadGeoIP(strings.ToUpper(country))
+			geoip, err := loadIP(filename, strings.ToUpper(country))
 			if err != nil {
 				return nil, newError("failed to load IPs: ", country, " from ", filename).Base(err)
 			}
