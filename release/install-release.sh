@@ -447,7 +447,7 @@ main(){
         RETVAL="$?"
         if [[ $RETVAL == 0 ]] && [[ "$FORCE" != "1" ]]; then
             colorEcho ${BLUE} "Latest version ${CUR_VER} is already installed."
-            if [ -n "${ERROR_IF_UPTODATE}" ]; then
+            if [[ "${ERROR_IF_UPTODATE}" == "1" ]]; then
               return 10
             fi
             return
