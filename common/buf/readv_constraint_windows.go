@@ -9,16 +9,16 @@ func checkReadVConstraint(conn syscall.RawConn) (bool, error) {
 	var isSocketReady = false
 	var reason error
 	/*
-			In Windows, WSARecv system call only support socket connection.
+		In Windows, WSARecv system call only support socket connection.
 
-			It it required to check if the given fd is of a socket type
+		It it required to check if the given fd is of a socket type
 
-			Fix https://github.com/v2ray/v2ray-core/issues/1666
+		Fix https://github.com/v2ray/v2ray-core/issues/1666
 
-			Additional Information:
-			https://docs.microsoft.com/en-us/windows/desktop/api/winsock2/nf-winsock2-wsarecv
-			https://docs.microsoft.com/en-us/windows/desktop/api/winsock/nf-winsock-getsockopt
-			https://docs.microsoft.com/en-us/windows/desktop/WinSock/sol-socket-socket-options
+		Additional Information:
+		https://docs.microsoft.com/en-us/windows/desktop/api/winsock2/nf-winsock2-wsarecv
+		https://docs.microsoft.com/en-us/windows/desktop/api/winsock/nf-winsock-getsockopt
+		https://docs.microsoft.com/en-us/windows/desktop/WinSock/sol-socket-socket-options
 
 	*/
 	err := conn.Control(func(fd uintptr) {
@@ -33,5 +33,9 @@ func checkReadVConstraint(conn syscall.RawConn) (bool, error) {
 		reason = err
 	})
 
-	return isSocketReady, err
+	if err != nil {
+		return false, err
+	}
+
+	return isSocketReady, reason
 }
