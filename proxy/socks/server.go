@@ -117,12 +117,12 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 		dest := request.Destination()
 		newError("TCP Connect request to ", dest).WriteToLog(session.ExportIDToError(ctx))
 		if inbound != nil && inbound.Source.IsValid() {
-			log.Record(&log.AccessMessage{
+			log.AccessMessageChan <- log.AccessMessage{
 				From:   inbound.Source,
 				To:     dest,
 				Status: log.AccessAccepted,
 				Reason: "",
-			})
+			}
 		}
 
 		return s.transport(ctx, reader, conn, dest, dispatcher)

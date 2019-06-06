@@ -175,12 +175,12 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	inbound.User = s.user
 
 	dest := request.Destination()
-	log.Record(&log.AccessMessage{
+	log.AccessMessageChan <- log.AccessMessage{
 		From:   conn.RemoteAddr(),
 		To:     dest,
 		Status: log.AccessAccepted,
 		Reason: "",
-	})
+	}
 	newError("tunnelling request to ", dest).WriteToLog(session.ExportIDToError(ctx))
 
 	ctx, cancel := context.WithCancel(ctx)

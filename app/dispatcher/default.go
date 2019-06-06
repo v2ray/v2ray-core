@@ -14,6 +14,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/features/outbound"
@@ -257,6 +258,7 @@ func sniffer(ctx context.Context, cReader *cachedReader) (SniffResult, error) {
 
 func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.Link, destination net.Destination) {
 	var handler outbound.Handler
+	detourTag := "error"
 	if d.router != nil {
 		if tag, err := d.router.PickRoute(ctx); err == nil {
 			if h := d.ohm.GetHandler(tag); h != nil {
@@ -265,9 +267,19 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 			} else {
 				newError("non existing tag: ", tag).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 			}
+			detourTag = tag
 		} else {
 			newError("default route for ", destination).WriteToLog(session.ExportIDToError(ctx))
 		}
+	}
+
+	accessMessageCount := len(log.AccessMessageChan)
+	if (accessMessageCount != 0) {
+		accessMessage := <-log.AccessMessageChan
+		//accessMessage.Detour = "[" + detourTag + "]" + strconv.Itoa(len(log.AccessMessageChan))
+		accessMessage.Detour = "[" + detourTag + "]"
+		log.Record(&accessMessage)
+		log.AccessMessageChanChecker()
 	}
 
 	if handler == nil {
