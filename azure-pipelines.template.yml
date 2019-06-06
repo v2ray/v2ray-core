@@ -17,5 +17,6 @@ jobs:
 
   - script: |
       go build ./common/buf
+    condition: always()
     workingDirectory: '$(Build.SourcesDirectory)'
     displayName: 'Test Buf error'
