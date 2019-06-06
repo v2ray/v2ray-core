@@ -14,3 +14,8 @@ jobs:
       go test -p 1 -v -timeout 30m ./...
     workingDirectory: '$(Build.SourcesDirectory)'
     displayName: 'Test'
+
+  - script: |
+      go build ./common/buf
+    workingDirectory: '$(Build.SourcesDirectory)'
+    displayName: 'Test Buf error'
