@@ -117,7 +117,7 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 		dest := request.Destination()
 		newError("TCP Connect request to ", dest).WriteToLog(session.ExportIDToError(ctx))
 		if inbound != nil && inbound.Source.IsValid() {
-			log.Record(&log.AccessMessage{
+			ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 				From:   inbound.Source,
 				To:     dest,
 				Status: log.AccessAccepted,
@@ -229,7 +229,7 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 
 			newError("send packet to ", request.Destination(), " with ", payload.Len(), " bytes").AtDebug().WriteToLog(session.ExportIDToError(ctx))
 			if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
-				log.Record(&log.AccessMessage{
+				ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 					From:   inbound.Source,
 					To:     request.Destination(),
 					Status: log.AccessAccepted,

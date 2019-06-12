@@ -250,7 +250,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	}
 
 	if request.Command != protocol.RequestCommandMux {
-		log.Record(&log.AccessMessage{
+		ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 			From:   connection.RemoteAddr(),
 			To:     request.Destination(),
 			Status: log.AccessAccepted,
