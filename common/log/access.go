@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"strings"
+	"context"
 
 	"v2ray.com/core/common/serial"
 )
@@ -25,8 +26,7 @@ type AccessMessage struct {
 	To     interface{}
 	Status AccessStatus
 	Reason interface{}
-	Email  string
-	Detour string
+	Detour interface{}
 }
 
 func (m *AccessMessage) String() string {
@@ -37,11 +37,8 @@ func (m *AccessMessage) String() string {
 	builder.WriteByte(' ')
 	builder.WriteString(serial.ToString(m.To))
 	builder.WriteByte(' ')
-	if len(m.Detour) > 0 {
-		builder.WriteByte('[')
-		builder.WriteString(m.Detour)
-		builder.WriteString("] ")
-	}
+	builder.WriteString(serial.ToString(m.Detour))
+	builder.WriteByte(' ')
 	builder.WriteString(serial.ToString(m.Reason))
 
 	if len(m.Email) > 0 {
@@ -60,5 +57,5 @@ func AccessMessageFromContext(ctx context.Context) *AccessMessage {
 	if accessMessage, ok := ctx.Value(accessMessageKey).(*AccessMessage); ok {
 		return accessMessage
 	}
-	return nil
+	return nil 
 }
