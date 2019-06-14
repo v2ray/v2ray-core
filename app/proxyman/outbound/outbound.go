@@ -123,7 +123,7 @@ func (m *Manager) AddHandler(ctx context.Context, handler outbound.Handler) erro
 
 // RemoveHandler implements outbound.Manager.
 func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
-	if len(tag) == 0 {
+	if tag == "" {
 		return common.ErrNoClue
 	}
 	m.access.Lock()

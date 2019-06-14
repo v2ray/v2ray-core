@@ -128,11 +128,11 @@ func (c *VerifyCommand) Execute(args []string) error {
 	}
 
 	target := fs.Arg(0)
-	if len(target) == 0 {
+	if target == "" {
 		return newError("empty file path.")
 	}
 
-	if len(*sigFile) == 0 {
+	if *sigFile == "" {
 		*sigFile = target + ".sig"
 	}
 

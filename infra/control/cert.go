@@ -21,7 +21,7 @@ func (l *stringList) String() string {
 }
 
 func (l *stringList) Set(v string) error {
-	if len(v) == 0 {
+	if v == "" {
 		return newError("empty value")
 	}
 	*l = append(*l, v)

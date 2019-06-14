@@ -46,7 +46,7 @@ func (v *ShadowsocksServerConfig) Build() (proto.Message, error) {
 	config.UdpEnabled = v.UDP
 	config.Network = v.NetworkList.Build()
 
-	if len(v.Password) == 0 {
+	if v.Password == "" {
 		return nil, newError("Shadowsocks password is not specified.")
 	}
 	account := &shadowsocks.Account{
@@ -103,7 +103,7 @@ func (v *ShadowsocksClientConfig) Build() (proto.Message, error) {
 		if server.Port == 0 {
 			return nil, newError("Invalid Shadowsocks port.")
 		}
-		if len(server.Password) == 0 {
+		if server.Password == "" {
 			return nil, newError("Shadowsocks password is not specified.")
 		}
 		account := &shadowsocks.Account{

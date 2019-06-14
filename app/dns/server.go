@@ -42,7 +42,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		clients: make([]Client, 0, len(config.NameServers)+len(config.NameServer)),
 		tag:     config.Tag,
 	}
-	if len(server.tag) == 0 {
+	if server.tag == "" {
 		server.tag = generateRandomTag()
 	}
 	if len(config.ClientIp) > 0 {
@@ -196,7 +196,7 @@ func toNetIP(ips []net.Address) []net.IP {
 }
 
 func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, error) {
-	if len(domain) == 0 {
+	if domain == "" {
 		return nil, newError("empty domain name")
 	}
 
