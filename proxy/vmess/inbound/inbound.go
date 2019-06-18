@@ -233,6 +233,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 				To:     "",
 				Status: log.AccessRejected,
 				Reason: err,
+				Email: request.User.Email,
 			})
 			err = newError("invalid request from ", connection.RemoteAddr()).Base(err).AtInfo()
 		}
@@ -245,6 +246,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 			To:     "",
 			Status: log.AccessRejected,
 			Reason: "Insecure encryption",
+			Email: request.User.Email,
 		})
 		return newError("client is using insecure encryption: ", request.Security)
 	}
@@ -255,6 +257,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 			To:     request.Destination(),
 			Status: log.AccessAccepted,
 			Reason: "",
+			Email: request.User.Email,
 		})
 	}
 
