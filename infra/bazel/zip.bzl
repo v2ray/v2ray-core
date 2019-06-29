@@ -48,9 +48,6 @@ def _zip_file(ctx):
             d.startswith("/") or d.endswith("/")):
             fail("mappings should not begin or end with slash")
     srcs = depset(transitive = [depset(ctx.files.srcs),depset(ctx.files.data),depset(collect_runfiles(ctx.attr.data))])
-    # srcs += ctx.files.srcs
-    # srcs += ctx.files.data
-    # srcs += collect_runfiles(ctx.attr.data)
     mapped = _map_sources(ctx, srcs, ctx.attr.mappings)
     cmd = [
         "#!/bin/sh",
