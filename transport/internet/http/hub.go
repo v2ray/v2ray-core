@@ -16,9 +16,6 @@ import (
 	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
-
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 type Listener struct {
@@ -107,61 +104,34 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 
 	config := tls.ConfigFromStreamSettings(streamSettings)
 	if config == nil {
-		// return nil, newError("TLS must be enabled for http transport.").AtWarning()
-		h2s:=&http2.Server{}
-
-		server := &http.Server{
-			Addr:              serial.Concat(address, ":", port),
-			// TLSConfig:         config.GetTLSConfig(tls.WithNextProto("h2")),
-			Handler:            h2c.NewHandler(listener,h2s),
-			ReadHeaderTimeout: time.Second * 4,
-		}
-
-		listener.server = server
-		go func() {
-			tcpListener, err := internet.ListenSystem(ctx, &net.TCPAddr{
-				IP:   address.IP(),
-				Port: int(port),
-			}, streamSettings.SocketSettings)
-			if err != nil {
-				newError("failed to listen on", address, ":", port).Base(err).WriteToLog(session.ExportIDToError(ctx))
-				return
-			}
-
-			err = server.Serve(tcpListener)
-			if err != nil {
-				newError("stoping serving H2C").Base(err).WriteToLog(session.ExportIDToError(ctx))
-			}
-		}()
-
-		return listener, nil
-	} else {
-		server := &http.Server{
-			Addr:              serial.Concat(address, ":", port),
-			TLSConfig:         config.GetTLSConfig(tls.WithNextProto("h2")),
-			Handler:           listener,
-			ReadHeaderTimeout: time.Second * 4,
-		}
-
-		listener.server = server
-		go func() {
-			tcpListener, err := internet.ListenSystem(ctx, &net.TCPAddr{
-				IP:   address.IP(),
-				Port: int(port),
-			}, streamSettings.SocketSettings)
-			if err != nil {
-				newError("failed to listen on", address, ":", port).Base(err).WriteToLog(session.ExportIDToError(ctx))
-				return
-			}
-
-			err = server.ServeTLS(tcpListener, "", "")
-			if err != nil {
-				newError("stoping serving TLS").Base(err).WriteToLog(session.ExportIDToError(ctx))
-			}
-		}()
-
-		return listener, nil
+		return nil, newError("TLS must be enabled for http transport.").AtWarning()
 	}
+
+	server := &http.Server{
+		Addr:              serial.Concat(address, ":", port),
+		TLSConfig:         config.GetTLSConfig(tls.WithNextProto("h2")),
+		Handler:           listener,
+		ReadHeaderTimeout: time.Second * 4,
+	}
+
+	listener.server = server
+	go func() {
+		tcpListener, err := internet.ListenSystem(ctx, &net.TCPAddr{
+			IP:   address.IP(),
+			Port: int(port),
+		}, streamSettings.SocketSettings)
+		if err != nil {
+			newError("failed to listen on", address, ":", port).Base(err).WriteToLog(session.ExportIDToError(ctx))
+			return
+		}
+
+		err = server.ServeTLS(tcpListener, "", "")
+		if err != nil {
+			newError("stoping serving TLS").Base(err).WriteToLog(session.ExportIDToError(ctx))
+		}
+	}()
+
+	return listener, nil
 }
 
 func init() {
