@@ -6,6 +6,8 @@ package dns
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -87,6 +89,49 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		address := endpoint.Address.AsAddress()
 		if address.Family().IsDomain() && address.Domain() == "localhost" {
 			server.clients = append(server.clients, NewLocalNameServer())
+			newError("DNS: localhost inited").AtInfo().WriteToLog()
+		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "DOHL_") {
+			dohHost := address.Domain()[5:]
+			server.clients = append(server.clients, NewDoHLocalNameServer(dohHost, server.clientIP))
+			newError("DNS: DOH - Local inited for https://", dohHost).AtInfo().WriteToLog()
+		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "DOH_") {
+			// DOH_ prefix makes net.Address think it's a domain
+			// need to process the real address here.
+			dohHost := address.Domain()[4:]
+			dohAddr := net.ParseAddress(dohHost)
+			dohIP := dohHost
+			var dests []net.Destination
+
+			if dohAddr.Family().IsDomain() {
+				// resolve DOH server in advance
+				ips, err := net.LookupIP(dohAddr.Domain())
+				if err != nil || len(ips) == 0 {
+					return 0
+				}
+				for _, ip := range ips {
+					dohIP := ip.String()
+					if len(ip) == net.IPv6len {
+						dohIP = fmt.Sprintf("[%s]", dohIP)
+					}
+					dohdest, _ := net.ParseDestination(fmt.Sprintf("tcp:%s:443", dohIP))
+					dests = append(dests, dohdest)
+				}
+			} else {
+				// rfc8484, DOH service only use port 443
+				dest, err := net.ParseDestination(fmt.Sprintf("tcp:%s:443", dohIP))
+				if err != nil {
+					return 0
+				}
+				dests = []net.Destination{dest}
+			}
+
+			// need the core dispatcher, register DOHClient at callback
+			idx := len(server.clients)
+			server.clients = append(server.clients, nil)
+			common.Must(core.RequireFeatures(ctx, func(d routing.Dispatcher) {
+				server.clients[idx] = NewDoHNameServer(dests, dohHost, d, server.clientIP)
+				newError("DNS: DOH - Remote client inited for https://", dohHost).AtInfo().WriteToLog()
+			}))
 		} else {
 			dest := endpoint.AsDestination()
 			if dest.Network == net.Network_Unknown {
@@ -100,6 +145,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 					server.clients[idx] = NewClassicNameServer(dest, d, server.clientIP)
 				}))
 			}
+			newError("DNS: UDP client inited for ", dest.NetAddr()).AtInfo().WriteToLog()
 		}
 		return len(server.clients) - 1
 	}
@@ -272,8 +318,14 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 		return nil, newError("empty domain name")
 	}
 
+	// normalize the FQDN form query
 	if domain[len(domain)-1] == '.' {
 		domain = domain[:len(domain)-1]
+	}
+
+	// skip domain without any dot
+	if strings.Index(domain, ".") == -1 {
+		return nil, newError("invalid domain name")
 	}
 
 	ips := s.lookupStatic(domain, option, 0)
@@ -331,7 +383,7 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 		}
 	}
 
-	return nil, newError("returning nil for domain ", domain).Base(lastErr)
+	return nil, dns.ErrEmptyResponse.Base(lastErr)
 }
 
 func init() {

@@ -75,15 +75,24 @@ func (c *SniffingConfig) Build() (*proxyman.SniffingConfig, error) {
 }
 
 type MuxConfig struct {
-	Enabled     bool   `json:"enabled"`
-	Concurrency uint16 `json:"concurrency"`
+	Enabled     bool  `json:"enabled"`
+	Concurrency int16 `json:"concurrency"`
 }
 
-func (c *MuxConfig) GetConcurrency() uint16 {
-	if c.Concurrency == 0 {
-		return 8
+func (m *MuxConfig) Build() *proxyman.MultiplexingConfig {
+	if m.Concurrency < 0 {
+		return nil
 	}
-	return c.Concurrency
+
+	var con uint32 = 8
+	if m.Concurrency > 0 {
+		con = uint32(m.Concurrency)
+	}
+
+	return &proxyman.MultiplexingConfig{
+		Enabled:     m.Enabled,
+		Concurrency: con,
+	}
 }
 
 type InboundDetourAllocationConfig struct {
@@ -246,11 +255,8 @@ func (c *OutboundDetourConfig) Build() (*core.OutboundHandlerConfig, error) {
 		senderSettings.ProxySettings = ps
 	}
 
-	if c.MuxSettings != nil && c.MuxSettings.Enabled {
-		senderSettings.MultiplexSettings = &proxyman.MultiplexingConfig{
-			Enabled:     true,
-			Concurrency: uint32(c.MuxSettings.GetConcurrency()),
-		}
+	if c.MuxSettings != nil {
+		senderSettings.MultiplexSettings = c.MuxSettings.Build()
 	}
 
 	settings := []byte("{}")
