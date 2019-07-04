@@ -81,8 +81,7 @@ func ReadClientHello(data []byte, h *SniffHeader) error {
 			return errNotClientHello
 		}
 
-		switch extension {
-		case 0x00: /* extensionServerName */
+		if extension == 0x00 { /* extensionServerName */
 			d := data[:length]
 			if len(d) < 2 {
 				return errNotClientHello

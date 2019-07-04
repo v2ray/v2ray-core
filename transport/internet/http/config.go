@@ -33,7 +33,7 @@ func (c *Config) getRandomHost() string {
 }
 
 func (c *Config) getNormalizedPath() string {
-	if len(c.Path) == 0 {
+	if c.Path == "" {
 		return "/"
 	}
 	if c.Path[0] != '/' {

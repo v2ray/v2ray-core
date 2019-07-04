@@ -68,7 +68,7 @@ func (m *Manager) GetHandler(ctx context.Context, tag string) (inbound.Handler, 
 
 // RemoveHandler implements inbound.Manager.
 func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
-	if len(tag) == 0 {
+	if tag == "" {
 		return common.ErrNoClue
 	}
 

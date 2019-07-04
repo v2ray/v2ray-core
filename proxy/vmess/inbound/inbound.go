@@ -167,7 +167,7 @@ func (h *Handler) AddUser(ctx context.Context, user *protocol.MemoryUser) error 
 }
 
 func (h *Handler) RemoveUser(ctx context.Context, email string) error {
-	if len(email) == 0 {
+	if email == "" {
 		return newError("Email must not be empty.")
 	}
 	if !h.usersByEmail.Remove(email) {

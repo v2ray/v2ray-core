@@ -12,7 +12,7 @@ const protocolName = "domainsocket"
 
 func (c *Config) GetUnixAddr() (*net.UnixAddr, error) {
 	path := c.Path
-	if len(path) == 0 {
+	if path == "" {
 		return nil, newError("empty domain socket path")
 	}
 	if c.Abstract && path[0] != '\x00' {

@@ -23,7 +23,7 @@ type BalancingRule struct {
 }
 
 func (r *BalancingRule) Build() (*router.BalancingRule, error) {
-	if len(r.Tag) == 0 {
+	if r.Tag == "" {
 		return nil, newError("empty balancer tag")
 	}
 	if len(r.Selectors) == 0 {

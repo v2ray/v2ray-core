@@ -33,7 +33,7 @@ func (c *conn) HandshakeAddress() net.Address {
 		return nil
 	}
 	state := c.Conn.ConnectionState()
-	if len(state.ServerName) == 0 {
+	if state.ServerName == "" {
 		return nil
 	}
 	return net.ParseAddress(state.ServerName)
