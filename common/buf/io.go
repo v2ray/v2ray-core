@@ -63,8 +63,9 @@ func NewReader(reader io.Reader) Reader {
 			if err != nil {
 				newError("failed to get sysconn").Base(err).WriteToLog()
 			} else {
-				/* Check if ReadVReader Can be used on this reader first
-				   Fix https://github.com/v2ray/v2ray-core/issues/1666
+				/*
+					Check if ReadVReader Can be used on this reader first
+					Fix https://github.com/v2ray/v2ray-core/issues/1666
 				*/
 				if ok, _ := checkReadVConstraint(rawConn); ok {
 					return NewReadVReader(reader, rawConn)

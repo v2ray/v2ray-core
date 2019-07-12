@@ -51,7 +51,7 @@ func (g *DomainMatcherGroup) addMatcher(m domainMatcher, value uint32) {
 }
 
 func (g *DomainMatcherGroup) Match(domain string) uint32 {
-	if len(domain) == 0 {
+	if domain == "" {
 		return 0
 	}
 

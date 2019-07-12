@@ -33,9 +33,5 @@ func checkReadVConstraint(conn syscall.RawConn) (bool, error) {
 		reason = err
 	})
 
-	if err != nil {
-		return false, err
-	}
-
-	return isSocketReady, reason
+	return isSocketReady, err
 }
