@@ -47,10 +47,7 @@ def _zip_file(ctx):
         if (s.startswith("/") or s.endswith("/") or
             d.startswith("/") or d.endswith("/")):
             fail("mappings should not begin or end with slash")
-    srcs = depset()
-    srcs += ctx.files.srcs
-    srcs += ctx.files.data
-    srcs += collect_runfiles(ctx.attr.data)
+    srcs = depset(transitive = [depset(ctx.files.srcs),depset(ctx.files.data),depset(collect_runfiles(ctx.attr.data))])
     mapped = _map_sources(ctx, srcs, ctx.attr.mappings)
     cmd = [
         "#!/bin/sh",
@@ -74,7 +71,7 @@ def _zip_file(ctx):
                 for _, zip_path in mapped
                 if "/" in zip_path
             ],
-        )
+        ).to_list()
     ]
     cmd += [
         'ln -sf "${repo}/%s" "${tmp}/%s"' % (path, zip_path)
@@ -86,12 +83,12 @@ def _zip_file(ctx):
         'cd "${repo}"',
         'rm -rf "${tmp}"',
     ]
-    script = ctx.new_file(ctx.bin_dir, "%s.sh" % ctx.label.name)
-    ctx.file_action(output = script, content = "\n".join(cmd), executable = True)
+    script = ctx.actions.declare_file("%s/%s.sh" % (ctx.bin_dir, ctx.label.name))
+    ctx.actions.write(output = script, content = "\n".join(cmd), is_executable = True)
     inputs = [ctx.file._zipper]
     inputs += [dep.zip_file for dep in ctx.attr.deps]
-    inputs += list(srcs)
-    ctx.action(
+    inputs += list(srcs.to_list())
+    ctx.actions.run(
         inputs = inputs,
         outputs = [ctx.outputs.out],
         executable = script,
@@ -117,7 +114,7 @@ def _map_sources(ctx, srcs, mappings):
     mappings_indexes = range(len(mappings))
     used = {i: False for i in mappings_indexes}
     mapped = []
-    for file_ in srcs:
+    for file_ in srcs.to_list():
         run_path = long_path(ctx, file_)
         zip_path = None
         for i in mappings_indexes:
@@ -159,6 +156,6 @@ pkg_zip = rule(
         "deps": attr.label_list(providers = ["zip_file"]),
         "exclude": attr.string_list(),
         "mappings": attr.string_dict(),
-        "_zipper": attr.label(default = Label(ZIPPER), single_file = True),
+        "_zipper": attr.label(default = Label(ZIPPER), allow_single_file = True),
     },
 )
