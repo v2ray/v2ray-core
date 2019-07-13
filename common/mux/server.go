@@ -118,6 +118,7 @@ func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata,
 		}
 		if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
 			msg.From = inbound.Source
+			msg.Email = inbound.User.Email
 		}
 		log.Record(msg)
 	}

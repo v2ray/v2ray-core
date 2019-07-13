@@ -225,7 +225,6 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	reader := &buf.BufferedReader{Reader: buf.NewReader(connection)}
 	svrSession := encoding.NewServerSession(h.clients, h.sessionHistory)
 	request, err := svrSession.DecodeRequestHeader(reader)
-
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
 			log.Record(&log.AccessMessage{
@@ -245,6 +244,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 			To:     "",
 			Status: log.AccessRejected,
 			Reason: "Insecure encryption",
+			Email:  request.User.Email,
 		})
 		return newError("client is using insecure encryption: ", request.Security)
 	}
@@ -255,6 +255,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 			To:     request.Destination(),
 			Status: log.AccessAccepted,
 			Reason: "",
+			Email:  request.User.Email,
 		})
 	}
 
