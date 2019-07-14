@@ -32,6 +32,7 @@ func (c *ApiCommand) Description() Description {
 			"\tLoggerService.RestartLogger",
 			"\tStatsService.GetStats",
 			"\tStatsService.QueryStats",
+			"API calls in this command have a timeout to the server of 3 seconds.",
 			"Examples:",
 			"v2ctl api --server=127.0.0.1:8080 LoggerService.RestartLogger '' ",
 			"v2ctl api --server=127.0.0.1:8080 StatsService.QueryStats 'pattern: \"\" reset: false'",
