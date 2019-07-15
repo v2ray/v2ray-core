@@ -18,55 +18,76 @@ __root="$(cd "$(dirname "${__dir}")" && pwd)" # <-- change this as it depends on
 NOW=$(date '+%Y%m%d-%H%M%S')
 TMP=$(mktemp -d)
 
-BUILDTAG=$NOW
-BUILDNAME="user"
+CODENAME="user"
+BUILDNAME=$NOW
 GOPATH=$(go env GOPATH)
 
 cleanup () { rm -rf $TMP; }
 trap cleanup INT TERM ERR
 
 get_source() {
+	echo ">>> Getting v2ray sources ..."
 	go get -v -t v2ray.com/core/...
 }
 
 build_v2() {
 	pushd $GOPATH/src/v2ray.com/core
-	sed -i "s/\"Po\"/\"${BUILDNAME}\"/;s/\"Custom\"/\"${BUILDTAG}\"/;" core.go
+	echo ">>> Update source code name ..."
+	sed -i "s/^[ \t]\+codename.\+$/\tcodename = \"${CODENAME}\"/;s/^[ \t]\+build.\+$/\tbuild = \"${BUILDNAME}\"/;" core.go
 
+	echo ">>> Compile v2ray ..."
 	pushd $GOPATH/src/v2ray.com/core/main
 	env CGO_ENABLED=0 go build -o $TMP/v2ray${EXESUFFIX} -ldflags "-s -w"
+	if [[ $GOOS == "windows" ]];then
+	  env CGO_ENABLED=0 go build -o $TMP/wv2ray${EXESUFFIX} -ldflags "-s -w -H windowsgui"
+	fi
 	popd
 
 	git checkout -- core.go
 	popd
 
+	echo ">>> Compile v2ctl ..."
 	pushd $GOPATH/src/v2ray.com/core/infra/control/main
 	env CGO_ENABLED=0 go build -o $TMP/v2ctl${EXESUFFIX} -tags confonly -ldflags "-s -w"
 	popd
 }
 
 build_dat() {
+	echo ">>> Downloading newest geoip ..."
 	wget -qO - https://api.github.com/repos/v2ray/geoip/releases/latest \
 	| grep browser_download_url | cut -d '"' -f 4 \
 	| wget -i - -O $TMP/geoip.dat
 
+	echo ">>> Downloading newest geosite ..."
 	wget -qO - https://api.github.com/repos/v2ray/domain-list-community/releases/latest \
 	| grep browser_download_url | cut -d '"' -f 4 \
 	| wget -i - -O $TMP/geosite.dat
 }
 
 copyconf() {
+	echo ">>> Copying config..."
 	pushd $GOPATH/src/v2ray.com/core/release/config
 	tar c --exclude "*.dat" . | tar x -C $TMP
 }
 
-pack() {
+packzip() {
+	echo ">>> Generating zip package"
 	pushd $TMP
 	local PKG=${__dir}/v2ray-custom-${GOARCH}-${GOOS}-${PKGSUFFIX}${NOW}.zip
 	zip -r $PKG .
+	echo ">>> Generated: $(basename $PKG)"
+}
+
+packtgz() {
+	echo ">>> Generating tgz package"
+	pushd $TMP
+	local PKG=${__dir}/v2ray-custom-${GOARCH}-${GOOS}-${PKGSUFFIX}${NOW}.tar.gz
+	tar cvfz $PKG .
+	echo ">>> Generated: $(basename $PKG)"
 }
 
 
+pkg=zip
 nosource=0
 nodat=0
 noconf=0
@@ -103,6 +124,9 @@ case $arg in
 	nosource)
 		nosource=1
 		;;
+	tgz)
+		pkg=tgz
+		;;
 esac
 done
 
@@ -121,5 +145,13 @@ if [[ $noconf != 1 ]]; then
   copyconf 
 fi
 
-pack
+if [[ $pkg == "zip" ]]; then
+  packzip
+fi
+
+if [[ $pkg == "tgz" ]]; then
+  packtgz
+fi
+
 cleanup
+
