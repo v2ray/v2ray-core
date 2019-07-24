@@ -46,8 +46,7 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	}, nil
 }
 
-// Process implements proxy.Outbound.Process.
-// 使用connect方法连接http代理服务器，获得一个隧道，然后通过该隧道通信
+// Process implements proxy.Outbound.Process. We first create a socket tunnel via HTTP CONNECT method, then redirect all inbound traffic to that tunnel.
 func (c *Client) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
 	outbound := session.OutboundFromContext(ctx)
 	if outbound == nil || !outbound.Target.IsValid() {
@@ -113,7 +112,7 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	return nil
 }
 
-// 使用http connect方法建立一个隧道
+// setUpHttpTunnel will create a socket tunnel via HTTP CONNECT method
 func setUpHttpTunnel(reader io.Reader, writer io.Writer, destination *net.Destination, user *protocol.MemoryUser) error {
 	var headers []string
 	destNetAddr := destination.NetAddr()
