@@ -1,3 +1,4 @@
+// +build !confonly
 package http
 
 import (
