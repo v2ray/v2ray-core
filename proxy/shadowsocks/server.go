@@ -164,7 +164,6 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			To:     "",
 			Status: log.AccessRejected,
 			Reason: err,
-			Email:  request.User.Email,
 		})
 		return newError("failed to create request from: ", conn.RemoteAddr()).Base(err)
 	}
