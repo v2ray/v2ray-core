@@ -168,7 +168,7 @@ func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	defer buffer.Release()
 
 	if _, err := buffer.ReadFullFrom(c.responseReader, 4); err != nil {
-		return nil, newError("failed to read response header").Base(err)
+		return nil, newError("failed to read response header").Base(err).AtWarning()
 	}
 
 	if buffer.Byte(0) != c.responseHeader {
