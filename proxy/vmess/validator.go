@@ -163,6 +163,12 @@ func (v *TimedUserValidator) Remove(email string) bool {
 	v.users[ulen-1] = nil
 	v.users = v.users[:ulen-1]
 
+        for key, pair := range v.userHash {
+		if strings.EqualFold(pair.user.user.Email, email) {
+			delete(v.userHash, key)
+		}
+	}
+
 	return true
 }
 
