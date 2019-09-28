@@ -104,7 +104,7 @@ func (v *userByEmail) Remove(email string) bool {
 type Handler struct {
 	policyManager         policy.Manager
 	inboundHandlerManager feature_inbound.Manager
-	clients               *vmess.TimedUserValidator
+	clients               vmess.UserValidator
 	usersByEmail          *userByEmail
 	detours               *DetourConfig
 	sessionHistory        *encoding.SessionHistory
@@ -136,6 +136,11 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	}
 
 	return handler, nil
+}
+
+// SetClients by this , you can set another user validator by remote or others
+func (h *Handler) SetClients(clients vmess.UserValidator) {
+	h.clients = clients
 }
 
 // Close implements common.Closable.
