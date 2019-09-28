@@ -23,6 +23,7 @@ type user struct {
 	lastSec protocol.Timestamp
 }
 
+// UserValidator is user Validator interface
 type UserValidator interface {
 	Get(userHash []byte) (*protocol.MemoryUser, protocol.Timestamp, bool)
 	Close() error
