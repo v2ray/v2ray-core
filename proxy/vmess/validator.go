@@ -23,6 +23,13 @@ type user struct {
 	lastSec protocol.Timestamp
 }
 
+type UserValidator interface {
+	Get(userHash []byte) (*protocol.MemoryUser, protocol.Timestamp, bool)
+	Close() error
+	Add(u *protocol.MemoryUser) error
+	Remove(email string) bool
+}
+
 // TimedUserValidator is a user Validator based on time.
 type TimedUserValidator struct {
 	sync.RWMutex
