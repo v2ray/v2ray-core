@@ -18,6 +18,7 @@ const (
 	cacheDurationSec = 120
 )
 
+// UserValidator interface
 type UserValidator interface {
 	Get(userHash []byte) (*protocol.MemoryUser, protocol.Timestamp, bool)
 	Close() error
