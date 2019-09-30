@@ -18,6 +18,13 @@ const (
 	cacheDurationSec = 120
 )
 
+type UserValidator interface {
+	Get(userHash []byte) (*protocol.MemoryUser, protocol.Timestamp, bool)
+	Close() error
+	Add(u *protocol.MemoryUser) error
+	Remove(email string) bool
+}
+
 type user struct {
 	user    protocol.MemoryUser
 	lastSec protocol.Timestamp
