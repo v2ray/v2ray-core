@@ -89,7 +89,7 @@ func (h *SessionHistory) removeExpiredEntries() error {
 
 // ServerSession keeps information for a session in VMess server.
 type ServerSession struct {
-	userValidator   *vmess.TimedUserValidator
+	userValidator   vmess.UserValidator
 	sessionHistory  *SessionHistory
 	requestBodyKey  [16]byte
 	requestBodyIV   [16]byte
@@ -101,7 +101,7 @@ type ServerSession struct {
 
 // NewServerSession creates a new ServerSession, using the given UserValidator.
 // The ServerSession instance doesn't take ownership of the validator.
-func NewServerSession(validator *vmess.TimedUserValidator, sessionHistory *SessionHistory) *ServerSession {
+func NewServerSession(validator vmess.UserValidator, sessionHistory *SessionHistory) *ServerSession {
 	return &ServerSession{
 		userValidator:  validator,
 		sessionHistory: sessionHistory,
