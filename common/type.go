@@ -22,6 +22,16 @@ func RegisterConfig(config interface{}, configCreator ConfigCreator) error {
 	return nil
 }
 
+// UnRegisterConfig registers a global config creator. The config can be nil but must have a type.
+func UnRegisterConfig(config interface{}) error {
+	configType := reflect.TypeOf(config)
+	if _, found := typeCreatorRegistry[configType]; !found {
+		return newError(configType.Name() + " is not registered").AtError()
+	}
+	delete(typeCreatorRegistry, configType)
+	return nil
+}
+
 // CreateObject creates an object by its config. The config type must be registered through RegisterConfig().
 func CreateObject(ctx context.Context, config interface{}) (interface{}, error) {
 	configType := reflect.TypeOf(config)
