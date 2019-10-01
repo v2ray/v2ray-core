@@ -104,20 +104,30 @@ func (v *userByEmail) Remove(email string) bool {
 type Handler struct {
 	policyManager         policy.Manager
 	inboundHandlerManager feature_inbound.Manager
-	clients               *vmess.TimedUserValidator
+	clients               vmess.UserValidator
 	usersByEmail          *userByEmail
 	detours               *DetourConfig
 	sessionHistory        *encoding.SessionHistory
 	secure                bool
 }
 
+// HandlerOptions some handle options export
+type HandlerOptions struct {
+	Clients vmess.UserValidator
+}
+
 // New creates a new VMess inbound handler.
-func New(ctx context.Context, config *Config) (*Handler, error) {
+func New(ctx context.Context, config *Config, options HandlerOptions) (*Handler, error) {
+
+	if options.Clients == nil {
+		options.Clients = vmess.NewTimedUserValidator(protocol.DefaultIDHash)
+	}
+
 	v := core.MustFromContext(ctx)
 	handler := &Handler{
 		policyManager:         v.GetFeature(policy.ManagerType()).(policy.Manager),
 		inboundHandlerManager: v.GetFeature(feature_inbound.ManagerType()).(feature_inbound.Manager),
-		clients:               vmess.NewTimedUserValidator(protocol.DefaultIDHash),
+		clients:               options.Clients,
 		detours:               config.Detour,
 		usersByEmail:          newUserByEmail(config.GetDefaultValue()),
 		sessionHistory:        encoding.NewSessionHistory(),
@@ -352,6 +362,6 @@ func (h *Handler) generateCommand(ctx context.Context, request *protocol.Request
 
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return New(ctx, config.(*Config))
+		return New(ctx, config.(*Config), HandlerOptions{})
 	}))
 }
