@@ -8,13 +8,14 @@ import (
 )
 
 type BalancingStrategy interface {
-	PickOutbound([]string) string
+	PickOutbound(outbound.Manager, []string) string
 }
 
 type RandomStrategy struct {
 }
 
-func (s *RandomStrategy) PickOutbound(tags []string) string {
+// PickOutbound implement BalancingStrategy interface
+func (s *RandomStrategy) PickOutbound(_ outbound.Manager, tags []string) string {
 	n := len(tags)
 	if n == 0 {
 		panic("0 tags")
@@ -38,7 +39,7 @@ func (b *Balancer) PickOutbound() (string, error) {
 	if len(tags) == 0 {
 		return "", newError("no available outbounds selected")
 	}
-	tag := b.strategy.PickOutbound(tags)
+	tag := b.strategy.PickOutbound(b.ohm, tags)
 	if tag == "" {
 		return "", newError("balancing strategy returns empty tag")
 	}

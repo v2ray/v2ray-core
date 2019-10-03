@@ -2,8 +2,9 @@ package router
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 	net "v2ray.com/core/common/net"
 )
 
@@ -659,12 +660,25 @@ func (*RoutingRule) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+type OptimalStrategyConfig struct {
+	Timeout  uint32 `protobuf:"varint,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Interval uint32 `protobuf:"varint,2,opt,name=interval,proto3" json:"interval,omitempty"`
+	URL      string `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+	Count    uint32 `protobuf:"varint,5,opt,name=count,proto3" json:"count,omitempty"`
+}
+
+func (m *OptimalStrategyConfig) Reset()         { *m = OptimalStrategyConfig{} }
+func (m *OptimalStrategyConfig) String() string { return proto.CompactTextString(m) }
+func (*OptimalStrategyConfig) ProtoMessage()    {}
+
 type BalancingRule struct {
-	Tag                  string   `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
-	OutboundSelector     []string `protobuf:"bytes,2,rep,name=outbound_selector,json=outboundSelector,proto3" json:"outbound_selector,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Tag                   string                 `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	OutboundSelector      []string               `protobuf:"bytes,2,rep,name=outbound_selector,json=outboundSelector,proto3" json:"outbound_selector,omitempty"`
+	Strategy              string                 `protobuf:"bytes,3,opt,name=strategy,json=strategy,proto3" json:"strategy,omitempty"`
+	OptimalStrategyConfig *OptimalStrategyConfig `protobuf:"bytes,4,opt,name=optimal_strategy_config,json=optimal_strategy_config,proto3" json:"optimal_strategy_config,omitempty"`
+	XXX_NoUnkeyedLiteral  struct{}               `json:"-"`
+	XXX_unrecognized      []byte                 `json:"-"`
+	XXX_sizecache         int32                  `json:"-"`
 }
 
 func (m *BalancingRule) Reset()         { *m = BalancingRule{} }
@@ -702,6 +716,13 @@ func (m *BalancingRule) GetTag() string {
 func (m *BalancingRule) GetOutboundSelector() []string {
 	if m != nil {
 		return m.OutboundSelector
+	}
+	return nil
+}
+
+func (m *BalancingRule) GetOptimalStrategyConfig() *OptimalStrategyConfig {
+	if m != nil {
+		return m.OptimalStrategyConfig
 	}
 	return nil
 }

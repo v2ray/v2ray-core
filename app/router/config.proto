@@ -117,9 +117,19 @@ message RoutingRule {
   string attributes = 15;
 }
 
+message BalancingOptimalStrategyConfig {
+  uint32 timeout = 1;
+  uint32 interval = 2;
+  string target = 3;
+	string content = 4;
+  uint32 count = 5;
+}
+
 message BalancingRule {
   string tag = 1;
   repeated string outbound_selector = 2;
+  string strategy = 3;
+  BalancingOptimalStrategyConfig optimal_strategy_config = 4;
 }
 
 message Config {

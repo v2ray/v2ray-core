@@ -142,9 +142,17 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 }
 
 func (br *BalancingRule) Build(ohm outbound.Manager) (*Balancer, error) {
+	var strategy BalancingStrategy
+
+	if br.Strategy == "optimal" {
+		strategy = NewOptimalStrategy(br.OptimalStrategyConfig)
+	} else if br.Strategy == "" || br.Strategy == "random" {
+		strategy = &RandomStrategy{}
+	}
+
 	return &Balancer{
 		selectors: br.OutboundSelector,
-		strategy:  &RandomStrategy{},
+		strategy:  strategy,
 		ohm:       ohm,
 	}, nil
 }
