@@ -6,6 +6,13 @@ option go_package = "http";
 option java_package = "com.v2ray.core.proxy.http";
 option java_multiple_files = true;
 
+import "v2ray.com/core/common/protocol/server_spec.proto";
+
+message Account {
+  string username = 1;
+  string password = 2;
+}
+
 // Config for HTTP proxy server.
 message ServerConfig {
   uint32 timeout = 1 [deprecated = true];
@@ -14,7 +21,8 @@ message ServerConfig {
   uint32 user_level = 4;
 }
 
-// ClientConfig for HTTP proxy client.
+// ClientConfig is the protobuf config for HTTP proxy client.
 message ClientConfig {
-
+  // Sever is a list of HTTP server addresses.
+  repeated v2ray.core.common.protocol.ServerEndpoint server = 1;
 }

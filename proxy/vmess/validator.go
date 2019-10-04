@@ -149,7 +149,7 @@ func (v *TimedUserValidator) Remove(email string) bool {
 	email = strings.ToLower(email)
 	idx := -1
 	for i, u := range v.users {
-		if strings.ToLower(u.user.Email) == email {
+		if strings.EqualFold(u.user.Email, email) {
 			idx = i
 			break
 		}

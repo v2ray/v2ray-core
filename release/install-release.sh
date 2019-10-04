@@ -220,7 +220,7 @@ getVersion(){
             return 3
         elif [[ $RETVAL -ne 0 ]];then
             return 2
-        elif [[ `echo $NEW_VER | cut -d. -f-2` != `echo $CUR_VER | cut -d. -f-2` ]];then
+        elif [[ $NEW_VER != $CUR_VER ]];then
             return 1
         fi
         return 0
@@ -430,7 +430,7 @@ main(){
         getVersion
         RETVAL="$?"
         if [[ $RETVAL == 0 ]] && [[ "$FORCE" != "1" ]]; then
-            colorEcho ${BLUE} "Latest version ${NEW_VER} is already installed."
+            colorEcho ${BLUE} "Latest version ${CUR_VER} is already installed."
             if [[ "${ERROR_IF_UPTODATE}" == "1" ]]; then
               return 10
             fi

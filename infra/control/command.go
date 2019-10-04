@@ -22,7 +22,7 @@ var (
 
 func RegisterCommand(cmd Command) error {
 	entry := strings.ToLower(cmd.Name())
-	if len(entry) == 0 {
+	if entry == "" {
 		return newError("empty command name")
 	}
 	commandRegistry[entry] = cmd
