@@ -18,6 +18,7 @@ type AccessMessage struct {
 	To     interface{}
 	Status AccessStatus
 	Reason interface{}
+	Email  string
 }
 
 func (m *AccessMessage) String() string {
@@ -29,5 +30,11 @@ func (m *AccessMessage) String() string {
 	builder.WriteString(serial.ToString(m.To))
 	builder.WriteByte(' ')
 	builder.WriteString(serial.ToString(m.Reason))
+
+	if len(m.Email) > 0 {
+		builder.WriteString("email:")
+		builder.WriteString(m.Email)
+		builder.WriteByte(' ')
+	}
 	return builder.String()
 }
