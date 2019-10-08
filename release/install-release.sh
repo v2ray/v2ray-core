@@ -204,7 +204,7 @@ getVersion(){
         fi
         return 4
     else
-        VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
+        VER=`/usr/lib/v2ray/v2ray -version 2>/dev/null`
         RETVAL="$?"
         CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2`
         if [[ ${CUR_VER} != v* ]]; then
@@ -258,7 +258,7 @@ startV2ray(){
 
 copyFile() {
     NAME=$1
-    ERROR=`cp "${VSRC_ROOT}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
+    ERROR=`cp "${VSRC_ROOT}/${NAME}" "/usr/lib/v2ray/${NAME}" 2>&1`
     if [[ $? -ne 0 ]]; then
         colorEcho ${YELLOW} "${ERROR}"
         return 1
@@ -267,12 +267,12 @@ copyFile() {
 }
 
 makeExecutable() {
-    chmod +x "/usr/bin/v2ray/$1"
+    chmod +x "/usr/lib/v2ray/$1"
 }
 
 installV2Ray(){
-    # Install V2Ray binary to /usr/bin/v2ray
-    mkdir -p /usr/bin/v2ray
+    # Install V2Ray binary to /usr/lib/v2ray
+    mkdir -p /usr/lib/v2ray
     copyFile v2ray
     if [[ $? -ne 0 ]]; then
         colorEcho ${RED} "Failed to copy V2Ray binary and resources."
@@ -341,7 +341,7 @@ remove(){
             stopV2ray
         fi
         systemctl disable v2ray.service
-        rm -rf "/usr/bin/v2ray" "/etc/systemd/system/v2ray.service"
+        rm -rf "/usr/lib/v2ray" "/etc/systemd/system/v2ray.service"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
             return 0
@@ -355,7 +355,7 @@ remove(){
             stopV2ray
         fi
         systemctl disable v2ray.service
-        rm -rf "/usr/bin/v2ray" "/lib/systemd/system/v2ray.service"
+        rm -rf "/usr/lib/v2ray" "/lib/systemd/system/v2ray.service"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
             return 0
@@ -368,7 +368,7 @@ remove(){
         if pgrep "v2ray" > /dev/null ; then
             stopV2ray
         fi
-        rm -rf "/usr/bin/v2ray" "/etc/init.d/v2ray"
+        rm -rf "/usr/lib/v2ray" "/etc/init.d/v2ray"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
             return 0

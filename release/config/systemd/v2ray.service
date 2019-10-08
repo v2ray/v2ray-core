@@ -11,8 +11,11 @@ Wants=network.target
 # Group=v2ray
 Type=simple
 PIDFile=/run/v2ray.pid
-ExecStart=/usr/bin/v2ray/v2ray -config /etc/v2ray/config.json
+ExecStart=/usr/lib/v2ray/v2ray -config /etc/v2ray/config.json
 Restart=on-failure
+StandardOut=/var/log/v2ray/std.log
+StandardError=/var/log/v2ray/err.log
+
 # Don't restart in the case of configuration error
 RestartPreventExitStatus=23
 
