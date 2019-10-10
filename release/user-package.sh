@@ -27,7 +27,7 @@ trap cleanup INT TERM ERR
 
 get_source() {
 	echo ">>> Getting v2ray sources ..."
-	go get -v -t v2ray.com/core/...
+	go get -insecure -v -t v2ray.com/core/...
 }
 
 build_v2() {

@@ -37,7 +37,7 @@ jobs:
   - checkout: self
   - task: GoTool@0
     inputs:
-      version: '1.12'
+      version: '1.13'
   - script: |
       bash ./testing/coverage/coverall
     workingDirectory: '$(Build.SourcesDirectory)'
@@ -59,14 +59,14 @@ jobs:
   - checkout: none
   - task: GoTool@0
     inputs:
-      version: '1.12'
+      version: '1.13'
   - script: |
       sudo apt-get -y update
       sudo apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python openssl
     displayName: Apt Install
   - script: |
       go version
-      go get -v -t -d v2ray.com/core/...
+      go get -insecure -v -t -d v2ray.com/core/...
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Fetch sources'
   - script: |
