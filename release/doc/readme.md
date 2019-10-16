@@ -34,4 +34,4 @@ https://github.com/v2ray/v2ray-core/blob/master/release/verify/official_release.
 ## 问题反馈
 
 * Github: https://github.com/v2ray/v2ray-core
-* Telegram: https://t.me/projectv2ray
+* Telegram: https://t.me/v2fly_chat
