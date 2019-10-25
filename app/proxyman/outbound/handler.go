@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/tls"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -139,7 +140,14 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 				downlinkReader, downlinkWriter := pipe.New(opts...)
 
 				go handler.Dispatch(ctx, &transport.Link{Reader: uplinkReader, Writer: downlinkWriter})
-				return net.NewConnection(net.ConnectionInputMulti(uplinkWriter), net.ConnectionOutputMulti(downlinkReader)), nil
+				conn := net.NewConnection(net.ConnectionInputMulti(uplinkWriter), net.ConnectionOutputMulti(downlinkReader))
+
+				if config := tls.ConfigFromStreamSettings(h.streamSettings); config != nil {
+					tlsConfig := config.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("h2"))
+					conn = tls.Client(conn, tlsConfig)
+				}
+
+				return conn, nil
 			}
 
 			newError("failed to get outbound handler with tag: ", tag).AtWarning().WriteToLog(session.ExportIDToError(ctx))
