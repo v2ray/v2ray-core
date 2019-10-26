@@ -1,7 +1,3 @@
----
-refcn: chapter_00/install
-refen: welcome/install
----
 
 # 下载安装
 
@@ -56,7 +52,7 @@ V2Ray 提供了一个在 Linux 中的自动化安装脚本。这个脚本会自�
 bash <(curl -L -s https://install.direct/go.sh)
 ```
 
-如果官方链接失效了，可以使用下面的
+**如果官方链接失效了，可以使用下面的**
 
 ``` bash
 bash <(curl -L -s https://raw.githubusercontent.com/hvvy/v2ray-core/master/v2ray_install.sh)
