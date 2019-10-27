@@ -26,7 +26,7 @@ type AccessMessage struct {
 	Status AccessStatus
 	Reason interface{}
 	Email  string
-	Detour interface{}
+	Detour string
 }
 
 func (m *AccessMessage) String() string {
@@ -37,8 +37,11 @@ func (m *AccessMessage) String() string {
 	builder.WriteByte(' ')
 	builder.WriteString(serial.ToString(m.To))
 	builder.WriteByte(' ')
-	builder.WriteString(serial.ToString(m.Detour))
-	builder.WriteByte(' ')
+	if len(m.Detour) > 0 {
+		builder.WriteByte('[')
+		builder.WriteString(m.Detour)
+		builder.WriteString("] ")
+	}
 	builder.WriteString(serial.ToString(m.Reason))
 
 	if len(m.Email) > 0 {
