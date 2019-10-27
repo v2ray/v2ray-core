@@ -13,8 +13,8 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/features/outbound"
@@ -284,7 +284,11 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 
 	accessMessage := log.AccessMessageFromContext(ctx)
 	if accessMessage != nil {
-		accessMessage.Detour = "[" + handler.Tag() + "]"
+		if len(handler.Tag()) > 0 {
+			accessMessage.Detour = handler.Tag()
+		} else {
+			accessMessage.Detour = ""
+		}
 		log.Record(accessMessage)
 	}
 
