@@ -47,11 +47,11 @@ func newUserByEmail(config *DefaultConfig) *userByEmail {
 
 func (v *userByEmail) addNoLock(u *protocol.MemoryUser) bool {
 	email := strings.ToLower(u.Email)
-	user, found := v.cache[email]
+	_, found := v.cache[email]
 	if found {
 		return false
 	}
-	v.cache[email] = user
+	v.cache[email] = u
 	return true
 }
 
@@ -250,7 +250,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	}
 
 	if request.Command != protocol.RequestCommandMux {
-		log.Record(&log.AccessMessage{
+		ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 			From:   connection.RemoteAddr(),
 			To:     request.Destination(),
 			Status: log.AccessAccepted,

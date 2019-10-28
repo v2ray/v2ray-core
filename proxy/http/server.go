@@ -131,10 +131,11 @@ Start:
 	if err != nil {
 		return newError("malformed proxy host: ", host).AtWarning().Base(err)
 	}
-	log.Record(&log.AccessMessage{
+	ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 		From:   conn.RemoteAddr(),
 		To:     request.URL,
 		Status: log.AccessAccepted,
+		Reason: "",
 	})
 
 	if strings.EqualFold(request.Method, "CONNECT") {
