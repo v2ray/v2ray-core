@@ -264,9 +264,8 @@ checkUpdate(){
     return 0
 }
 
-ZIPFILE="/tmp/v2ray/v2ray.zip"
-
 downloadV2Ray(){
+    local ZIPFILE=$1
     rm -rf /tmp/v2ray
     mkdir -p /tmp/v2ray
     DOWNLOAD_LINK="$(tarballUrl "${NEW_VER}" "$(arch_affix)" "${DIST_SRC}")"
@@ -446,6 +445,7 @@ main(){
     [[ "$REMOVE" == "1" ]] && remove && return
 
     local ARCH=$(uname -m)
+    local ZIPFILE="/tmp/v2ray/v2ray.zip"
 
     # extract local file
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
@@ -480,7 +480,7 @@ main(){
             return 3
         else
             colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
-            downloadV2Ray || return $?
+            downloadV2Ray ${ZIPFILE} || return $?
             installSoftware unzip || return $?
             extract ${ZIPFILE} || return $?
         fi
