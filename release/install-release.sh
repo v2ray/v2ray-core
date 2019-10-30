@@ -17,7 +17,7 @@ CHECK=''
 REMOVE=''
 VERSION=''
 VSRC_ROOT='/tmp/v2ray'
-EXTRACT_ONLY=0
+EXTRACT_ONLY=''
 LOCAL=''
 LOCAL_INSTALL=''
 DIST_SRC='github'
@@ -449,7 +449,7 @@ main(){
         fi
     fi
 
-    if [[ "${EXTRACT_ONLY}" == "1" ]]; then
+    if [ -n "${EXTRACT_ONLY}" ]; then
         colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT}, and exiting..."
         return 0
     fi
