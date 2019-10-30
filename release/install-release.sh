@@ -97,33 +97,49 @@ colorEcho(){
     echo -e "\033[${color}${@:2}\033[0m" 1>& 2
 }
 
-ARCH=""
-VDIS="64"
+VDIS="$(arch_affix)"
 
-sysArch(){
-    ARCH=$(uname -m)
-    if [[ "$ARCH" == "i686" ]] || [[ "$ARCH" == "i386" ]]; then
-        VDIS="32"
-    elif [[ "$ARCH" == *"armv7"* ]] || [[ "$ARCH" == "armv6l" ]]; then
-        VDIS="arm"
-    elif [[ "$ARCH" == *"armv8"* ]] || [[ "$ARCH" == "aarch64" ]]; then
-        VDIS="arm64"
-    elif [[ "$ARCH" == *"mips64le"* ]]; then
-        VDIS="mips64le"
-    elif [[ "$ARCH" == *"mips64"* ]]; then
-        VDIS="mips64"
-    elif [[ "$ARCH" == *"mipsle"* ]]; then
-        VDIS="mipsle"
-    elif [[ "$ARCH" == *"mips"* ]]; then
-        VDIS="mips"
-    elif [[ "$ARCH" == *"s390x"* ]]; then
-        VDIS="s390x"
-    elif [[ "$ARCH" == "ppc64le" ]]; then
-        VDIS="ppc64le"
-    elif [[ "$ARCH" == "ppc64" ]]; then
-        VDIS="ppc64"
-    fi
-    return 0
+arch_affix(){
+    case "${1:-"$(uname -m)"}" in
+        i686|i386)
+            echo '32'
+        ;;
+        x86_64|amd64)
+            echo '64'
+        ;;
+        *armv7*|armv6l)
+            echo 'arm'
+        ;;
+        *armv8*|aarch64)
+            echo 'arm64'
+        ;;
+        *mips64le*)
+            echo 'mips64le'
+        ;;
+        *mips64*)
+            echo 'mips64'
+        ;;
+        *mipsle*)
+            echo 'mipsle'
+        ;;
+        *mips*)
+            echo 'mips'
+        ;;
+        *s390x*)
+            echo 's390x'
+        ;;
+        ppc64le)
+            echo 'ppc64le'
+        ;;
+        ppc64)
+            echo 'ppc64'
+        ;;
+        *)
+            return 1
+        ;;
+    esac
+
+	return 0
 }
 
 CMD_INSTALL=""
@@ -412,7 +428,8 @@ main(){
     [[ "$CHECK" == "1" ]] && checkUpdate && return
     [[ "$REMOVE" == "1" ]] && remove && return
 
-    sysArch
+    local ARCH=$(uname -m)
+
     # extract local file
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
         colorEcho ${YELLOW} "Installing V2Ray via local file. Please make sure the file is a valid V2Ray package, as we are not able to determine that."
