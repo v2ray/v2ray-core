@@ -16,7 +16,7 @@ TRIGGER_REASON_B=${TRIGGER_REASON:0:${#CONST_refsB}}
 
 if [ $TRIGGER_REASON_B != $CONST_refsB ]
 then
-  echo "not a tag/B"
+  echo "not a tag (B)"
   exit
 fi
 
