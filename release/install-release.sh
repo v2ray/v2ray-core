@@ -94,7 +94,7 @@ BLUE="36m"     # Info message
 
 colorEcho(){
     COLOR=$1
-    echo -e "\033[${COLOR}${@:2}\033[0m"
+    echo -e "\033[${COLOR}${@:2}\033[0m" 1>& 2
 }
 
 ARCH=""
