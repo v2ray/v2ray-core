@@ -75,15 +75,16 @@ done
 ###############################
 
 Help(){
-    echo "./install-release.sh [-h] [-c] [--remove] [-p proxy] [-f] [--version vx.y.z] [-l file]"
-    echo "  -h, --help            Show help"
-    echo "  -p, --proxy           To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
-    echo "  -f, --force           Force install"
-    echo "      --version         Install a particular version, use --version v3.15"
-    echo "  -l, --local           Install from a local file"
-    echo "      --remove          Remove installed V2Ray"
-    echo "  -c, --check           Check for update"
-    return 0
+  cat - 1>& 2 << EOF
+./install-release.sh [-h] [-c] [--remove] [-p proxy] [-f] [--version vx.y.z] [-l file]
+  -h, --help            Show help
+  -p, --proxy           To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc
+  -f, --force           Force install
+      --version         Install a particular version, use --version v3.15
+  -l, --local           Install from a local file
+      --remove          Remove installed V2Ray
+  -c, --check           Check for update
+EOF
 }
 
 #######color code########
