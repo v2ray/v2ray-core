@@ -265,17 +265,24 @@ checkUpdate(){
 }
 
 downloadV2Ray(){
-    local ZIPFILE=$1
-    rm -rf /tmp/v2ray
-    mkdir -p /tmp/v2ray
-    DOWNLOAD_LINK="$(tarballUrl "${NEW_VER}" "$(arch_affix)" "${DIST_SRC}")"
-    colorEcho ${BLUE} "Downloading V2Ray: ${DOWNLOAD_LINK}"
-    curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
-    if [ $? != 0 ];then
-        colorEcho ${RED} "Failed to download! Please check your network or try again."
+    local zipfile="$1" ver="$2" arch_affix="$3" cdn="$4"
+	local link="$(tarballUrl "$ver" "$arch_affix" "$cdn")"
+
+    colorEcho ${BLUE} "Downloading V2Ray: $link"
+
+	if [ -z "$zipfile" ]; then
+        colorEcho ${RED} 'Failed to download! Destination is not given.'
+
+        return 2
+	elif ! mkdir -p "$(dirname "$zipfile")"; then
+        colorEcho ${RED} 'Failed to download! Cannot create directories.'
+
         return 3
-    fi
-    return 0
+	elif ! curl ${PROXY} -L -H "Cache-Control: no-cache" -o "$zipfile" "$link"; then
+        colorEcho ${RED} 'Failed to download! Please check your network or try again.'
+
+        return 3
+	fi
 }
 
 extract(){
@@ -480,7 +487,8 @@ main(){
             return 3
         else
             colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
-            downloadV2Ray ${ZIPFILE} || return $?
+            rm -rf /tmp/v2ray
+            downloadV2Ray "${ZIPFILE}" "${NEW_VER}" "${VDIS}" "${DIST_SRC}" "${PROXY}" || return $?
             installSoftware unzip || return $?
             extract ${ZIPFILE} || return $?
         fi
