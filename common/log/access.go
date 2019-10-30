@@ -3,7 +3,6 @@ package log
 import (
 	"context"
 	"strings"
-	"context"
 
 	"v2ray.com/core/common/serial"
 )
@@ -61,5 +60,5 @@ func AccessMessageFromContext(ctx context.Context) *AccessMessage {
 	if accessMessage, ok := ctx.Value(accessMessageKey).(*AccessMessage); ok {
 		return accessMessage
 	}
-	return nil 
+	return nil
 }
