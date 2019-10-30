@@ -9,13 +9,19 @@
 # 2: Application error
 # 3: Network error
 
-HELP=""
-FORCE=""
-CHECK=""
-VSRC_ROOT="/tmp/v2ray"
+# CLI arguments
+PROXY=''
+HELP=''
+FORCE=''
+CHECK=''
+REMOVE=''
+VERSION=''
+VSRC_ROOT='/tmp/v2ray'
 EXTRACT_ONLY=0
+LOCAL=''
+LOCAL_INSTALL=''
+DIST_SRC='github'
 ERROR_IF_UPTODATE=0
-DIST_SRC="github"
 
 #########################
 while [[ $# > 0 ]];do
