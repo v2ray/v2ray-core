@@ -8,7 +8,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 
-	utls "v2ray.com/core/external/github.com/refraction-networking/utls"
+	utls "github.com/refraction-networking/utls"
 )
 
 //go:generate errorgen

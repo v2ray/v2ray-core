@@ -130,7 +130,7 @@ func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 	defer m.access.Unlock()
 
 	delete(m.taggedHandler, tag)
-	if m.defaultHandler.Tag() == tag {
+	if m.defaultHandler != nil && m.defaultHandler.Tag() == tag {
 		m.defaultHandler = nil
 	}
 

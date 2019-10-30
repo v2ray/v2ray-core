@@ -42,7 +42,7 @@ jobs:
   - checkout: self
   - task: GoTool@0
     inputs:
-      version: '1.12'
+      version: '1.13'
   - script: |
       bash ./testing/coverage/coverall
     workingDirectory: '$(Build.SourcesDirectory)'
@@ -67,7 +67,7 @@ jobs:
   - checkout: self
   - task: GoTool@0
     inputs:
-      version: '1.12'
+      version: '1.13'
   - script: |
       mkdir triggersrc
       ls -I "triggersrc" | xargs cp -rf -t triggersrc

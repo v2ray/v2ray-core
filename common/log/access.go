@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"strings"
 	"context"
 
@@ -25,7 +26,8 @@ type AccessMessage struct {
 	To     interface{}
 	Status AccessStatus
 	Reason interface{}
-	Detour interface{}
+	Email  string
+	Detour string
 }
 
 func (m *AccessMessage) String() string {
@@ -36,9 +38,18 @@ func (m *AccessMessage) String() string {
 	builder.WriteByte(' ')
 	builder.WriteString(serial.ToString(m.To))
 	builder.WriteByte(' ')
-	builder.WriteString(serial.ToString(m.Detour))
-	builder.WriteByte(' ')
+	if len(m.Detour) > 0 {
+		builder.WriteByte('[')
+		builder.WriteString(m.Detour)
+		builder.WriteString("] ")
+	}
 	builder.WriteString(serial.ToString(m.Reason))
+
+	if len(m.Email) > 0 {
+		builder.WriteString("email:")
+		builder.WriteString(m.Email)
+		builder.WriteByte(' ')
+	}
 	return builder.String()
 }
 

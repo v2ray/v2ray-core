@@ -118,8 +118,9 @@ func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata,
 		}
 		if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
 			msg.From = inbound.Source
+			msg.Email = inbound.User.Email
 		}
-		log.Record(msg)
+		ctx = log.ContextWithAccessMessage(ctx, msg)
 	}
 	link, err := w.dispatcher.Dispatch(ctx, meta.Target)
 	if err != nil {
