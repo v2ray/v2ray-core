@@ -21,7 +21,7 @@ EXTRACT_ONLY=''
 LOCAL=''
 LOCAL_INSTALL=''
 DIST_SRC='github'
-ERROR_IF_UPTODATE=0
+ERROR_IF_UPTODATE=''
 
 #########################
 while [[ $# > 0 ]]; do
@@ -435,7 +435,7 @@ main(){
         RETVAL="$?"
         if [[ $RETVAL == 0 ]] && [[ "$FORCE" != "1" ]]; then
             colorEcho ${BLUE} "Latest version ${CUR_VER} is already installed."
-            if [[ "${ERROR_IF_UPTODATE}" == "1" ]]; then
+            if [ -n "${ERROR_IF_UPTODATE}" ]; then
               return 10
             fi
             return
