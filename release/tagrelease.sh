@@ -30,6 +30,8 @@ RELEASE_DATA=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -X GET https://api
 echo $RELEASE_DATA
 RELEASE_ID=$(echo $RELEASE_DATA| jq ".id")
 
+echo $RELEASE_ID
+
 function uploadfile() {
   FILE=$1
   CTYPE=$(file -b --mime-type $FILE)
