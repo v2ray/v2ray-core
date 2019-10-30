@@ -176,26 +176,29 @@ installSoftware(){
 CUR_VER=""
 NEW_VER=""
 
+normalizeVersion() {
+    case "$1" in
+        v*)
+            echo "$1"
+        ;;
+        *)
+            echo "v$1"
+        ;;
+    esac
+}
+
 # 1: new V2Ray. 0: no. 2: not installed. 3: check failed. 4: don't check.
 getVersion(){
-    if [[ -n "$VERSION" ]]; then
-        NEW_VER="$VERSION"
-        if [[ ${NEW_VER} != v* ]]; then
-          NEW_VER=v${NEW_VER}
-        fi
+    if [ -n "$VERSION" ]; then
+        NEW_VER="$(normalizeVersion "$VERSION")"
         return 4
     else
-        VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
-        RETVAL="$?"
-        CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2`
-        if [[ ${CUR_VER} != v* ]]; then
-            CUR_VER=v${CUR_VER}
-        fi
+        VER="$(/usr/bin/v2ray/v2ray -version 2>/dev/null)"
+        RETVAL=$?
+        CUR_VER="$(normalizeVersion "$(echo "$VER" | head -n 1 | cut -d " " -f2)")"
         TAG_URL="https://api.github.com/repos/v2ray/v2ray-core/releases/latest"
-        NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep 'tag_name' | cut -d\" -f4`
-        if [[ ${NEW_VER} != v* ]]; then
-          NEW_VER=v${NEW_VER}
-        fi
+        NEW_VER="$(normalizeVersion "$(curl ${PROXY} -s "${TAG_URL}" --connect-timeout 10| grep 'tag_name' | cut -d\" -f4)")"
+
         if [[ $? -ne 0 ]] || [[ $NEW_VER == "" ]]; then
             colorEcho ${RED} "Failed to fetch release information. Please check your network or try again."
             return 3
