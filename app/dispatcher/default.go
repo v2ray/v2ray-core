@@ -15,7 +15,6 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/features/outbound"
