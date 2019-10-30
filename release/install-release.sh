@@ -97,8 +97,6 @@ colorEcho(){
     echo -e "\033[${color}${@:2}\033[0m" 1>& 2
 }
 
-VDIS="$(arch_affix)"
-
 arch_affix(){
     case "${1:-"$(uname -m)"}" in
         i686|i386)
@@ -140,6 +138,28 @@ arch_affix(){
     esac
 
 	return 0
+}
+
+tarballUrl() {
+    local ver="$1" arch="${2:-"$(arch_affix)"}" cdn="${3:-github}"
+
+    if [ "$cdn" = 'jsdelivr' ]; then
+        if [ -n "$ver" ]; then
+            echo "https://cdn.jsdelivr.net/gh/v2ray/dist@${ver}/v2ray-linux-${arch}.zip"
+        else
+            echo "https://cdn.jsdelivr.net/gh/v2ray/dist/v2ray-linux-${arch}.zip"
+        fi
+    elif [ "$cdn" = 'github' ]; then
+        if [ -n "$ver" ]; then
+            echo "https://github.com/v2ray/v2ray-core/releases/download/${ver}/v2ray-linux-${arch}.zip"
+        else
+            echo "https://github.com/v2ray/v2ray-core/releases/latest/download/v2ray-linux-${arch}.zip"
+        fi
+    else
+        return 1
+    fi
+
+    return 0
 }
 
 CMD_INSTALL=""
@@ -248,11 +268,7 @@ ZIPFILE="/tmp/v2ray/v2ray.zip"
 downloadV2Ray(){
     rm -rf /tmp/v2ray
     mkdir -p /tmp/v2ray
-    if [[ "${DIST_SRC}" == "jsdelivr" ]]; then
-        DOWNLOAD_LINK="https://cdn.jsdelivr.net/gh/v2ray/dist/v2ray-linux-${VDIS}.zip"
-    else
-        DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
-    fi
+    DOWNLOAD_LINK="$(tarballUrl "${NEW_VER}" "$(arch_affix)" "${DIST_SRC}")"
     colorEcho ${BLUE} "Downloading V2Ray: ${DOWNLOAD_LINK}"
     curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
     if [ $? != 0 ];then
