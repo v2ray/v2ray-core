@@ -9,34 +9,13 @@
 # 2: Application error
 # 3: Network error
 
-CUR_VER=""
-NEW_VER=""
-ARCH=""
-VDIS="64"
-ZIPFILE="/tmp/v2ray/v2ray.zip"
-V2RAY_RUNNING=0
+HELP=""
+FORCE=""
+CHECK=""
 VSRC_ROOT="/tmp/v2ray"
 EXTRACT_ONLY=0
 ERROR_IF_UPTODATE=0
 DIST_SRC="github"
-
-CMD_INSTALL=""
-CMD_UPDATE=""
-SOFTWARE_UPDATED=0
-
-SYSTEMCTL_CMD=$(command -v systemctl 2>/dev/null)
-SERVICE_CMD=$(command -v service 2>/dev/null)
-
-CHECK=""
-FORCE=""
-HELP=""
-
-#######color code########
-RED="31m"      # Error message
-GREEN="32m"    # Success message
-YELLOW="33m"   # Warning message
-BLUE="36m"     # Info message
-
 
 #########################
 while [[ $# > 0 ]];do
@@ -89,10 +68,32 @@ while [[ $# > 0 ]];do
 done
 
 ###############################
+
+Help(){
+    echo "./install-release.sh [-h] [-c] [--remove] [-p proxy] [-f] [--version vx.y.z] [-l file]"
+    echo "  -h, --help            Show help"
+    echo "  -p, --proxy           To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
+    echo "  -f, --force           Force install"
+    echo "      --version         Install a particular version, use --version v3.15"
+    echo "  -l, --local           Install from a local file"
+    echo "      --remove          Remove installed V2Ray"
+    echo "  -c, --check           Check for update"
+    return 0
+}
+
+#######color code########
+RED="31m"      # Error message
+GREEN="32m"    # Success message
+YELLOW="33m"   # Warning message
+BLUE="36m"     # Info message
+
 colorEcho(){
     COLOR=$1
     echo -e "\033[${COLOR}${@:2}\033[0m"
 }
+
+ARCH=""
+VDIS="64"
 
 sysArch(){
     ARCH=$(uname -m)
@@ -120,48 +121,9 @@ sysArch(){
     return 0
 }
 
-downloadV2Ray(){
-    rm -rf /tmp/v2ray
-    mkdir -p /tmp/v2ray
-    if [[ "${DIST_SRC}" == "jsdelivr" ]]; then
-        DOWNLOAD_LINK="https://cdn.jsdelivr.net/gh/v2ray/dist/v2ray-linux-${VDIS}.zip"
-    else
-        DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
-    fi
-    colorEcho ${BLUE} "Downloading V2Ray: ${DOWNLOAD_LINK}"
-    curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
-    if [ $? != 0 ];then
-        colorEcho ${RED} "Failed to download! Please check your network or try again."
-        return 3
-    fi
-    return 0
-}
-
-installSoftware(){
-    COMPONENT=$1
-    if [[ -n `command -v $COMPONENT` ]]; then
-        return 0
-    fi
-
-    getPMT
-    if [[ $? -eq 1 ]]; then
-        colorEcho ${RED} "The system package manager tool isn't APT or YUM, please install ${COMPONENT} manually."
-        return 1 
-    fi
-    if [[ $SOFTWARE_UPDATED -eq 0 ]]; then
-        colorEcho ${BLUE} "Updating software repo"
-        $CMD_UPDATE      
-        SOFTWARE_UPDATED=1
-    fi
-
-    colorEcho ${BLUE} "Installing ${COMPONENT}"
-    $CMD_INSTALL $COMPONENT
-    if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Failed to install ${COMPONENT}. Please install it manually."
-        return 1
-    fi
-    return 0
-}
+CMD_INSTALL=""
+CMD_UPDATE=""
+SOFTWARE_UPDATED=0
 
 # return 1: not apt, yum, or zypper
 getPMT(){
@@ -180,20 +142,34 @@ getPMT(){
     return 0
 }
 
-extract(){
-    colorEcho ${BLUE}"Extracting V2Ray package to /tmp/v2ray."
-    mkdir -p /tmp/v2ray
-    unzip $1 -d ${VSRC_ROOT}
-    if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Failed to extract V2Ray."
-        return 2
+installSoftware(){
+    COMPONENT=$1
+    if [[ -n `command -v $COMPONENT` ]]; then
+        return 0
     fi
-    if [[ -d "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}" ]]; then
-      VSRC_ROOT="/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}"
+
+    getPMT
+    if [[ $? -eq 1 ]]; then
+        colorEcho ${RED} "The system package manager tool isn't APT or YUM, please install ${COMPONENT} manually."
+        return 1
+    fi
+    if [[ $SOFTWARE_UPDATED -eq 0 ]]; then
+        colorEcho ${BLUE} "Updating software repo"
+        $CMD_UPDATE
+        SOFTWARE_UPDATED=1
+    fi
+
+    colorEcho ${BLUE} "Installing ${COMPONENT}"
+    $CMD_INSTALL $COMPONENT
+    if [[ $? -ne 0 ]]; then
+        colorEcho ${RED} "Failed to install ${COMPONENT}. Please install it manually."
+        return 1
     fi
     return 0
 }
 
+CUR_VER=""
+NEW_VER=""
 
 # 1: new V2Ray. 0: no. 2: not installed. 3: check failed. 4: don't check.
 getVersion(){
@@ -227,18 +203,74 @@ getVersion(){
     fi
 }
 
-stopV2ray(){
-    colorEcho ${BLUE} "Shutting down V2Ray service."
-    if [[ -n "${SYSTEMCTL_CMD}" ]] || [[ -f "/lib/systemd/system/v2ray.service" ]] || [[ -f "/etc/systemd/system/v2ray.service" ]]; then
-        ${SYSTEMCTL_CMD} stop v2ray
-    elif [[ -n "${SERVICE_CMD}" ]] || [[ -f "/etc/init.d/v2ray" ]]; then
-        ${SERVICE_CMD} v2ray stop
-    fi
-    if [[ $? -ne 0 ]]; then
-        colorEcho ${YELLOW} "Failed to shutdown V2Ray service."
-        return 2
+checkUpdate(){
+    echo "Checking for update."
+    VERSION=""
+    getVersion
+    RETVAL="$?"
+    if [[ $RETVAL -eq 1 ]]; then
+        colorEcho ${BLUE} "Found new version ${NEW_VER} for V2Ray.(Current version:$CUR_VER)"
+    elif [[ $RETVAL -eq 0 ]]; then
+        colorEcho ${BLUE} "No new version. Current version is ${NEW_VER}."
+    elif [[ $RETVAL -eq 2 ]]; then
+        colorEcho ${YELLOW} "No V2Ray installed."
+        colorEcho ${BLUE} "The newest version for V2Ray is ${NEW_VER}."
     fi
     return 0
+}
+
+ZIPFILE="/tmp/v2ray/v2ray.zip"
+
+downloadV2Ray(){
+    rm -rf /tmp/v2ray
+    mkdir -p /tmp/v2ray
+    if [[ "${DIST_SRC}" == "jsdelivr" ]]; then
+        DOWNLOAD_LINK="https://cdn.jsdelivr.net/gh/v2ray/dist/v2ray-linux-${VDIS}.zip"
+    else
+        DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
+    fi
+    colorEcho ${BLUE} "Downloading V2Ray: ${DOWNLOAD_LINK}"
+    curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
+    if [ $? != 0 ];then
+        colorEcho ${RED} "Failed to download! Please check your network or try again."
+        return 3
+    fi
+    return 0
+}
+
+extract(){
+    colorEcho ${BLUE}"Extracting V2Ray package to /tmp/v2ray."
+    mkdir -p /tmp/v2ray
+    unzip $1 -d ${VSRC_ROOT}
+    if [[ $? -ne 0 ]]; then
+        colorEcho ${RED} "Failed to extract V2Ray."
+        return 2
+    fi
+    if [[ -d "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}" ]]; then
+      VSRC_ROOT="/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}"
+    fi
+    return 0
+}
+
+SYSTEMCTL_CMD=$(command -v systemctl 2>/dev/null)
+SERVICE_CMD=$(command -v service 2>/dev/null)
+
+installInitScript(){
+    if [[ -n "${SYSTEMCTL_CMD}" ]];then
+        if [[ ! -f "/etc/systemd/system/v2ray.service" ]]; then
+            if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
+                cp "${VSRC_ROOT}/systemd/v2ray.service" "/etc/systemd/system/"
+                systemctl enable v2ray.service
+            fi
+        fi
+        return
+    elif [[ -n "${SERVICE_CMD}" ]] && [[ ! -f "/etc/init.d/v2ray" ]]; then
+        installSoftware "daemon" || return $?
+        cp "${VSRC_ROOT}/systemv/v2ray" "/etc/init.d/v2ray"
+        chmod +x "/etc/init.d/v2ray"
+        update-rc.d v2ray defaults
+    fi
+    return
 }
 
 startV2ray(){
@@ -256,6 +288,24 @@ startV2ray(){
     return 0
 }
 
+stopV2ray(){
+    colorEcho ${BLUE} "Shutting down V2Ray service."
+    if [[ -n "${SYSTEMCTL_CMD}" ]] || [[ -f "/lib/systemd/system/v2ray.service" ]] || [[ -f "/etc/systemd/system/v2ray.service" ]]; then
+        ${SYSTEMCTL_CMD} stop v2ray
+    elif [[ -n "${SERVICE_CMD}" ]] || [[ -f "/etc/init.d/v2ray" ]]; then
+        ${SERVICE_CMD} v2ray stop
+    fi
+    if [[ $? -ne 0 ]]; then
+        colorEcho ${YELLOW} "Failed to shutdown V2Ray service."
+        return 2
+    fi
+    return 0
+}
+
+makeExecutable() {
+    chmod +x "/usr/bin/v2ray/$1"
+}
+
 copyFile() {
     NAME=$1
     ERROR=`cp "${VSRC_ROOT}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
@@ -264,10 +314,6 @@ copyFile() {
         return 1
     fi
     return 0
-}
-
-makeExecutable() {
-    chmod +x "/usr/bin/v2ray/$1"
 }
 
 installV2Ray(){
@@ -301,37 +347,6 @@ installV2Ray(){
         colorEcho ${BLUE} "PORT:${PORT}"
         colorEcho ${BLUE} "UUID:${UUID}"
     fi
-    return 0
-}
-
-
-installInitScript(){
-    if [[ -n "${SYSTEMCTL_CMD}" ]];then
-        if [[ ! -f "/etc/systemd/system/v2ray.service" ]]; then
-            if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
-                cp "${VSRC_ROOT}/systemd/v2ray.service" "/etc/systemd/system/"
-                systemctl enable v2ray.service
-            fi
-        fi
-        return
-    elif [[ -n "${SERVICE_CMD}" ]] && [[ ! -f "/etc/init.d/v2ray" ]]; then
-        installSoftware "daemon" || return $?
-        cp "${VSRC_ROOT}/systemv/v2ray" "/etc/init.d/v2ray"
-        chmod +x "/etc/init.d/v2ray"
-        update-rc.d v2ray defaults
-    fi
-    return
-}
-
-Help(){
-    echo "./install-release.sh [-h] [-c] [--remove] [-p proxy] [-f] [--version vx.y.z] [-l file]"
-    echo "  -h, --help            Show help"
-    echo "  -p, --proxy           To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
-    echo "  -f, --force           Force install"
-    echo "      --version         Install a particular version, use --version v3.15"
-    echo "  -l, --local           Install from a local file"
-    echo "      --remove          Remove installed V2Ray"
-    echo "  -c, --check           Check for update"
     return 0
 }
 
@@ -376,27 +391,11 @@ remove(){
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
             return 0
-        fi       
+        fi
     else
         colorEcho ${YELLOW} "V2Ray not found."
         return 0
     fi
-}
-
-checkUpdate(){
-    echo "Checking for update."
-    VERSION=""
-    getVersion
-    RETVAL="$?"
-    if [[ $RETVAL -eq 1 ]]; then
-        colorEcho ${BLUE} "Found new version ${NEW_VER} for V2Ray.(Current version:$CUR_VER)"
-    elif [[ $RETVAL -eq 0 ]]; then
-        colorEcho ${BLUE} "No new version. Current version is ${NEW_VER}."
-    elif [[ $RETVAL -eq 2 ]]; then
-        colorEcho ${YELLOW} "No V2Ray installed."
-        colorEcho ${BLUE} "The newest version for V2Ray is ${NEW_VER}."
-    fi
-    return 0
 }
 
 main(){
@@ -404,7 +403,7 @@ main(){
     [[ "$HELP" == "1" ]] && Help && return
     [[ "$CHECK" == "1" ]] && checkUpdate && return
     [[ "$REMOVE" == "1" ]] && remove && return
-    
+
     sysArch
     # extract local file
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
@@ -443,12 +442,14 @@ main(){
             installSoftware unzip || return $?
             extract ${ZIPFILE} || return $?
         fi
-    fi 
-    
+    fi
+
     if [[ "${EXTRACT_ONLY}" == "1" ]]; then
         colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT}, and exiting..."
         return 0
     fi
+
+    local V2RAY_RUNNING=0
 
     if pgrep "v2ray" > /dev/null ; then
         V2RAY_RUNNING=1
