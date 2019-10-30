@@ -306,15 +306,15 @@ installInitScript(){
     if [[ -n "${SYSTEMCTL_CMD}" ]];then
         if [[ ! -f "/etc/systemd/system/v2ray.service" ]]; then
             if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
-                cp "${VSRC_ROOT}/systemd/v2ray.service" "/etc/systemd/system/"
+                unzip -oj "$1" 'systemd/v2ray.service' -d '/etc/systemd/system' && \
                 systemctl enable v2ray.service
             fi
         fi
         return
     elif [[ -n "${SERVICE_CMD}" ]] && [[ ! -f "/etc/init.d/v2ray" ]]; then
-        installSoftware "daemon" || return $?
-        cp "${VSRC_ROOT}/systemv/v2ray" "/etc/init.d/v2ray"
-        chmod +x "/etc/init.d/v2ray"
+        installSoftware "daemon" && \
+        unzip -oj "$1" 'systemv/v2ray' -d '/etc/init.d' && \
+        chmod +x "/etc/init.d/v2ray" && \
         update-rc.d v2ray defaults
     fi
     return
@@ -351,27 +351,23 @@ stopV2ray(){
 
 installV2Ray(){
     # Install V2Ray binary to /usr/bin/v2ray
-    mkdir -p '/usr/bin/v2ray' '/etc/v2ray' '/var/log/v2ray' \
-    cp "${VSRC_ROOT}/v2ray" \
-        "${VSRC_ROOT}/v2ctl" \
-        "${VSRC_ROOT}/geoip.dat" \
-        "${VSRC_ROOT}/geosite.dat" \
-        "/usr/bin/v2ray/" && \
-    chmod +x "/usr/bin/v2ray/v2ray" && \
-    chmod +x "/usr/bin/v2ray/v2ctl" || {
+    mkdir -p '/etc/v2ray' '/var/log/v2ray' && \
+    unzip -oj "$1" 'v2ray' 'v2ctl' 'geoip.dat' 'geosite.dat' -d '/usr/bin/v2ray' && \
+    chmod +x '/usr/bin/v2ray/v2ray' '/usr/bin/v2ray/v2ctl' || {
         colorEcho ${RED} "Failed to copy V2Ray binary and resources."
         return 1
     }
 
     # Install V2Ray server config to /etc/v2ray
-    if [[ ! -f "/etc/v2ray/config.json" ]]; then
-        cp "${VSRC_ROOT}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
-        if [[ $? -ne 0 ]]; then
+    if [ ! -f '/etc/v2ray/config.json' ]; then
+        unzip -oj "$1" 'vpoint_vmess_freedom.json' -d '/etc/v2ray' && \
+        mv '/etc/v2ray/vpoint_vmess_freedom.json' '/etc/v2ray/config.json' || {
             colorEcho ${YELLOW} "Failed to create V2Ray configuration file. Please create it manually."
             return 1
-        fi
-        let PORT=$RANDOM+10000
-        UUID=$(cat /proc/sys/kernel/random/uuid)
+        }
+
+        local PORT="$(($RANDOM + 10000))"
+        local UUID="$(cat '/proc/sys/kernel/random/uuid')"
 
         sed -i "s/10086/${PORT}/g" "/etc/v2ray/config.json"
         sed -i "s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${UUID}/g" "/etc/v2ray/config.json"
@@ -379,7 +375,6 @@ installV2Ray(){
         colorEcho ${BLUE} "PORT:${PORT}"
         colorEcho ${BLUE} "UUID:${UUID}"
     fi
-    return 0
 }
 
 remove(){
@@ -443,9 +438,8 @@ main(){
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
         colorEcho ${YELLOW} "Installing V2Ray via local file. Please make sure the file is a valid V2Ray package, as we are not able to determine that."
         NEW_VER=local
-        installSoftware unzip || return $?
         rm -rf /tmp/v2ray
-        extract $LOCAL || return $?
+        ZIPFILE="$LOCAL"
         #FILEVDIS=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f4`
         #SYSTEM=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f3`
         #if [[ ${SYSTEM} != "linux" ]]; then
@@ -474,12 +468,13 @@ main(){
             colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
             rm -rf /tmp/v2ray
             downloadV2Ray "${ZIPFILE}" "${NEW_VER}" "${VDIS}" "${DIST_SRC}" "${PROXY}" || return $?
-            installSoftware unzip || return $?
-            extract ${ZIPFILE} || return $?
         fi
     fi
 
+    installSoftware unzip || return $?
+
     if [ -n "${EXTRACT_ONLY}" ]; then
+        extract ${ZIPFILE} || return $?
         colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT}, and exiting..."
         return 0
     fi
@@ -490,8 +485,8 @@ main(){
         V2RAY_RUNNING=1
         stopV2ray
     fi
-    installV2Ray || return $?
-    installInitScript || return $?
+    installV2Ray "${ZIPFILE}" || return $?
+    installInitScript "${ZIPFILE}" || return $?
     if [[ ${V2RAY_RUNNING} -eq 1 ]];then
         colorEcho ${BLUE} "Restarting V2Ray service."
         startV2ray
