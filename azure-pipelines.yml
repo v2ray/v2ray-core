@@ -120,3 +120,14 @@ jobs:
       GITHUB_TOKEN: $(GITHUB_TOKEN)
       PRERELEASE: true
       RELEASE_TAG: unstable-$(Build.SourceVersion)
+  - script: |
+      cd ./src/v2ray.com/core
+      echo $RELEASE_TAG
+      ./release/tagrelease.sh
+    workingDirectory: '$(GOPATH)'
+    displayName: 'Generate Tag Release'
+    env:
+      GITHUB_TOKEN: $(GITHUB_TOKEN)
+      PRERELEASE: true
+      RELEASE_TAG: unstable-$(Build.SourceVersion)
+      TRIGGER_REASON: $(Build.SourceBranch)
