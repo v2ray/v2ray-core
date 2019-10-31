@@ -86,6 +86,14 @@ packtgzAbPath() {
 	echo ">>> Generated: $ABPATH"
 }
 
+packtgzAbPath() {
+	local ABPATH="$1"
+	echo ">>> Generating tgz package at $ABPATH"
+	pushd $TMP
+	tar cvfz $ABPATH .
+	echo ">>> Generated: $ABPATH"
+}
+
 
 pkg=zip
 nosource=0
@@ -130,12 +138,6 @@ case $arg in
 	abpathtgz=*)
 		pkg=${arg##abpathtgz=}
 		;;
-	codename=*)
-		CODENAME=${arg##codename=}
-		;;
-	buildname=*)
-		BUILDNAME=${arg##buildname=}
-		;;
 esac
 done
 
@@ -161,7 +163,7 @@ if [[ $pkg == "zip" ]]; then
 elif [[ $pkg == "tgz" ]]; then
   packtgz
 else
-	packtgzAbPath "$pkg"
+	packtgzAbPath $pkg
 fi
 
 
