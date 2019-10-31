@@ -341,11 +341,15 @@ func (c *Config) Build() (*core.Config, error) {
 		config.App = append(config.App, serial.ToTypedMessage(statsConf))
 	}
 
+	var logConfMsg *serial.TypedMessage
 	if c.LogConfig != nil {
-		config.App = append(config.App, serial.ToTypedMessage(c.LogConfig.Build()))
+		logConfMsg = serial.ToTypedMessage(c.LogConfig.Build())
 	} else {
-		config.App = append(config.App, serial.ToTypedMessage(DefaultLogConfig()))
+		logConfMsg = serial.ToTypedMessage(DefaultLogConfig())
 	}
+	// let logger module be the first App to start,
+	// so that other modules could print log during initiating
+	config.App = append([]*serial.TypedMessage{logConfMsg}, config.App...)
 
 	if c.RouterConfig != nil {
 		routerConfig, err := c.RouterConfig.Build()
