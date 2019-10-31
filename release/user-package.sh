@@ -86,6 +86,14 @@ packtgz() {
 	echo ">>> Generated: $(basename $PKG)"
 }
 
+packtgzAbPath() {
+	local ABPATH="$1"
+	echo ">>> Generating tgz package at $ABPATH"
+	pushd $TMP
+	tar cvfz $ABPATH .
+	echo ">>> Generated: $ABPATH"
+}
+
 
 pkg=zip
 nosource=0
@@ -127,6 +135,9 @@ case $arg in
 	tgz)
 		pkg=tgz
 		;;
+	abpathtgz=*)
+		pkg=${arg##abpathtgz=}
+		;;
 esac
 done
 
@@ -147,11 +158,12 @@ fi
 
 if [[ $pkg == "zip" ]]; then
   packzip
+elif [[ $pkg == "tgz" ]]; then
+  packtgz
+else
+	packtgzAbPath $pkg
 fi
 
-if [[ $pkg == "tgz" ]]; then
-  packtgz
-fi
 
 cleanup
 
