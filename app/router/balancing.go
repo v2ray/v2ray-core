@@ -39,7 +39,7 @@ func (b *Balancer) PickOutbound() (string, error) {
 		return "", newError("no available outbounds selected")
 	}
 	tag := b.strategy.PickOutbound(tags)
-	if len(tag) == 0 {
+	if tag == "" {
 		return "", newError("balancing strategy returns empty tag")
 	}
 	return tag, nil

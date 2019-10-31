@@ -16,7 +16,7 @@ type ApiConfig struct {
 }
 
 func (c *ApiConfig) Build() (*commander.Config, error) {
-	if len(c.Tag) == 0 {
+	if c.Tag == "" {
 		return nil, newError("Api tag can't be empty.")
 	}
 

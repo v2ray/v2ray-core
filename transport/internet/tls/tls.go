@@ -8,7 +8,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 
-	utls "v2ray.com/core/external/github.com/refraction-networking/utls"
+	utls "github.com/refraction-networking/utls"
 )
 
 //go:generate errorgen
@@ -33,7 +33,7 @@ func (c *conn) HandshakeAddress() net.Address {
 		return nil
 	}
 	state := c.Conn.ConnectionState()
-	if len(state.ServerName) == 0 {
+	if state.ServerName == "" {
 		return nil
 	}
 	return net.ParseAddress(state.ServerName)

@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	version  = "4.19.1"
+	version  = "4.21.3"
 	build    = "Custom"
-	codename = "Po"
+	codename = "V2Fly, a community-driven edition of V2Ray."
 	intro    = "A unified platform for anti-censorship."
 )
 

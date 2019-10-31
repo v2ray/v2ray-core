@@ -134,11 +134,12 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 
 			dest := request.Destination()
 			if inbound.Source.IsValid() {
-				log.Record(&log.AccessMessage{
+				ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 					From:   inbound.Source,
 					To:     dest,
 					Status: log.AccessAccepted,
 					Reason: "",
+					Email:  request.User.Email,
 				})
 			}
 			newError("tunnelling request to ", dest).WriteToLog(session.ExportIDToError(ctx))
@@ -175,11 +176,12 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	inbound.User = s.user
 
 	dest := request.Destination()
-	log.Record(&log.AccessMessage{
+	ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 		From:   conn.RemoteAddr(),
 		To:     dest,
 		Status: log.AccessAccepted,
 		Reason: "",
+		Email:  request.User.Email,
 	})
 	newError("tunnelling request to ", dest).WriteToLog(session.ExportIDToError(ctx))
 

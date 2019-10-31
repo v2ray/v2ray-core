@@ -134,7 +134,7 @@ type WebSocketConfig struct {
 // Build implements Buildable.
 func (c *WebSocketConfig) Build() (proto.Message, error) {
 	path := c.Path
-	if len(path) == 0 && len(c.Path2) > 0 {
+	if path == "" && c.Path2 != "" {
 		path = c.Path2
 	}
 	header := make([]*websocket.Header, 0, 32)
@@ -380,7 +380,7 @@ func (c *StreamConfig) Build() (*internet.StreamConfig, error) {
 		}
 		config.ProtocolName = protocol
 	}
-	if strings.ToLower(c.Security) == "tls" {
+	if strings.EqualFold(c.Security, "tls") {
 		tlsSettings := c.TLSSettings
 		if tlsSettings == nil {
 			tlsSettings = &TLSConfig{}
@@ -469,7 +469,7 @@ type ProxyConfig struct {
 
 // Build implements Buildable.
 func (v *ProxyConfig) Build() (*internet.ProxyConfig, error) {
-	if len(v.Tag) == 0 {
+	if v.Tag == "" {
 		return nil, newError("Proxy tag is not set.")
 	}
 	return &internet.ProxyConfig{
