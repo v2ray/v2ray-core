@@ -138,6 +138,12 @@ case $arg in
 	abpathtgz=*)
 		pkg=${arg##abpathtgz=}
 		;;
+	codename=*)
+		CODENAME=${arg##codename=}
+		;;
+	buildname=*)
+		BUILDNAME=${arg##buildname=}
+		;;
 esac
 done
 
