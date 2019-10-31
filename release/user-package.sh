@@ -138,6 +138,12 @@ case $arg in
 	abpathtgz=*)
 		pkg=${arg##abpathtgz=}
 		;;
+	codename=*)
+		CODENAME=${arg##codename=}
+		;;
+	buildname=*)
+		BUILDNAME=${arg##buildname=}
+		;;
 esac
 done
 
@@ -146,6 +152,8 @@ if [[ $nosource != 1 ]]; then
 fi
 
 export GOOS GOARCH
+echo "Build ARGS: GOOS=${GOOS} GOARCH=${GOARCH} CODENAME=${CODENAME} BUILDNAME=${BUILDNAME}"
+echo "PKG ARGS: pkg=${pkg}"
 build_v2
 
 if [[ $nodat != 1 ]]; then
