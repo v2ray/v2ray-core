@@ -376,56 +376,50 @@ installV2Ray(){
     fi
 }
 
+# 0: ok. 1: not installed. 2: remove failed.
 removeInitScript(){
     if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/etc/systemd/system/v2ray.service" ]];then
         if pgrep "v2ray" > /dev/null ; then
             stopV2ray
         fi
         systemctl disable v2ray.service
-        rm -rf "/etc/systemd/system/v2ray.service"
-        if [[ $? -ne 0 ]]; then
-            colorEcho ${RED} "Failed to remove V2Ray."
-            return 0
-        else
-            colorEcho ${GREEN} "Removed V2Ray successfully."
-            colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
-            return 0
+        if ! rm -rf "/etc/systemd/system/v2ray.service"; then
+            return 2
         fi
     elif [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/lib/systemd/system/v2ray.service" ]];then
         if pgrep "v2ray" > /dev/null ; then
             stopV2ray
         fi
         systemctl disable v2ray.service
-        rm -rf "/lib/systemd/system/v2ray.service"
-        if [[ $? -ne 0 ]]; then
-            colorEcho ${RED} "Failed to remove V2Ray."
-            return 0
+        if ! rm -rf "/lib/systemd/system/v2ray.service"; then
+            return 2
         else
-            colorEcho ${GREEN} "Removed V2Ray successfully."
-            colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
-            return 0
         fi
     elif [[ -n "${SERVICE_CMD}" ]] && [[ -f "/etc/init.d/v2ray" ]]; then
         if pgrep "v2ray" > /dev/null ; then
             stopV2ray
         fi
-        rm -rf "/etc/init.d/v2ray"
-        if [[ $? -ne 0 ]]; then
-            colorEcho ${RED} "Failed to remove V2Ray."
-            return 0
-        else
-            colorEcho ${GREEN} "Removed V2Ray successfully."
-            colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
-            return 0
+
+        if ! rm -rf "/etc/init.d/v2ray"; then
+            return 2
         fi
     else
-        colorEcho ${YELLOW} "V2Ray not found."
-        return 0
+        return 1
     fi
 }
 
 remove(){
-    removeInitScript && rm -rf "/usr/bin/v2ray"
+    removeInitScript && rm -rf '/usr/bin/v2ray'
+    local RETVAL=$?
+
+    if [ $RETVAL -eq 0 ]; then
+        colorEcho ${GREEN} "Removed V2Ray successfully."
+        colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
+    elif [ $RETVAL -eq 1 ]; then
+        colorEcho ${YELLOW} "V2Ray not found."
+    elif [ $RETVAL -eq 2 ]; then
+        colorEcho ${RED} "Failed to remove V2Ray."
+    fi
 }
 
 main(){
