@@ -376,13 +376,13 @@ installV2Ray(){
     fi
 }
 
-remove(){
+removeInitScript(){
     if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/etc/systemd/system/v2ray.service" ]];then
         if pgrep "v2ray" > /dev/null ; then
             stopV2ray
         fi
         systemctl disable v2ray.service
-        rm -rf "/usr/bin/v2ray" "/etc/systemd/system/v2ray.service"
+        rm -rf "/etc/systemd/system/v2ray.service"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
             return 0
@@ -396,7 +396,7 @@ remove(){
             stopV2ray
         fi
         systemctl disable v2ray.service
-        rm -rf "/usr/bin/v2ray" "/lib/systemd/system/v2ray.service"
+        rm -rf "/lib/systemd/system/v2ray.service"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
             return 0
@@ -409,7 +409,7 @@ remove(){
         if pgrep "v2ray" > /dev/null ; then
             stopV2ray
         fi
-        rm -rf "/usr/bin/v2ray" "/etc/init.d/v2ray"
+        rm -rf "/etc/init.d/v2ray"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
             return 0
@@ -422,6 +422,10 @@ remove(){
         colorEcho ${YELLOW} "V2Ray not found."
         return 0
     fi
+}
+
+remove(){
+    removeInitScript && rm -rf "/usr/bin/v2ray"
 }
 
 main(){
