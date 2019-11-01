@@ -376,49 +376,27 @@ installV2Ray(){
     fi
 }
 
-# 0: ok. 1: not installed. 2: remove failed.
 removeInitScript(){
-    if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/etc/systemd/system/v2ray.service" ]];then
-        if pgrep "v2ray" > /dev/null ; then
-            stopV2ray
-        fi
+    if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/etc/systemd/system/v2ray.service" || -f "/lib/systemd/system/v2ray.service" ]]; then
+        ${SYSTEMCTL_CMD} stop v2ray
         systemctl disable v2ray.service
-        if ! rm -rf "/etc/systemd/system/v2ray.service"; then
-            return 2
-        fi
-    elif [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/lib/systemd/system/v2ray.service" ]];then
-        if pgrep "v2ray" > /dev/null ; then
-            stopV2ray
-        fi
-        systemctl disable v2ray.service
-        if ! rm -rf "/lib/systemd/system/v2ray.service"; then
-            return 2
-        else
-        fi
+        rm -rf "/etc/systemd/system/v2ray.service" "/lib/systemd/system/v2ray.service"
     elif [[ -n "${SERVICE_CMD}" ]] && [[ -f "/etc/init.d/v2ray" ]]; then
-        if pgrep "v2ray" > /dev/null ; then
-            stopV2ray
-        fi
-
-        if ! rm -rf "/etc/init.d/v2ray"; then
-            return 2
-        fi
-    else
-        return 1
+        ${SERVICE_CMD} v2ray stop
+        rm -rf "/etc/init.d/v2ray"
     fi
 }
 
-remove(){
-    removeInitScript && rm -rf '/usr/bin/v2ray'
-    local RETVAL=$?
-
-    if [ $RETVAL -eq 0 ]; then
-        colorEcho ${GREEN} "Removed V2Ray successfully."
-        colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
-    elif [ $RETVAL -eq 1 ]; then
+removeV2Ray(){
+    if [ -d '/usr/bin/v2ray' ]; then
+        if rm -rf '/usr/bin/v2ray'; then
+            colorEcho ${GREEN} "Removed V2Ray successfully."
+            colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
+        else
+            colorEcho ${RED} "Failed to remove V2Ray."
+        fi
+    else
         colorEcho ${YELLOW} "V2Ray not found."
-    elif [ $RETVAL -eq 2 ]; then
-        colorEcho ${RED} "Failed to remove V2Ray."
     fi
 }
 
@@ -426,7 +404,7 @@ main(){
     #helping information
     [[ "$HELP" == "1" ]] && Help && return
     [[ "$CHECK" == "1" ]] && checkUpdate && return
-    [[ "$REMOVE" == "1" ]] && remove && return
+    [[ "$REMOVE" == "1" ]] && removeInitScript && removeV2Ray && return
 
     local ARCH=$(uname -m)
     local ZIPFILE="/tmp/v2ray/v2ray.zip"
