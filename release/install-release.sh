@@ -320,6 +320,17 @@ installInitScript(){
     return
 }
 
+removeInitScript(){
+    if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/etc/systemd/system/v2ray.service" || -f "/lib/systemd/system/v2ray.service" ]]; then
+        ${SYSTEMCTL_CMD} stop v2ray
+        systemctl disable v2ray.service
+        rm -rf "/etc/systemd/system/v2ray.service" "/lib/systemd/system/v2ray.service"
+    elif [[ -n "${SERVICE_CMD}" ]] && [[ -f "/etc/init.d/v2ray" ]]; then
+        ${SERVICE_CMD} v2ray stop
+        rm -rf "/etc/init.d/v2ray"
+    fi
+}
+
 startV2ray(){
     if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ]; then
         ${SYSTEMCTL_CMD} start v2ray
@@ -373,17 +384,6 @@ installV2Ray(){
             colorEcho ${YELLOW} "Failed to create V2Ray configuration file. Please create it manually."
             return 1
         }
-    fi
-}
-
-removeInitScript(){
-    if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/etc/systemd/system/v2ray.service" || -f "/lib/systemd/system/v2ray.service" ]]; then
-        ${SYSTEMCTL_CMD} stop v2ray
-        systemctl disable v2ray.service
-        rm -rf "/etc/systemd/system/v2ray.service" "/lib/systemd/system/v2ray.service"
-    elif [[ -n "${SERVICE_CMD}" ]] && [[ -f "/etc/init.d/v2ray" ]]; then
-        ${SERVICE_CMD} v2ray stop
-        rm -rf "/etc/init.d/v2ray"
     fi
 }
 
