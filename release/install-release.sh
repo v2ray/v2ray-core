@@ -24,9 +24,8 @@ DIST_SRC='github'
 ERROR_IF_UPTODATE=0
 
 #########################
-while [[ $# > 0 ]];do
-    key="$1"
-    case $key in
+while [[ $# > 0 ]]; do
+    case "$1" in
         -p|--proxy)
         PROXY="-x ${2}"
         shift # past argument
