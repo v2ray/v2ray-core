@@ -24,20 +24,14 @@ func readOneUDP(r io.Reader) (*Buffer, error) {
 	return nil, newError("Reader returns too many empty payloads.")
 }
 
-// ReadBuffer reads a Buffer from the given reader, without allocating large buffer in advance.
+// ReadBuffer reads a Buffer from the given reader.
 func ReadBuffer(r io.Reader) (*Buffer, error) {
-	// Use an one-byte buffer to wait for incoming payload.
-	var firstByte [1]byte
-	nBytes, err := r.Read(firstByte[:])
+	b := New()
+	_, err := b.ReadFrom(r)
 	if err != nil {
+		b.Release()
 		return nil, err
 	}
-
-	b := New()
-	if nBytes > 0 {
-		common.Must(b.WriteByte(firstByte[0]))
-	}
-	b.ReadFrom(r)
 	return b, nil
 }
 
