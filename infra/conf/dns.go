@@ -178,6 +178,24 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 				mapping.Domain = domain[5:]
 
 				mappings = append(mappings, mapping)
+			} else if strings.HasPrefix(domain, "ext:") {
+				kv := strings.Split(domain[4:], ":")
+				if len(kv) != 2 {
+					return nil, newError("invalid external resource: ", domain)
+				}
+				filename := kv[0]
+				country := kv[1]
+				domains, err := loadGeositeWithAttr(filename, country)
+				if err != nil {
+					return nil, newError("failed to load domains: ", country, " from ", filename).Base(err)
+				}
+				for _, d := range domains {
+					mapping := getHostMapping(addr)
+					mapping.Type = typeMap[d.Type]
+					mapping.Domain = d.Value
+
+					mappings = append(mappings, mapping)
+				}
 			} else {
 				mapping := getHostMapping(addr)
 				mapping.Type = dns.DomainMatchingType_Full
