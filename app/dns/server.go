@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/strmatcher"
@@ -37,6 +38,8 @@ type Server struct {
 type MultiGeoIPMatcher struct {
 	matchers []*router.GeoIPMatcher
 }
+
+var errExpectedIPNonMatch = errors.New("expected ip not match")
 
 // Match check ip match
 func (c *MultiGeoIPMatcher) Match(ip net.IP) bool {
@@ -178,11 +181,6 @@ func (s *Server) IsOwnLink(ctx context.Context) bool {
 
 // Match check dns ip match geoip
 func (s *Server) Match(idx uint32, client Client, domain string, ips []net.IP) ([]net.IP, error) {
-	if len(ips) == 0 {
-		newError("domain ", domain, " has empty response at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
-		return nil, context.Canceled
-	}
-
 	matcher, exist := s.ipIndexMap[idx]
 	if exist == false {
 		newError("domain ", domain, " server not in ipIndexMap: ", client.Name(), " idx:", idx, " just return").AtDebug().WriteToLog()
@@ -190,7 +188,7 @@ func (s *Server) Match(idx uint32, client Client, domain string, ips []net.IP) (
 	}
 
 	if matcher.HasMatcher() == false {
-		newError("domain ", domain, "server has not valid matcher: ", client.Name(), " idx:", idx, " just return").AtDebug().WriteToLog()
+		newError("domain ", domain, " server has not valid matcher: ", client.Name(), " idx:", idx, " just return").AtDebug().WriteToLog()
 		return ips, nil
 	}
 
@@ -204,7 +202,7 @@ func (s *Server) Match(idx uint32, client Client, domain string, ips []net.IP) (
 		}
 	}
 	if len(newIps) == 0 {
-		return nil, context.Canceled
+		return nil, errExpectedIPNonMatch
 	}
 	return newIps, nil
 }
@@ -217,8 +215,13 @@ func (s *Server) queryIPTimeout(idx uint32, client Client, domain string, option
 		})
 	}
 	ips, err := client.QueryIP(ctx, domain, option)
-	ips, err = s.Match(idx, client, domain, ips)
 	cancel()
+
+	if err != nil {
+		return ips, err
+	}
+
+	ips, err = s.Match(idx, client, domain, ips)
 	return ips, err
 }
 
@@ -324,7 +327,7 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 			newError("failed to lookup ip for domain ", domain, " at server ", client.Name()).Base(err).WriteToLog()
 			lastErr = err
 		}
-		if err != context.Canceled && err != context.DeadlineExceeded {
+		if err != context.Canceled && err != context.DeadlineExceeded && err != errExpectedIPNonMatch {
 			return nil, err
 		}
 	}
