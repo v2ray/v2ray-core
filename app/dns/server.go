@@ -295,12 +295,13 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 	}
 
 	var lastErr error
+	var matchedClient Client
 	if s.domainMatcher != nil {
 		idx := s.domainMatcher.Match(domain)
 		if idx > 0 {
-			ns := s.clients[s.domainIndexMap[idx]]
-			newError("domain matched, direct lookup ip for domain ", domain, " at ", ns.Name()).WriteToLog()
-			ips, err := s.queryIPTimeout(s.domainIndexMap[idx], ns, domain, option)
+			matchedClient = s.clients[s.domainIndexMap[idx]]
+			newError("domain matched, direct lookup ip for domain ", domain, " at ", matchedClient.Name()).WriteToLog()
+			ips, err := s.queryIPTimeout(s.domainIndexMap[idx], matchedClient, domain, option)
 			if len(ips) > 0 {
 				return ips, nil
 			}
@@ -308,15 +309,19 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 				return nil, err
 			}
 			if err != nil {
-				newError("failed to lookup ip for domain ", domain, " at server ", ns.Name()).Base(err).WriteToLog()
+				newError("failed to lookup ip for domain ", domain, " at server ", matchedClient.Name()).Base(err).WriteToLog()
 				lastErr = err
 			}
 		}
 	}
 
 	for idx, client := range s.clients {
-		newError("try to lookup ip for domain ", domain, " at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
+		if client == matchedClient {
+			newError("domain ", domain, " at server ", client.Name(), " idx:", idx, " already lookup failed, just ignore").AtDebug().WriteToLog()
+			continue
+		}
 
+		newError("try to lookup ip for domain ", domain, " at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
 		ips, err := s.queryIPTimeout(uint32(idx), client, domain, option)
 		if len(ips) > 0 {
 			newError("lookup ip for domain ", domain, " success: ", ips, " at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
