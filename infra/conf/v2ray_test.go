@@ -138,9 +138,6 @@ func TestV2RayConfig(t *testing.T) {
 			Parser: createParser(),
 			Output: &core.Config{
 				App: []*serial.TypedMessage{
-					serial.ToTypedMessage(&dispatcher.Config{}),
-					serial.ToTypedMessage(&proxyman.InboundConfig{}),
-					serial.ToTypedMessage(&proxyman.OutboundConfig{}),
 					serial.ToTypedMessage(&log.Config{
 						ErrorLogType:  log.LogType_File,
 						ErrorLogPath:  "/var/log/v2ray/error.log",
@@ -148,6 +145,9 @@ func TestV2RayConfig(t *testing.T) {
 						AccessLogType: log.LogType_File,
 						AccessLogPath: "/var/log/v2ray/access.log",
 					}),
+					serial.ToTypedMessage(&dispatcher.Config{}),
+					serial.ToTypedMessage(&proxyman.InboundConfig{}),
+					serial.ToTypedMessage(&proxyman.OutboundConfig{}),
 					serial.ToTypedMessage(&router.Config{
 						DomainStrategy: router.Config_AsIs,
 						Rule: []*router.RoutingRule{
