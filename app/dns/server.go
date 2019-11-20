@@ -38,7 +38,7 @@ type MultiGeoIPMatcher struct {
 	matchers []*router.GeoIPMatcher
 }
 
-// Match for
+// Match check ip match
 func (c *MultiGeoIPMatcher) Match(ip net.IP) bool {
 	for _, matcher := range c.matchers {
 		if matcher.Match(ip) {
@@ -48,7 +48,7 @@ func (c *MultiGeoIPMatcher) Match(ip net.IP) bool {
 	return false
 }
 
-// HasMatcher f
+// HasMatcher check has matcher
 func (c *MultiGeoIPMatcher) HasMatcher() bool {
 	if len(c.matchers) > 0 {
 		return true
