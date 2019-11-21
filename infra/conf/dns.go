@@ -11,9 +11,10 @@ import (
 )
 
 type NameServerConfig struct {
-	Address *Address
-	Port    uint16
-	Domains []string
+	Address   *Address
+	Port      uint16
+	Domains   []string
+	ExpectIPs StringList
 }
 
 func (c *NameServerConfig) UnmarshalJSON(data []byte) error {
@@ -25,14 +26,16 @@ func (c *NameServerConfig) UnmarshalJSON(data []byte) error {
 	}
 
 	var advanced struct {
-		Address *Address `json:"address"`
-		Port    uint16   `json:"port"`
-		Domains []string `json:"domains"`
+		Address   *Address   `json:"address"`
+		Port      uint16     `json:"port"`
+		Domains   []string   `json:"domains"`
+		ExpectIPs StringList `json:"expectIps"`
 	}
 	if err := json.Unmarshal(data, &advanced); err == nil {
 		c.Address = advanced.Address
 		c.Port = advanced.Port
 		c.Domains = advanced.Domains
+		c.ExpectIPs = advanced.ExpectIPs
 		return nil
 	}
 
@@ -75,6 +78,11 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 		}
 	}
 
+	geoipList, err := toCidrList(c.ExpectIPs)
+	if err != nil {
+		return nil, newError("invalid ip rule: ", c.ExpectIPs).Base(err)
+	}
+
 	return &dns.NameServer{
 		Address: &net.Endpoint{
 			Network: net.Network_UDP,
@@ -82,6 +90,7 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 			Port:    uint32(c.Port),
 		},
 		PrioritizedDomain: domains,
+		Geoip:             geoipList,
 	}, nil
 }
 
