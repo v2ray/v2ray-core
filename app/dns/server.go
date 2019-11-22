@@ -53,10 +53,7 @@ func (c *MultiGeoIPMatcher) Match(ip net.IP) bool {
 
 // HasMatcher check has matcher
 func (c *MultiGeoIPMatcher) HasMatcher() bool {
-	if len(c.matchers) > 0 {
-		return true
-	}
-	return false
+	return len(c.matchers) > 0
 }
 
 func generateRandomTag() string {
