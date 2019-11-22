@@ -444,17 +444,6 @@ func TestIPMatch(t *testing.T) {
 	config := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&Config{
-				NameServers: []*net.Endpoint{
-					{
-						Network: net.Network_UDP,
-						Address: &net.IPOrDomain{
-							Address: &net.IPOrDomain_Ip{
-								Ip: []byte{127, 0, 0, 1},
-							},
-						},
-						Port: 9999, /* unreachable */
-					},
-				},
 				NameServer: []*NameServer{
 					// private dns, not match
 					{
