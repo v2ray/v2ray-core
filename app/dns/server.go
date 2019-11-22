@@ -53,10 +53,7 @@ func (c *MultiGeoIPMatcher) Match(ip net.IP) bool {
 
 // HasMatcher check has matcher
 func (c *MultiGeoIPMatcher) HasMatcher() bool {
-	if len(c.matchers) > 0 {
-		return true
-	}
-	return false
+	return len(c.matchers) > 0
 }
 
 func generateRandomTag() string {
@@ -109,18 +106,16 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 
 	if len(config.NameServers) > 0 {
 		features.PrintDeprecatedFeatureWarning("simple DNS server")
+		for _, destPB := range config.NameServers {
+			addNameServer(destPB)
+		}
 	}
-
-	for _, destPB := range config.NameServers {
-		addNameServer(destPB)
-	}
-
-	var geoIPMatcherContainer router.GeoIPMatcherContainer
 
 	if len(config.NameServer) > 0 {
 		domainMatcher := &strmatcher.MatcherGroup{}
 		domainIndexMap := make(map[uint32]uint32)
 		ipIndexMap := make(map[uint32]*MultiGeoIPMatcher)
+		var geoIPMatcherContainer router.GeoIPMatcherContainer
 
 		for _, ns := range config.NameServer {
 			idx := addNameServer(ns.Address)
@@ -141,7 +136,6 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 					return nil, newError("failed to create ip matcher").Base(err).AtWarning()
 				}
 				matchers = append(matchers, matcher)
-
 			}
 			matcher := &MultiGeoIPMatcher{matchers: matchers}
 			ipIndexMap[uint32(idx)] = matcher
@@ -182,12 +176,12 @@ func (s *Server) IsOwnLink(ctx context.Context) bool {
 // Match check dns ip match geoip
 func (s *Server) Match(idx uint32, client Client, domain string, ips []net.IP) ([]net.IP, error) {
 	matcher, exist := s.ipIndexMap[idx]
-	if exist == false {
+	if !exist {
 		newError("domain ", domain, " server not in ipIndexMap: ", client.Name(), " idx:", idx, " just return").AtDebug().WriteToLog()
 		return ips, nil
 	}
 
-	if matcher.HasMatcher() == false {
+	if !matcher.HasMatcher() {
 		newError("domain ", domain, " server has not valid matcher: ", client.Name(), " idx:", idx, " just return").AtDebug().WriteToLog()
 		return ips, nil
 	}
