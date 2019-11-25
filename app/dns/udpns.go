@@ -36,6 +36,12 @@ type ClassicNameServer struct {
 }
 
 func NewClassicNameServer(address net.Destination, dispatcher routing.Dispatcher, clientIP net.IP) *ClassicNameServer {
+
+	// default to 53 if unspecific
+	if address.Port == 0 {
+		address.Port = net.Port(53)
+	}
+
 	s := &ClassicNameServer{
 		address:  address,
 		ips:      make(map[string]record),
@@ -49,6 +55,7 @@ func NewClassicNameServer(address net.Destination, dispatcher routing.Dispatcher
 		Execute:  s.Cleanup,
 	}
 	s.udpServer = udp.NewDispatcher(dispatcher, s.HandleResponse)
+	newError("DNS: created udp client inited for ", address.NetAddr()).AtInfo().WriteToLog()
 	return s
 }
 

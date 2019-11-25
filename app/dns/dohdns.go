@@ -40,10 +40,41 @@ type DoHNameServer struct {
 	name       string
 }
 
-func NewDoHNameServer(dests []net.Destination, dohHost string, dispatcher routing.Dispatcher, clientIP net.IP) *DoHNameServer {
+func NewDoHNameServer(dohHost string, dohPort uint32, dispatcher routing.Dispatcher, clientIP net.IP) (*DoHNameServer, error) {
 
-	s := NewDoHLocalNameServer(dohHost, clientIP)
-	s.name = "DOH:" + dohHost
+	dohAddr := net.ParseAddress(dohHost)
+	var dests []net.Destination
+
+	if dohPort == 0 {
+		dohPort = 443
+	}
+
+	parseIPDest := func(ip net.IP, port uint32) net.Destination {
+		strIP := ip.String()
+		if len(ip) == net.IPv6len {
+			strIP = fmt.Sprintf("[%s]", strIP)
+		}
+		dest, err := net.ParseDestination(fmt.Sprintf("tcp:%s:%d", strIP, port))
+		common.Must(err)
+		return dest
+	}
+
+	if dohAddr.Family().IsDomain() {
+		// resolve DOH server in advance
+		ips, err := net.LookupIP(dohAddr.Domain())
+		if err != nil || len(ips) == 0 {
+			return nil, err
+		}
+		for _, ip := range ips {
+			dests = append(dests, parseIPDest(ip, dohPort))
+		}
+	} else {
+		ip := dohAddr.IP()
+		dests = append(dests, parseIPDest(ip, dohPort))
+	}
+
+	newError("DNS: created remote DOH client for https://", dohHost, ":", dohPort).AtInfo().WriteToLog()
+	s := baseDOHNameServer(dohHost, dohPort, "DOH", clientIP)
 	s.dispatcher = dispatcher
 	s.dohDests = dests
 
@@ -66,22 +97,41 @@ func NewDoHNameServer(dests []net.Destination, dohHost string, dispatcher routin
 	}
 
 	s.httpClient = dispatchedClient
+	return s, nil
+}
+
+func NewDoHLocalNameServer(dohHost string, dohPort uint32, clientIP net.IP) *DoHNameServer {
+
+	if dohPort == 0 {
+		dohPort = 443
+	}
+
+	s := baseDOHNameServer(dohHost, dohPort, "DOHL", clientIP)
+	s.httpClient = &http.Client{
+		Timeout: time.Second * 180,
+	}
+	newError("DNS: created local DOH client for https://", dohHost, ":", dohPort).AtInfo().WriteToLog()
 	return s
 }
 
-func NewDoHLocalNameServer(dohHost string, clientIP net.IP) *DoHNameServer {
+func baseDOHNameServer(dohHost string, dohPort uint32, prefix string, clientIP net.IP) *DoHNameServer {
+
+	if dohPort == 0 {
+		dohPort = 443
+	}
+
 	s := &DoHNameServer{
-		httpClient: http.DefaultClient,
-		ips:        make(map[string]record),
-		clientIP:   clientIP,
-		pub:        pubsub.NewService(),
-		name:       "DOHL:" + dohHost,
-		dohURL:     fmt.Sprintf("https://%s/dns-query", dohHost),
+		ips:      make(map[string]record),
+		clientIP: clientIP,
+		pub:      pubsub.NewService(),
+		name:     fmt.Sprintf("%s:%s:%d", prefix, dohHost, dohPort),
+		dohURL:   fmt.Sprintf("https://%s:%d/dns-query", dohHost, dohPort),
 	}
 	s.cleanup = &task.Periodic{
 		Interval: time.Minute,
 		Execute:  s.Cleanup,
 	}
+
 	return s
 }
 
