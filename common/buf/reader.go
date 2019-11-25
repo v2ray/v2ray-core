@@ -27,12 +27,12 @@ func readOneUDP(r io.Reader) (*Buffer, error) {
 // ReadBuffer reads a Buffer from the given reader.
 func ReadBuffer(r io.Reader) (*Buffer, error) {
 	b := New()
-	_, err := b.ReadFrom(r)
-	if err != nil {
-		b.Release()
-		return nil, err
+	n, err := b.ReadFrom(r)
+	if n > 0 {
+		return b, err
 	}
-	return b, nil
+	b.Release()
+	return nil, err
 }
 
 // BufferedReader is a Reader that keeps its internal buffer.
@@ -156,10 +156,7 @@ type SingleReader struct {
 // ReadMultiBuffer implements Reader.
 func (r *SingleReader) ReadMultiBuffer() (MultiBuffer, error) {
 	b, err := ReadBuffer(r.Reader)
-	if err != nil {
-		return nil, err
-	}
-	return MultiBuffer{b}, nil
+	return MultiBuffer{b}, err
 }
 
 // PacketReader is a Reader that read one Buffer every time.

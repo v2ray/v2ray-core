@@ -1,6 +1,7 @@
 package buf_test
 
 import (
+	"bytes"
 	"crypto/rand"
 	"io"
 	"testing"
@@ -93,6 +94,66 @@ func TestMultiBufferSplitFirst(t *testing.T) {
 
 	if !mb.IsEmpty() {
 		t.Error("expect empty buffer, but got ", mb.String())
+	}
+}
+
+func TestMultiBufferReadAllToByte(t *testing.T) {
+	lb := make([]byte, 8*1024)
+	common.Must2(io.ReadFull(rand.Reader, lb))
+	rd := bytes.NewBuffer(lb)
+	b, err := ReadAllToBytes(rd)
+	common.Must(err)
+
+	if l := len(b); l != 8*1024 {
+		t.Error("unexpceted length from ReadAllToBytes", l)
+	}
+}
+
+func TestMultiBufferCopy(t *testing.T) {
+	lb := make([]byte, 8*1024)
+	common.Must2(io.ReadFull(rand.Reader, lb))
+	reader := bytes.NewBuffer(lb)
+
+	mb, err := ReadFrom(reader)
+	common.Must(err)
+
+	lbdst := make([]byte, 8*1024)
+	mb.Copy(lbdst)
+
+	if d := cmp.Diff(lb, lbdst); d != "" {
+		t.Error("unexpceted different from MultiBufferCopy ", d)
+	}
+}
+
+func TestSplitFirstBytes(t *testing.T) {
+	a := New()
+	common.Must2(a.WriteString("ab"))
+	b := New()
+	common.Must2(b.WriteString("bc"))
+
+	mb := MultiBuffer{a, b}
+
+	o := make([]byte, 2)
+	_, cnt := SplitFirstBytes(mb, o)
+	if cnt != 2 {
+		t.Error("unexpected cnt from SplitFirstBytes ", cnt)
+	}
+	if d := cmp.Diff(string(o), "ab"); d != "" {
+		t.Error("unexpected splited result from SplitFirstBytes ", d)
+	}
+}
+
+func TestCompact(t *testing.T) {
+	a := New()
+	common.Must2(a.WriteString("ab"))
+	b := New()
+	common.Must2(b.WriteString("bc"))
+
+	mb := MultiBuffer{a, b}
+	cmb := Compact(mb)
+
+	if w := cmb.String(); w != "abbc" {
+		t.Error("unexpected Compact result ", w)
 	}
 }
 

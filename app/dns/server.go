@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"v2ray.com/core"
+	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/strmatcher"
@@ -28,7 +30,30 @@ type Server struct {
 	clientIP       net.IP
 	domainMatcher  strmatcher.IndexMatcher
 	domainIndexMap map[uint32]uint32
+	ipIndexMap     map[uint32]*MultiGeoIPMatcher
 	tag            string
+}
+
+// MultiGeoIPMatcher for match
+type MultiGeoIPMatcher struct {
+	matchers []*router.GeoIPMatcher
+}
+
+var errExpectedIPNonMatch = errors.New("expected ip not match")
+
+// Match check ip match
+func (c *MultiGeoIPMatcher) Match(ip net.IP) bool {
+	for _, matcher := range c.matchers {
+		if matcher.Match(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasMatcher check has matcher
+func (c *MultiGeoIPMatcher) HasMatcher() bool {
+	return len(c.matchers) > 0
 }
 
 func generateRandomTag() string {
@@ -81,15 +106,16 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 
 	if len(config.NameServers) > 0 {
 		features.PrintDeprecatedFeatureWarning("simple DNS server")
-	}
-
-	for _, destPB := range config.NameServers {
-		addNameServer(destPB)
+		for _, destPB := range config.NameServers {
+			addNameServer(destPB)
+		}
 	}
 
 	if len(config.NameServer) > 0 {
 		domainMatcher := &strmatcher.MatcherGroup{}
 		domainIndexMap := make(map[uint32]uint32)
+		ipIndexMap := make(map[uint32]*MultiGeoIPMatcher)
+		var geoIPMatcherContainer router.GeoIPMatcherContainer
 
 		for _, ns := range config.NameServer {
 			idx := addNameServer(ns.Address)
@@ -102,10 +128,22 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 				midx := domainMatcher.Add(matcher)
 				domainIndexMap[midx] = uint32(idx)
 			}
+
+			var matchers []*router.GeoIPMatcher
+			for _, geoip := range ns.Geoip {
+				matcher, err := geoIPMatcherContainer.Add(geoip)
+				if err != nil {
+					return nil, newError("failed to create ip matcher").Base(err).AtWarning()
+				}
+				matchers = append(matchers, matcher)
+			}
+			matcher := &MultiGeoIPMatcher{matchers: matchers}
+			ipIndexMap[uint32(idx)] = matcher
 		}
 
 		server.domainMatcher = domainMatcher
 		server.domainIndexMap = domainIndexMap
+		server.ipIndexMap = ipIndexMap
 	}
 
 	if len(server.clients) == 0 {
@@ -135,7 +173,35 @@ func (s *Server) IsOwnLink(ctx context.Context) bool {
 	return inbound != nil && inbound.Tag == s.tag
 }
 
-func (s *Server) queryIPTimeout(client Client, domain string, option IPOption) ([]net.IP, error) {
+// Match check dns ip match geoip
+func (s *Server) Match(idx uint32, client Client, domain string, ips []net.IP) ([]net.IP, error) {
+	matcher, exist := s.ipIndexMap[idx]
+	if !exist {
+		newError("domain ", domain, " server not in ipIndexMap: ", client.Name(), " idx:", idx, " just return").AtDebug().WriteToLog()
+		return ips, nil
+	}
+
+	if !matcher.HasMatcher() {
+		newError("domain ", domain, " server has not valid matcher: ", client.Name(), " idx:", idx, " just return").AtDebug().WriteToLog()
+		return ips, nil
+	}
+
+	newIps := []net.IP{}
+	for _, ip := range ips {
+		if matcher.Match(ip) {
+			newIps = append(newIps, ip)
+			newError("domain ", domain, " ip ", ip, " is match at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
+		} else {
+			newError("domain ", domain, " ip ", ip, " is not match at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
+		}
+	}
+	if len(newIps) == 0 {
+		return nil, errExpectedIPNonMatch
+	}
+	return newIps, nil
+}
+
+func (s *Server) queryIPTimeout(idx uint32, client Client, domain string, option IPOption) ([]net.IP, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
 	if len(s.tag) > 0 {
 		ctx = session.ContextWithInbound(ctx, &session.Inbound{
@@ -144,6 +210,12 @@ func (s *Server) queryIPTimeout(client Client, domain string, option IPOption) (
 	}
 	ips, err := client.QueryIP(ctx, domain, option)
 	cancel()
+
+	if err != nil {
+		return ips, err
+	}
+
+	ips, err = s.Match(idx, client, domain, ips)
 	return ips, err
 }
 
@@ -217,12 +289,13 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 	}
 
 	var lastErr error
+	var matchedClient Client
 	if s.domainMatcher != nil {
 		idx := s.domainMatcher.Match(domain)
 		if idx > 0 {
-			ns := s.clients[s.domainIndexMap[idx]]
-			newError("querying domain ", domain, " at ", ns.Name()).WriteToLog()
-			ips, err := s.queryIPTimeout(ns, domain, option)
+			matchedClient = s.clients[s.domainIndexMap[idx]]
+			newError("domain matched, direct lookup ip for domain ", domain, " at ", matchedClient.Name()).WriteToLog()
+			ips, err := s.queryIPTimeout(s.domainIndexMap[idx], matchedClient, domain, option)
 			if len(ips) > 0 {
 				return ips, nil
 			}
@@ -230,22 +303,30 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 				return nil, err
 			}
 			if err != nil {
-				newError("failed to lookup ip for domain ", domain, " at server ", ns.Name()).Base(err).WriteToLog()
+				newError("failed to lookup ip for domain ", domain, " at server ", matchedClient.Name()).Base(err).WriteToLog()
 				lastErr = err
 			}
 		}
 	}
 
-	for _, client := range s.clients {
-		ips, err := s.queryIPTimeout(client, domain, option)
+	for idx, client := range s.clients {
+		if client == matchedClient {
+			newError("domain ", domain, " at server ", client.Name(), " idx:", idx, " already lookup failed, just ignore").AtDebug().WriteToLog()
+			continue
+		}
+
+		newError("try to lookup ip for domain ", domain, " at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
+		ips, err := s.queryIPTimeout(uint32(idx), client, domain, option)
 		if len(ips) > 0 {
+			newError("lookup ip for domain ", domain, " success: ", ips, " at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
 			return ips, nil
 		}
+
 		if err != nil {
 			newError("failed to lookup ip for domain ", domain, " at server ", client.Name()).Base(err).WriteToLog()
 			lastErr = err
 		}
-		if err != context.Canceled && err != context.DeadlineExceeded {
+		if err != context.Canceled && err != context.DeadlineExceeded && err != errExpectedIPNonMatch {
 			return nil, err
 		}
 	}
