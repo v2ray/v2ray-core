@@ -49,6 +49,7 @@ func (s *localNameServer) Name() string {
 }
 
 func NewLocalNameServer() *localNameServer {
+	newError("DNS: created localhost client").AtInfo().WriteToLog()
 	return &localNameServer{
 		client: localdns.New(),
 	}

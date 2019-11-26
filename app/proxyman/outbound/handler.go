@@ -68,12 +68,13 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (outbou
 		return nil, newError("not an outbound handler")
 	}
 
-	if h.senderSettings != nil && h.senderSettings.MultiplexSettings != nil && h.senderSettings.MultiplexSettings.Enabled {
+	if h.senderSettings != nil && h.senderSettings.MultiplexSettings != nil {
 		config := h.senderSettings.MultiplexSettings
 		if config.Concurrency < 1 || config.Concurrency > 1024 {
 			return nil, newError("invalid mux concurrency: ", config.Concurrency).AtWarning()
 		}
 		h.mux = &mux.ClientManager{
+			Enabled: h.senderSettings.MultiplexSettings.Enabled,
 			Picker: &mux.IncrementalWorkerPicker{
 				Factory: &mux.DialingWorkerFactory{
 					Proxy:  proxyHandler,
@@ -98,7 +99,7 @@ func (h *Handler) Tag() string {
 
 // Dispatch implements proxy.Outbound.Dispatch.
 func (h *Handler) Dispatch(ctx context.Context, link *transport.Link) {
-	if h.mux != nil {
+	if h.mux != nil && (h.mux.Enabled || session.MuxPreferedFromContext(ctx)) {
 		if err := h.mux.Dispatch(ctx, link); err != nil {
 			newError("failed to process mux outbound traffic").Base(err).WriteToLog(session.ExportIDToError(ctx))
 			common.Interrupt(link.Writer)

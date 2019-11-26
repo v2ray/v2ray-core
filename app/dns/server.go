@@ -6,6 +6,8 @@ package dns
 
 import (
 	"context"
+	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -39,7 +41,7 @@ type MultiGeoIPMatcher struct {
 	matchers []*router.GeoIPMatcher
 }
 
-var errExpectedIPNonMatch = errors.New("expected ip not match")
+var errExpectedIPNonMatch = errors.New("expectIPs not match")
 
 // Match check ip match
 func (c *MultiGeoIPMatcher) Match(ip net.IP) bool {
@@ -71,7 +73,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		server.tag = generateRandomTag()
 	}
 	if len(config.ClientIp) > 0 {
-		if len(config.ClientIp) != 4 && len(config.ClientIp) != 16 {
+		if len(config.ClientIp) != net.IPv4len && len(config.ClientIp) != net.IPv6len {
 			return nil, newError("unexpected IP length", len(config.ClientIp))
 		}
 		server.clientIP = net.IP(config.ClientIp)
@@ -87,6 +89,23 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		address := endpoint.Address.AsAddress()
 		if address.Family().IsDomain() && address.Domain() == "localhost" {
 			server.clients = append(server.clients, NewLocalNameServer())
+		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "DOHL_") {
+			dohHost := address.Domain()[5:]
+			server.clients = append(server.clients, NewDoHLocalNameServer(dohHost, endpoint.Port, server.clientIP))
+		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "DOH_") {
+			// DOH_ prefix makes net.Address think it's a domain
+			dohHost := address.Domain()[4:]
+			idx := len(server.clients)
+			server.clients = append(server.clients, nil)
+
+			// need the core dispatcher, register DOHClient at callback
+			common.Must(core.RequireFeatures(ctx, func(d routing.Dispatcher) {
+				c, err := NewDoHNameServer(dohHost, endpoint.Port, d, server.clientIP)
+				if err != nil {
+					log.Fatalln(newError("DNS config error").Base(err))
+				}
+				server.clients[idx] = c
+			}))
 		} else {
 			dest := endpoint.AsDestination()
 			if dest.Network == net.Network_Unknown {
@@ -129,16 +148,19 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 				domainIndexMap[midx] = uint32(idx)
 			}
 
-			var matchers []*router.GeoIPMatcher
-			for _, geoip := range ns.Geoip {
-				matcher, err := geoIPMatcherContainer.Add(geoip)
-				if err != nil {
-					return nil, newError("failed to create ip matcher").Base(err).AtWarning()
+			// only add to ipIndexMap if GeoIP is configured
+			if len(ns.Geoip) > 0 {
+				var matchers []*router.GeoIPMatcher
+				for _, geoip := range ns.Geoip {
+					matcher, err := geoIPMatcherContainer.Add(geoip)
+					if err != nil {
+						return nil, newError("failed to create ip matcher").Base(err).AtWarning()
+					}
+					matchers = append(matchers, matcher)
 				}
-				matchers = append(matchers, matcher)
+				matcher := &MultiGeoIPMatcher{matchers: matchers}
+				ipIndexMap[uint32(idx)] = matcher
 			}
-			matcher := &MultiGeoIPMatcher{matchers: matchers}
-			ipIndexMap[uint32(idx)] = matcher
 		}
 
 		server.domainMatcher = domainMatcher
@@ -177,12 +199,11 @@ func (s *Server) IsOwnLink(ctx context.Context) bool {
 func (s *Server) Match(idx uint32, client Client, domain string, ips []net.IP) ([]net.IP, error) {
 	matcher, exist := s.ipIndexMap[idx]
 	if !exist {
-		newError("domain ", domain, " server not in ipIndexMap: ", client.Name(), " idx:", idx, " just return").AtDebug().WriteToLog()
 		return ips, nil
 	}
 
 	if !matcher.HasMatcher() {
-		newError("domain ", domain, " server has not valid matcher: ", client.Name(), " idx:", idx, " just return").AtDebug().WriteToLog()
+		newError("domain ", domain, " server has no valid matcher: ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
 		return ips, nil
 	}
 
@@ -190,14 +211,12 @@ func (s *Server) Match(idx uint32, client Client, domain string, ips []net.IP) (
 	for _, ip := range ips {
 		if matcher.Match(ip) {
 			newIps = append(newIps, ip)
-			newError("domain ", domain, " ip ", ip, " is match at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
-		} else {
-			newError("domain ", domain, " ip ", ip, " is not match at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
 		}
 	}
 	if len(newIps) == 0 {
 		return nil, errExpectedIPNonMatch
 	}
+	newError("domain ", domain, " expectIPs ", newIps, " matched at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
 	return newIps, nil
 }
 
@@ -272,8 +291,14 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 		return nil, newError("empty domain name")
 	}
 
+	// normalize the FQDN form query
 	if domain[len(domain)-1] == '.' {
 		domain = domain[:len(domain)-1]
+	}
+
+	// skip domain without any dot
+	if strings.Index(domain, ".") == -1 {
+		return nil, newError("invalid domain name").AtWarning()
 	}
 
 	ips := s.lookupStatic(domain, option, 0)
@@ -294,7 +319,6 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 		idx := s.domainMatcher.Match(domain)
 		if idx > 0 {
 			matchedClient = s.clients[s.domainIndexMap[idx]]
-			newError("domain matched, direct lookup ip for domain ", domain, " at ", matchedClient.Name()).WriteToLog()
 			ips, err := s.queryIPTimeout(s.domainIndexMap[idx], matchedClient, domain, option)
 			if len(ips) > 0 {
 				return ips, nil
@@ -315,10 +339,8 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 			continue
 		}
 
-		newError("try to lookup ip for domain ", domain, " at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
 		ips, err := s.queryIPTimeout(uint32(idx), client, domain, option)
 		if len(ips) > 0 {
-			newError("lookup ip for domain ", domain, " success: ", ips, " at server ", client.Name(), " idx:", idx).AtDebug().WriteToLog()
 			return ips, nil
 		}
 
@@ -331,7 +353,7 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 		}
 	}
 
-	return nil, newError("returning nil for domain ", domain).Base(lastErr)
+	return nil, dns.ErrEmptyResponse.Base(lastErr)
 }
 
 func init() {
