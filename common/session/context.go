@@ -9,7 +9,7 @@ const (
 	inboundSessionKey
 	outboundSessionKey
 	contentSessionKey
-	MuxPreferedSessionKey
+	muxPreferedSessionKey
 )
 
 // ContextWithID returns a new context with the given ID.
@@ -60,12 +60,12 @@ func ContentFromContext(ctx context.Context) *Content {
 
 // ContextWithMuxPrefered returns a new context with the given bool
 func ContextWithMuxPrefered(ctx context.Context, forced bool) context.Context {
-	return context.WithValue(ctx, MuxPreferedSessionKey, forced)
+	return context.WithValue(ctx, muxPreferedSessionKey, forced)
 }
 
 // MuxPreferedFromContext returns value in this context, or false if not contained.
 func MuxPreferedFromContext(ctx context.Context) bool {
-	if val, ok := ctx.Value(MuxPreferedSessionKey).(bool); ok {
+	if val, ok := ctx.Value(muxPreferedSessionKey).(bool); ok {
 		return val
 	}
 	return false
