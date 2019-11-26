@@ -21,7 +21,6 @@ func (c *NameServerConfig) UnmarshalJSON(data []byte) error {
 	var address Address
 	if err := json.Unmarshal(data, &address); err == nil {
 		c.Address = &address
-		c.Port = 53
 		return nil
 	}
 
