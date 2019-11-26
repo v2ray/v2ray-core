@@ -40,6 +40,7 @@ type DoHNameServer struct {
 	name       string
 }
 
+// NewDoHNameServer creates DOH client object for remote resolving
 func NewDoHNameServer(dohHost string, dohPort uint32, dispatcher routing.Dispatcher, clientIP net.IP) (*DoHNameServer, error) {
 
 	dohAddr := net.ParseAddress(dohHost)
@@ -100,6 +101,7 @@ func NewDoHNameServer(dohHost string, dohPort uint32, dispatcher routing.Dispatc
 	return s, nil
 }
 
+// NewDoHLocalNameServer creates DOH client object for local resolving
 func NewDoHLocalNameServer(dohHost string, dohPort uint32, clientIP net.IP) *DoHNameServer {
 
 	if dohPort == 0 {
@@ -135,10 +137,12 @@ func baseDOHNameServer(dohHost string, dohPort uint32, prefix string, clientIP n
 	return s
 }
 
+// Name returns client name
 func (s *DoHNameServer) Name() string {
 	return s.name
 }
 
+// DialContext offer dispatched connection through core routing
 func (s *DoHNameServer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
 
 	dest := s.dohDests[dice.Roll(len(s.dohDests))]
@@ -153,6 +157,7 @@ func (s *DoHNameServer) DialContext(ctx context.Context, network, addr string) (
 	), nil
 }
 
+// Cleanup clears expired items from cache
 func (s *DoHNameServer) Cleanup() error {
 	now := time.Now()
 	s.Lock()

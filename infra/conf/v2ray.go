@@ -79,6 +79,7 @@ type MuxConfig struct {
 	Concurrency int16 `json:"concurrency"`
 }
 
+// Build creates MultiplexingConfig, Concurrency < 0 completely disables mux.
 func (m *MuxConfig) Build() *proxyman.MultiplexingConfig {
 	if m.Concurrency < 0 {
 		return nil

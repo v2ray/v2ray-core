@@ -13,6 +13,7 @@ import (
 	dns_feature "v2ray.com/core/features/dns"
 )
 
+// Fqdn normalize domain make sure it ends with '.'
 func Fqdn(domain string) string {
 	if len(domain) > 0 && domain[len(domain)-1] == '.' {
 		return domain
@@ -25,6 +26,7 @@ type record struct {
 	AAAA *IPRecord
 }
 
+// IPRecord is a cacheable item for a resolved domain
 type IPRecord struct {
 	ReqID  uint16
 	IP     []net.Address
