@@ -810,10 +810,10 @@ func TestVMessKCPLarge(t *testing.T) {
 								Protocol: internet.TransportProtocol_MKCP,
 								Settings: serial.ToTypedMessage(&kcp.Config{
 									ReadBuffer: &kcp.ReadBuffer{
-										Size: 4096,
+										Size: 512 * 1024,
 									},
 									WriteBuffer: &kcp.WriteBuffer{
-										Size: 4096,
+										Size: 512 * 1024,
 									},
 									UplinkCapacity: &kcp.UplinkCapacity{
 										Value: 20,
@@ -897,10 +897,10 @@ func TestVMessKCPLarge(t *testing.T) {
 								Protocol: internet.TransportProtocol_MKCP,
 								Settings: serial.ToTypedMessage(&kcp.Config{
 									ReadBuffer: &kcp.ReadBuffer{
-										Size: 4096,
+										Size: 512 * 1024,
 									},
 									WriteBuffer: &kcp.WriteBuffer{
-										Size: 4096,
+										Size: 512 * 1024,
 									},
 									UplinkCapacity: &kcp.UplinkCapacity{
 										Value: 20,
