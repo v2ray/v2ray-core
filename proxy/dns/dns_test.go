@@ -162,6 +162,7 @@ func TestUDPDNSTunnel(t *testing.T) {
 		m1.Question[0] = dns.Question{"ipv4only.google.com.", dns.TypeAAAA, dns.ClassINET}
 
 		c := new(dns.Client)
+		c.Timeout = 10 * time.Second
 		in, _, err := c.Exchange(m1, "127.0.0.1:"+strconv.Itoa(int(serverPort)))
 		common.Must(err)
 
