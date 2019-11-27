@@ -3,12 +3,9 @@ package buf_test
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
-	"os"
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/transport/pipe"
@@ -92,23 +89,6 @@ func TestReadBuffer(t *testing.T) {
 		buf.Release()
 	}
 
-	{
-		const dat = "data/test_ReadBuffer.dat"
-		f, err := os.Open(dat)
-		common.Must(err)
-		defer f.Close()
-
-		buf2, err := ReadBuffer(f)
-		common.Must(err)
-
-		cnt, err := ioutil.ReadFile(dat)
-		common.Must(err)
-
-		if cmp.Diff(buf2.Bytes(), cnt) != "" {
-			t.Error("fail to read from file")
-		}
-		buf2.Release()
-	}
 }
 
 func TestReadAtMost(t *testing.T) {

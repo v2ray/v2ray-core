@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"io/ioutil"
+	"os"
 
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
@@ -98,14 +100,33 @@ func TestMultiBufferSplitFirst(t *testing.T) {
 }
 
 func TestMultiBufferReadAllToByte(t *testing.T) {
-	lb := make([]byte, 8*1024)
-	common.Must2(io.ReadFull(rand.Reader, lb))
-	rd := bytes.NewBuffer(lb)
-	b, err := ReadAllToBytes(rd)
-	common.Must(err)
+	{
+		lb := make([]byte, 8*1024)
+		common.Must2(io.ReadFull(rand.Reader, lb))
+		rd := bytes.NewBuffer(lb)
+		b, err := ReadAllToBytes(rd)
+		common.Must(err)
 
-	if l := len(b); l != 8*1024 {
-		t.Error("unexpceted length from ReadAllToBytes", l)
+		if l := len(b); l != 8*1024 {
+			t.Error("unexpceted length from ReadAllToBytes", l)
+		}
+
+	}
+	{
+		const dat = "data/test_MultiBufferReadAllToByte.dat"
+		f, err := os.Open(dat)
+		common.Must(err)
+
+		buf2, err := ReadAllToBytes(f)
+		common.Must(err)
+		f.Close()
+
+		cnt, err := ioutil.ReadFile(dat)
+		common.Must(err)
+
+		if d := cmp.Diff(buf2, cnt); d != "" {
+			t.Error("fail to read from file: ", d)
+		}
 	}
 }
 
