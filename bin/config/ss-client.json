@@ -1,0 +1,31 @@
+{
+  "inbounds": [
+    {
+      "port": 1080, // 监听端口
+      "protocol": "socks", // 入口协议为 SOCKS 5
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"]
+      },
+      "settings": {
+        "auth": "noauth"  // 不认证
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [
+          {
+            "address": "serveraddr.com", // Shadowsocks 的服务器地址
+            "method": "aes-128-gcm", // Shadowsocks 的加密方式
+            "ota": true, // 是否开启 OTA，true 为开启
+            "password": "sspasswd", // Shadowsocks 的密码
+            "port": 1024
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "inbounds": [
+    {
+      "port": 1024, // 监听端口
+      "protocol": "shadowsocks",
+      "settings": {
+        "method": "aes-128-gcm",
+        "ota": true, // 是否开启 OTA
+        "password": "sspasswd"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {}
+    }
+  ]
+}
