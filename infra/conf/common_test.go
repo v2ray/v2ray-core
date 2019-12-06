@@ -51,6 +51,25 @@ func TestDomainParsing(t *testing.T) {
 	}
 }
 
+func TestURLParsing(t *testing.T) {
+	{
+		rawJson := "\"https://dns.google/dns-query\""
+		var address Address
+		common.Must(json.Unmarshal([]byte(rawJson), &address))
+		if address.Domain() != "https://dns.google/dns-query" {
+			t.Error("URL: ", address.Domain())
+		}
+	}
+	{
+		rawJson := "\"https+local://dns.google/dns-query\""
+		var address Address
+		common.Must(json.Unmarshal([]byte(rawJson), &address))
+		if address.Domain() != "https+local://dns.google/dns-query" {
+			t.Error("URL: ", address.Domain())
+		}
+	}
+}
+
 func TestInvalidAddressJson(t *testing.T) {
 	rawJson := "1234"
 	var address Address
