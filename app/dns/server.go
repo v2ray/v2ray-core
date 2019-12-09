@@ -8,7 +8,6 @@ import (
 	"context"
 	"log"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -87,40 +86,22 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	}
 	server.hosts = hosts
 
-	parseDOHURI := func(d string, endpoint *net.Endpoint) (host string, port uint32, err error) {
-		u, err := url.Parse(d)
-		if err != nil {
-			return "", 0, err
-		}
-		host = u.Hostname()
-		port = 443
-		if u.Port() != "" {
-			p, err := strconv.ParseUint(u.Port(), 10, 16)
-			if err != nil {
-				return "", 0, err
-			}
-			port = uint32(p)
-		}
-		if endpoint.Port != 0 {
-			port = endpoint.Port
-		}
-		return
-	}
-
 	addNameServer := func(endpoint *net.Endpoint) int {
 		address := endpoint.Address.AsAddress()
 		if address.Family().IsDomain() && address.Domain() == "localhost" {
 			server.clients = append(server.clients, NewLocalNameServer())
 		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "https+local://") {
 			// URI schemed string treated as domain
-			dohlHost, dohlPort, err := parseDOHURI(address.Domain(), endpoint)
+			// DOH Local mode
+			u, err := url.Parse(address.Domain())
 			if err != nil {
 				log.Fatalln(newError("DNS config error").Base(err))
 			}
-			server.clients = append(server.clients, NewDoHLocalNameServer(dohlHost, dohlPort, server.clientIP))
+			server.clients = append(server.clients, NewDoHLocalNameServer(u, server.clientIP))
 		} else if address.Family().IsDomain() &&
 			strings.HasPrefix(address.Domain(), "https://") {
-			dohHost, dohPort, err := parseDOHURI(address.Domain(), endpoint)
+			// DOH Remote mode
+			u, err := url.Parse(address.Domain())
 			if err != nil {
 				log.Fatalln(newError("DNS config error").Base(err))
 			}
@@ -129,13 +110,14 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 
 			// need the core dispatcher, register DOHClient at callback
 			common.Must(core.RequireFeatures(ctx, func(d routing.Dispatcher) {
-				c, err := NewDoHNameServer(dohHost, dohPort, d, server.clientIP)
+				c, err := NewDoHNameServer(u, d, server.clientIP)
 				if err != nil {
 					log.Fatalln(newError("DNS config error").Base(err))
 				}
 				server.clients[idx] = c
 			}))
 		} else {
+			// UDP classic DNS mode
 			dest := endpoint.AsDestination()
 			if dest.Network == net.Network_Unknown {
 				dest.Network = net.Network_UDP
