@@ -24,6 +24,7 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
+// Client is a inbound handler for HTTP protocol
 type Client struct {
 	serverPicker  protocol.ServerPicker
 	policyManager policy.Manager
@@ -92,7 +93,7 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 		p = c.policyManager.ForLevel(user.Level)
 	}
 
-	if err := setUpHttpTunnel(conn, &destination, user); err != nil {
+	if err := setUpHTTPTunnel(conn, &destination, user); err != nil {
 		return err
 	}
 
@@ -124,8 +125,8 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	return nil
 }
 
-// setUpHttpTunnel will create a socket tunnel via HTTP CONNECT method
-func setUpHttpTunnel(writer io.Writer, destination *net.Destination, user *protocol.MemoryUser) error {
+// setUpHTTPTunnel will create a socket tunnel via HTTP CONNECT method
+func setUpHTTPTunnel(writer io.Writer, destination *net.Destination, user *protocol.MemoryUser) error {
 	var headers []string
 	destNetAddr := destination.NetAddr()
 	headers = append(headers, "CONNECT "+destNetAddr+" HTTP/1.1")
