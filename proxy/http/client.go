@@ -3,9 +3,11 @@
 package http
 
 import (
+	"bufio"
 	"context"
 	"encoding/base64"
 	"io"
+	"net/http"
 	"strings"
 
 	"v2ray.com/core"
@@ -90,7 +92,7 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 		p = c.policyManager.ForLevel(user.Level)
 	}
 
-	if err := setUpHttpTunnel(conn, conn, &destination, user); err != nil {
+	if err := setUpHttpTunnel(conn, &destination, user); err != nil {
 		return err
 	}
 
@@ -103,7 +105,15 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	}
 	responseFunc := func() error {
 		defer timer.SetTimeout(p.Timeouts.UplinkOnly)
-		return buf.Copy(buf.NewReader(conn), link.Writer, buf.UpdateActivity(timer))
+		bc := bufio.NewReader(conn)
+		resp, err := http.ReadResponse(bc, nil)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return newError(resp.Status)
+		}
+		return buf.Copy(buf.NewReader(bc), link.Writer, buf.UpdateActivity(timer))
 	}
 
 	var responseDonePost = task.OnSuccess(responseFunc, task.Close(link.Writer))
@@ -115,7 +125,7 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 }
 
 // setUpHttpTunnel will create a socket tunnel via HTTP CONNECT method
-func setUpHttpTunnel(reader io.Reader, writer io.Writer, destination *net.Destination, user *protocol.MemoryUser) error {
+func setUpHttpTunnel(writer io.Writer, destination *net.Destination, user *protocol.MemoryUser) error {
 	var headers []string
 	destNetAddr := destination.NetAddr()
 	headers = append(headers, "CONNECT "+destNetAddr+" HTTP/1.1")
@@ -130,11 +140,6 @@ func setUpHttpTunnel(reader io.Reader, writer io.Writer, destination *net.Destin
 	b := buf.New()
 	b.WriteString(strings.Join(headers, "\r\n") + "\r\n\r\n")
 	if err := buf.WriteAllBytes(writer, b.Bytes()); err != nil {
-		return err
-	}
-
-	b.Clear()
-	if _, err := b.ReadFrom(reader); err != nil {
 		return err
 	}
 
