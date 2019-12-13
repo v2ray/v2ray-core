@@ -131,7 +131,7 @@ func (b *Buffer) IsEmpty() bool {
 
 // IsFull returns true if the buffer has no more room to grow.
 func (b *Buffer) IsFull() bool {
-	return b.end == int32(len(b.v))
+	return b != nil && b.end == int32(len(b.v))
 }
 
 // Write implements Write method in io.Writer.

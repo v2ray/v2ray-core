@@ -86,6 +86,14 @@ packtgz() {
 	echo ">>> Generated: $(basename $PKG)"
 }
 
+packtgzAbPath() {
+	local ABPATH="$1"
+	echo ">>> Generating tgz package at $ABPATH"
+	pushd $TMP
+	tar cvfz $ABPATH .
+	echo ">>> Generated: $ABPATH"
+}
+
 
 pkg=zip
 nosource=0
@@ -127,6 +135,15 @@ case $arg in
 	tgz)
 		pkg=tgz
 		;;
+	abpathtgz=*)
+		pkg=${arg##abpathtgz=}
+		;;
+	codename=*)
+		CODENAME=${arg##codename=}
+		;;
+	buildname=*)
+		BUILDNAME=${arg##buildname=}
+		;;
 esac
 done
 
@@ -135,6 +152,8 @@ if [[ $nosource != 1 ]]; then
 fi
 
 export GOOS GOARCH
+echo "Build ARGS: GOOS=${GOOS} GOARCH=${GOARCH} CODENAME=${CODENAME} BUILDNAME=${BUILDNAME}"
+echo "PKG ARGS: pkg=${pkg}"
 build_v2
 
 if [[ $nodat != 1 ]]; then
@@ -147,11 +166,12 @@ fi
 
 if [[ $pkg == "zip" ]]; then
   packzip
+elif [[ $pkg == "tgz" ]]; then
+  packtgz
+else
+	packtgzAbPath $pkg
 fi
 
-if [[ $pkg == "tgz" ]]; then
-  packtgz
-fi
 
 cleanup
 

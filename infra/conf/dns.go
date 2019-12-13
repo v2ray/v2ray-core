@@ -11,28 +11,30 @@ import (
 )
 
 type NameServerConfig struct {
-	Address *Address
-	Port    uint16
-	Domains []string
+	Address   *Address
+	Port      uint16
+	Domains   []string
+	ExpectIPs StringList
 }
 
 func (c *NameServerConfig) UnmarshalJSON(data []byte) error {
 	var address Address
 	if err := json.Unmarshal(data, &address); err == nil {
 		c.Address = &address
-		c.Port = 53
 		return nil
 	}
 
 	var advanced struct {
-		Address *Address `json:"address"`
-		Port    uint16   `json:"port"`
-		Domains []string `json:"domains"`
+		Address   *Address   `json:"address"`
+		Port      uint16     `json:"port"`
+		Domains   []string   `json:"domains"`
+		ExpectIPs StringList `json:"expectIps"`
 	}
 	if err := json.Unmarshal(data, &advanced); err == nil {
 		c.Address = advanced.Address
 		c.Port = advanced.Port
 		c.Domains = advanced.Domains
+		c.ExpectIPs = advanced.ExpectIPs
 		return nil
 	}
 
@@ -75,6 +77,11 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 		}
 	}
 
+	geoipList, err := toCidrList(c.ExpectIPs)
+	if err != nil {
+		return nil, newError("invalid ip rule: ", c.ExpectIPs).Base(err)
+	}
+
 	return &dns.NameServer{
 		Address: &net.Endpoint{
 			Network: net.Network_UDP,
@@ -82,6 +89,7 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 			Port:    uint32(c.Port),
 		},
 		PrioritizedDomain: domains,
+		Geoip:             geoipList,
 	}, nil
 }
 
@@ -178,6 +186,24 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 				mapping.Domain = domain[5:]
 
 				mappings = append(mappings, mapping)
+			} else if strings.HasPrefix(domain, "ext:") {
+				kv := strings.Split(domain[4:], ":")
+				if len(kv) != 2 {
+					return nil, newError("invalid external resource: ", domain)
+				}
+				filename := kv[0]
+				country := kv[1]
+				domains, err := loadGeositeWithAttr(filename, country)
+				if err != nil {
+					return nil, newError("failed to load domains: ", country, " from ", filename).Base(err)
+				}
+				for _, d := range domains {
+					mapping := getHostMapping(addr)
+					mapping.Type = typeMap[d.Type]
+					mapping.Domain = d.Value
+
+					mappings = append(mappings, mapping)
+				}
 			} else {
 				mapping := getHostMapping(addr)
 				mapping.Type = dns.DomainMatchingType_Full
