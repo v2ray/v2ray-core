@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/google/go-cmp/cmp"
 	"v2ray.com/core"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
@@ -365,6 +366,75 @@ func TestMuxConfig_Build(t *testing.T) {
 			common.Must(json.Unmarshal([]byte(tt.fields), m))
 			if got := m.Build(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MuxConfig.Build() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestConfig_Override(t *testing.T) {
+	tests := []struct {
+		name string
+		orig *Config
+		over *Config
+		want *Config
+	}{
+		{"combine/empty",
+			&Config{},
+			&Config{
+				LogConfig:    &LogConfig{},
+				RouterConfig: &RouterConfig{},
+				DNSConfig:    &DnsConfig{},
+				Transport:    &TransportConfig{},
+				Policy:       &PolicyConfig{},
+				Api:          &ApiConfig{},
+				Stats:        &StatsConfig{},
+				Reverse:      &ReverseConfig{},
+			},
+			&Config{
+				LogConfig:    &LogConfig{},
+				RouterConfig: &RouterConfig{},
+				DNSConfig:    &DnsConfig{},
+				Transport:    &TransportConfig{},
+				Policy:       &PolicyConfig{},
+				Api:          &ApiConfig{},
+				Stats:        &StatsConfig{},
+				Reverse:      &ReverseConfig{},
+			},
+		},
+		{"combine/newattr",
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "old"}}},
+			&Config{LogConfig: &LogConfig{}},
+			&Config{LogConfig: &LogConfig{}, InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "old"}}}},
+		{"replace/inbounds",
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos0"}, InboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}},
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos0"}, InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}}},
+		{"replace/inbounds-all",
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos0"}, InboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, InboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}},
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, InboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}}},
+		{"replace/notag",
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{}, InboundDetourConfig{Protocol: "vmess"}}},
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}},
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{}, InboundDetourConfig{Protocol: "vmess"}, InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}}},
+		{"replace/outbounds",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}},
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}}},
+		{"replace/outbounds-all",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, OutboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}},
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, OutboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}}},
+		{"replace/outbound-notag",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{}, OutboundDetourConfig{Protocol: "vmess"}}},
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}},
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{}, OutboundDetourConfig{Protocol: "vmess"}, OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.orig.Override(tt.over)
+			if r := cmp.Diff(tt.orig, tt.want); r != "" {
+				t.Error(r)
 			}
 		})
 	}
