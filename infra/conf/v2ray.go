@@ -327,7 +327,7 @@ func (c *Config) findOutboundTag(tag string) int {
 }
 
 // Override method accepts another Config overrides the current attribute
-func (c *Config) Override(o *Config) {
+func (c *Config) Override(o *Config, fn string) {
 
 	// only process the non-deprecated members
 
@@ -361,9 +361,10 @@ func (c *Config) Override(o *Config) {
 		if len(c.InboundConfigs) > 0 && len(o.InboundConfigs) == 1 {
 			if idx := c.findInboundTag(o.InboundConfigs[0].Tag); idx > -1 {
 				c.InboundConfigs[idx] = o.InboundConfigs[0]
-				newError("updated inbound with tag: ", o.InboundConfigs[0].Tag).AtInfo().WriteToLog()
+				newError("<", fn, "> updated inbound with tag: ", o.InboundConfigs[0].Tag).AtInfo().WriteToLog()
 			} else {
 				c.InboundConfigs = append(c.InboundConfigs, o.InboundConfigs[0])
+				newError("<", fn, "> appended inbound with tag: ", o.InboundConfigs[0].Tag).AtInfo().WriteToLog()
 			}
 		} else {
 			c.InboundConfigs = o.InboundConfigs
@@ -375,8 +376,10 @@ func (c *Config) Override(o *Config) {
 		if len(c.OutboundConfigs) > 0 && len(o.OutboundConfigs) == 1 {
 			if idx := c.findOutboundTag(o.OutboundConfigs[0].Tag); idx > -1 {
 				c.OutboundConfigs[idx] = o.OutboundConfigs[0]
+				newError("<", fn, "> updated outbound with tag: ", o.OutboundConfigs[0].Tag).AtInfo().WriteToLog()
 			} else {
 				c.OutboundConfigs = append(c.OutboundConfigs, o.OutboundConfigs[0])
+				newError("<", fn, "> updated outbound with tag: ", o.OutboundConfigs[0].Tag).AtInfo().WriteToLog()
 			}
 		} else {
 			c.OutboundConfigs = o.OutboundConfigs
