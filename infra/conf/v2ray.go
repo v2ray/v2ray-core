@@ -378,8 +378,13 @@ func (c *Config) Override(o *Config, fn string) {
 				c.OutboundConfigs[idx] = o.OutboundConfigs[0]
 				newError("<", fn, "> updated outbound with tag: ", o.OutboundConfigs[0].Tag).AtInfo().WriteToLog()
 			} else {
-				c.OutboundConfigs = append(c.OutboundConfigs, o.OutboundConfigs[0])
-				newError("<", fn, "> updated outbound with tag: ", o.OutboundConfigs[0].Tag).AtInfo().WriteToLog()
+				if strings.Contains(strings.ToLower(fn), "tail") {
+					c.OutboundConfigs = append(c.OutboundConfigs, o.OutboundConfigs[0])
+					newError("<", fn, "> appended outbound with tag: ", o.OutboundConfigs[0].Tag).AtInfo().WriteToLog()
+				} else {
+					c.OutboundConfigs = append(o.OutboundConfigs, c.OutboundConfigs...)
+					newError("<", fn, "> prepended outbound with tag: ", o.OutboundConfigs[0].Tag).AtInfo().WriteToLog()
+				}
 			}
 		} else {
 			c.OutboundConfigs = o.OutboundConfigs

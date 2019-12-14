@@ -376,6 +376,7 @@ func TestConfig_Override(t *testing.T) {
 		name string
 		orig *Config
 		over *Config
+		fn   string
 		want *Config
 	}{
 		{"combine/empty",
@@ -390,6 +391,7 @@ func TestConfig_Override(t *testing.T) {
 				Stats:        &StatsConfig{},
 				Reverse:      &ReverseConfig{},
 			},
+			"",
 			&Config{
 				LogConfig:    &LogConfig{},
 				RouterConfig: &RouterConfig{},
@@ -403,36 +405,47 @@ func TestConfig_Override(t *testing.T) {
 		},
 		{"combine/newattr",
 			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "old"}}},
-			&Config{LogConfig: &LogConfig{}},
+			&Config{LogConfig: &LogConfig{}}, "",
 			&Config{LogConfig: &LogConfig{}, InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "old"}}}},
 		{"replace/inbounds",
 			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos0"}, InboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
 			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}},
+			"",
 			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos0"}, InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}}},
 		{"replace/inbounds-all",
 			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos0"}, InboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
 			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, InboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}},
+			"",
 			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, InboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}}},
 		{"replace/notag",
 			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{}, InboundDetourConfig{Protocol: "vmess"}}},
 			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}},
+			"",
 			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{}, InboundDetourConfig{Protocol: "vmess"}, InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}}},
 		{"replace/outbounds",
 			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
 			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}},
+			"",
 			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}}},
-		{"replace/outbounds-all",
+		{"replace/outbounds-append",
 			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
 			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, OutboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}},
+			"",
 			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, OutboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}}},
-		{"replace/outbound-notag",
+		{"replace/outbounds-append",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}},
+			"config_tail.json",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Protocol: "vmess", Tag: "pos1"}, OutboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}}},
+		{"replace/outbound-prepend",
 			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{}, OutboundDetourConfig{Protocol: "vmess"}}},
 			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}},
-			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{}, OutboundDetourConfig{Protocol: "vmess"}, OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}}},
+			"config.json",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, OutboundDetourConfig{}, OutboundDetourConfig{Protocol: "vmess"}}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.orig.Override(tt.over)
+			tt.orig.Override(tt.over, tt.fn)
 			if r := cmp.Diff(tt.orig, tt.want); r != "" {
 				t.Error(r)
 			}
