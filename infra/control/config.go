@@ -13,26 +13,27 @@ import (
 	"v2ray.com/core/infra/conf/serial"
 )
 
-type MconfigCommand struct{}
+type ConfigCommand struct{}
 
-func (c *MconfigCommand) Name() string {
+func (c *ConfigCommand) Name() string {
 	return "config"
 }
 
-func (c *MconfigCommand) Description() Description {
+func (c *ConfigCommand) Description() Description {
 	return Description{
 		Short: "merge multiple json config",
-		Usage: []string{"v2ctl mconfig 1.json 2.json <url>.json"},
+		Usage: []string{"v2ctl config config.json c1.json c2.json <url>.json"},
 	}
 }
 
-func (c *MconfigCommand) Execute(args []string) error {
+func (c *ConfigCommand) Execute(args []string) error {
 	if len(args) < 1 {
 		return newError("empty config list")
 	}
 
 	conf := &conf.Config{}
 	for _, arg := range args {
+		newError("Reading config: ", arg).AtInfo().WriteToLog()
 		r, err := c.LoadArg(arg)
 		common.Must(err)
 		c, err := serial.DecodeJSONConfig(r)
@@ -57,7 +58,7 @@ func (c *MconfigCommand) Execute(args []string) error {
 	return nil
 }
 
-func (c *MconfigCommand) LoadArg(arg string) (out io.Reader, err error) {
+func (c *ConfigCommand) LoadArg(arg string) (out io.Reader, err error) {
 
 	var data []byte
 	if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
@@ -74,5 +75,5 @@ func (c *MconfigCommand) LoadArg(arg string) (out io.Reader, err error) {
 }
 
 func init() {
-	common.Must(RegisterCommand(&MconfigCommand{}))
+	common.Must(RegisterCommand(&ConfigCommand{}))
 }
