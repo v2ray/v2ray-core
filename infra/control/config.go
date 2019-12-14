@@ -16,7 +16,7 @@ import (
 type MconfigCommand struct{}
 
 func (c *MconfigCommand) Name() string {
-	return "mconfig"
+	return "config"
 }
 
 func (c *MconfigCommand) Description() Description {

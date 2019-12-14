@@ -3,6 +3,8 @@ package main
 //go:generate errorgen
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -14,15 +16,25 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/common/platform"
-	"v2ray.com/core/main/confloader"
 	_ "v2ray.com/core/main/distro/all"
 )
 
+type CmdConfig []string
+
+func (c *CmdConfig) String() string {
+	return strings.Join([]string(*c), ",")
+}
+
+func (c *CmdConfig) Set(value string) error {
+	*c = append(*c, value)
+	return nil
+}
+
 var (
-	configFile = flag.String("config", "", "Config file for V2Ray.")
-	version    = flag.Bool("version", false, "Show current version of V2Ray.")
-	test       = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
-	format     = flag.String("format", "json", "Format of input file.")
+	configFiles CmdConfig // "Config file for V2Ray.", the option is customed type, parse in main
+	version     = flag.Bool("version", false, "Show current version of V2Ray.")
+	test        = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
+	format      = flag.String("format", "json", "Format of input file.")
 )
 
 func fileExists(file string) bool {
@@ -30,23 +42,24 @@ func fileExists(file string) bool {
 	return err == nil && !info.IsDir()
 }
 
-func getConfigFilePath() string {
-	if len(*configFile) > 0 {
-		return *configFile
+func getConfigFilePath() CmdConfig {
+
+	if len(configFiles) > 0 {
+		return configFiles
 	}
 
 	if workingDir, err := os.Getwd(); err == nil {
 		configFile := filepath.Join(workingDir, "config.json")
 		if fileExists(configFile) {
-			return configFile
+			return []string{configFile}
 		}
 	}
 
 	if configFile := platform.GetConfigurationPath(); fileExists(configFile) {
-		return configFile
+		return []string{configFile}
 	}
 
-	return ""
+	return []string{}
 }
 
 func GetConfigFormat() string {
@@ -59,16 +72,11 @@ func GetConfigFormat() string {
 }
 
 func startV2Ray() (core.Server, error) {
-	configFile := getConfigFilePath()
-	configInput, err := confloader.LoadConfig(configFile)
+	configFiles := getConfigFilePath()
+	fs, _ := json.Marshal(configFiles)
+	config, err := core.LoadConfig(GetConfigFormat(), configFiles[0], bytes.NewBuffer(fs))
 	if err != nil {
-		return nil, newError("failed to load config: ", configFile).Base(err)
-	}
-	defer configInput.Close()
-
-	config, err := core.LoadConfig(GetConfigFormat(), configFile, configInput)
-	if err != nil {
-		return nil, newError("failed to read config file: ", configFile).Base(err)
+		return nil, newError("failed to read config files: [", configFiles.String(), "]").Base(err)
 	}
 
 	server, err := core.New(config)
@@ -87,6 +95,7 @@ func printVersion() {
 }
 
 func main() {
+	flag.Var(&configFiles, "config", "Config file for V2Ray. Multiple assign is accepted (only json). Latter ones overrides the former ones.")
 	flag.Parse()
 
 	printVersion()

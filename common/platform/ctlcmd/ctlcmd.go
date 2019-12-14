@@ -39,8 +39,10 @@ func Run(args []string, input io.Reader) (buf.MultiBuffer, error) {
 		}
 		return nil, newError(msg).Base(err)
 	}
+
+	// log stderr, info message
 	if !errBuffer.IsEmpty() {
-		newError("v2ctl > ", errBuffer.String()).AtInfo().WriteToLog()
+		newError("v2ctl > \n", errBuffer.MultiBuffer.String()).AtInfo().WriteToLog()
 	}
 
 	return outBuffer.MultiBuffer, nil

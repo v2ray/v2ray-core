@@ -3,7 +3,9 @@ package json
 //go:generate errorgen
 
 import (
+	"encoding/json"
 	"io"
+	"io/ioutil"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
@@ -16,7 +18,10 @@ func init() {
 		Name:      "JSON",
 		Extension: []string{"json"},
 		Loader: func(input io.Reader) (*core.Config, error) {
-			jsonContent, err := ctlcmd.Run([]string{"config"}, input)
+			fns := []string{}
+			data, _ := ioutil.ReadAll(input)
+			json.Unmarshal(data, &fns)
+			jsonContent, err := ctlcmd.Run(append([]string{"config"}, fns...), nil)
 			if err != nil {
 				return nil, newError("failed to execute v2ctl to convert config file.").Base(err).AtWarning()
 			}
