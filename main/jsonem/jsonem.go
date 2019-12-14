@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ func init() {
 			case cmdarg.Arg:
 				cf := &conf.Config{}
 				for _, arg := range v {
+					newError("Reading config: ", arg).AtInfo().WriteToLog()
 					r, err := LoadArg(arg)
 					common.Must(err)
 					c, err := serial.DecodeJSONConfig(r)
@@ -47,6 +49,8 @@ func LoadArg(arg string) (out io.Reader, err error) {
 	var data []byte
 	if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
 		data, err = FetchHTTPContent(arg)
+	} else if arg == "stdin:" {
+		data, err = ioutil.ReadAll(os.Stdin)
 	} else {
 		data, err = ioutil.ReadFile(arg)
 	}

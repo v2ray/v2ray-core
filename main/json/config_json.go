@@ -4,6 +4,7 @@ package json
 
 import (
 	"io"
+	"os"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
@@ -20,7 +21,7 @@ func init() {
 		Loader: func(input interface{}) (*core.Config, error) {
 			switch v := input.(type) {
 			case cmdarg.Arg:
-				jsonContent, err := ctlcmd.Run(append([]string{"config"}, v...), nil)
+				jsonContent, err := ctlcmd.Run(append([]string{"config"}, v...), os.Stdin)
 				if err != nil {
 					return nil, newError("failed to execute v2ctl to convert config file.").Base(err).AtWarning()
 				}

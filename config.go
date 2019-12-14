@@ -5,6 +5,7 @@ package core
 import (
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -92,9 +93,15 @@ func init() {
 				if len(v) == 0 {
 					return nil, newError("input has no element")
 				}
+				var data []byte
+				var rerr error
 				// pb type can only handle the first config
-				data, err := ioutil.ReadFile(v[0])
-				common.Must(err)
+				if v[0] == "stdin:" {
+					data, rerr = buf.ReadAllToBytes(os.Stdin)
+				} else {
+					data, rerr = ioutil.ReadFile(v[0])
+				}
+				common.Must(rerr)
 				return loadProtobufConfig(data)
 			case io.Reader:
 				data, err := buf.ReadAllToBytes(v)
