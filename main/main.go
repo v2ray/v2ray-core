@@ -3,8 +3,6 @@ package main
 //go:generate errorgen
 
 import (
-	"bytes"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -15,26 +13,17 @@ import (
 	"syscall"
 
 	"v2ray.com/core"
+	"v2ray.com/core/common/cmdarg"
 	"v2ray.com/core/common/platform"
 	_ "v2ray.com/core/main/distro/all"
 )
 
-type CmdConfig []string
-
-func (c *CmdConfig) String() string {
-	return strings.Join([]string(*c), ",")
-}
-
-func (c *CmdConfig) Set(value string) error {
-	*c = append(*c, value)
-	return nil
-}
-
 var (
-	configFiles CmdConfig // "Config file for V2Ray.", the option is customed type, parse in main
+	configFiles cmdarg.Arg // "Config file for V2Ray.", the option is customed type, parse in main
 	version     = flag.Bool("version", false, "Show current version of V2Ray.")
 	test        = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
-	format      = flag.String("format", "json", "Format of input file.")
+	format      = flag.String("format", "", "Format of input file.")
+	errNoConfig = newError("no valid config")
 )
 
 func fileExists(file string) bool {
@@ -42,8 +31,7 @@ func fileExists(file string) bool {
 	return err == nil && !info.IsDir()
 }
 
-func getConfigFilePath() CmdConfig {
-
+func getConfigFilePath() cmdarg.Arg {
 	if len(configFiles) > 0 {
 		return configFiles
 	}
@@ -51,15 +39,15 @@ func getConfigFilePath() CmdConfig {
 	if workingDir, err := os.Getwd(); err == nil {
 		configFile := filepath.Join(workingDir, "config.json")
 		if fileExists(configFile) {
-			return []string{configFile}
+			return cmdarg.Arg{configFile}
 		}
 	}
 
 	if configFile := platform.GetConfigurationPath(); fileExists(configFile) {
-		return []string{configFile}
+		return cmdarg.Arg{configFile}
 	}
 
-	return []string{}
+	return configFiles
 }
 
 func GetConfigFormat() string {
@@ -73,8 +61,14 @@ func GetConfigFormat() string {
 
 func startV2Ray() (core.Server, error) {
 	configFiles := getConfigFilePath()
-	fs, _ := json.Marshal(configFiles)
-	config, err := core.LoadConfig(GetConfigFormat(), configFiles[0], bytes.NewBuffer(fs))
+	if len(configFiles) == 0 {
+		if *format == "" {
+			return nil, errNoConfig
+		}
+		configFiles = []string{"stdin:"}
+	}
+
+	config, err := core.LoadConfig(GetConfigFormat(), configFiles[0], configFiles)
 	if err != nil {
 		return nil, newError("failed to read config files: [", configFiles.String(), "]").Base(err)
 	}
@@ -96,6 +90,7 @@ func printVersion() {
 
 func main() {
 	flag.Var(&configFiles, "config", "Config file for V2Ray. Multiple assign is accepted (only json). Latter ones overrides the former ones.")
+	flag.Var(&configFiles, "c", "short alias of -config")
 	flag.Parse()
 
 	printVersion()
@@ -108,6 +103,9 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 		// Configuration error. Exit with a special value to prevent systemd from restarting.
+		if err == errNoConfig {
+			flag.PrintDefaults()
+		}
 		os.Exit(23)
 	}
 
