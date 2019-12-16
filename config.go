@@ -4,14 +4,13 @@ package core
 
 import (
 	"io"
-	"io/ioutil"
-	"os"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/cmdarg"
+	"v2ray.com/core/main/confloader"
 )
 
 // ConfigFormat is a configurable format of V2Ray config file.
@@ -90,18 +89,10 @@ func init() {
 		Loader: func(input interface{}) (*Config, error) {
 			switch v := input.(type) {
 			case cmdarg.Arg:
-				if len(v) == 0 {
-					return nil, newError("input has no element")
-				}
-				var data []byte
-				var rerr error
-				// pb type can only handle the first config
-				if v[0] == "stdin:" {
-					data, rerr = buf.ReadAllToBytes(os.Stdin)
-				} else {
-					data, rerr = ioutil.ReadFile(v[0])
-				}
-				common.Must(rerr)
+				r, err := confloader.LoadConfig(v[0])
+				common.Must(err)
+				data, err := buf.ReadAllToBytes(r)
+				common.Must(err)
 				return loadProtobufConfig(data)
 			case io.Reader:
 				data, err := buf.ReadAllToBytes(v)

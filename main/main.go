@@ -22,7 +22,7 @@ var (
 	configFiles cmdarg.Arg // "Config file for V2Ray.", the option is customed type, parse in main
 	version     = flag.Bool("version", false, "Show current version of V2Ray.")
 	test        = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
-	format      = flag.String("format", "", "Format of input file.")
+	format      = flag.String("format", "json", "Format of input file.")
 	errNoConfig = newError("no valid config")
 )
 
@@ -31,23 +31,23 @@ func fileExists(file string) bool {
 	return err == nil && !info.IsDir()
 }
 
-func getConfigFilePath() cmdarg.Arg {
+func getConfigFilePath() (cmdarg.Arg, error) {
 	if len(configFiles) > 0 {
-		return configFiles
+		return configFiles, nil
 	}
 
 	if workingDir, err := os.Getwd(); err == nil {
 		configFile := filepath.Join(workingDir, "config.json")
 		if fileExists(configFile) {
-			return cmdarg.Arg{configFile}
+			return cmdarg.Arg{configFile}, nil
 		}
 	}
 
 	if configFile := platform.GetConfigurationPath(); fileExists(configFile) {
-		return cmdarg.Arg{configFile}
+		return cmdarg.Arg{configFile}, nil
 	}
 
-	return configFiles
+	return cmdarg.Arg{"stdin:"}, nil
 }
 
 func GetConfigFormat() string {
@@ -60,12 +60,9 @@ func GetConfigFormat() string {
 }
 
 func startV2Ray() (core.Server, error) {
-	configFiles := getConfigFilePath()
-	if len(configFiles) == 0 {
-		if *format == "" {
-			return nil, errNoConfig
-		}
-		configFiles = []string{"stdin:"}
+	configFiles, err := getConfigFilePath()
+	if err != nil {
+		return nil, err
 	}
 
 	config, err := core.LoadConfig(GetConfigFormat(), configFiles[0], configFiles)

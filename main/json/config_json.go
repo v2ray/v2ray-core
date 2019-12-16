@@ -4,14 +4,12 @@ package json
 
 import (
 	"io"
-	"os"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/cmdarg"
-	"v2ray.com/core/common/platform/ctlcmd"
 	"v2ray.com/core/infra/conf/serial"
+	"v2ray.com/core/main/confloader"
 )
 
 func init() {
@@ -21,13 +19,11 @@ func init() {
 		Loader: func(input interface{}) (*core.Config, error) {
 			switch v := input.(type) {
 			case cmdarg.Arg:
-				jsonContent, err := ctlcmd.Run(append([]string{"config"}, v...), os.Stdin)
+				r, err := confloader.LoadExtConfig(v)
 				if err != nil {
 					return nil, newError("failed to execute v2ctl to convert config file.").Base(err).AtWarning()
 				}
-				return core.LoadConfig("protobuf", "", &buf.MultiBufferContainer{
-					MultiBuffer: jsonContent,
-				})
+				return core.LoadConfig("protobuf", "", r)
 			case io.Reader:
 				return serial.LoadJSONConfig(v)
 			default:
