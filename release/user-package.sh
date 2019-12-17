@@ -35,16 +35,16 @@ get_source() {
 
 build_v2() {
 	pushd $SRCDIR
-	LDFLAGS="-X v2ray.com/core.codename=${CODENAME} -X v2ray.com/core.build=${BUILDNAME}  -X v2ray.com/core.version=${VERSIONTAG}"
+	LDFLAGS="-s -w -X v2ray.com/core.codename=${CODENAME} -X v2ray.com/core.build=${BUILDNAME}  -X v2ray.com/core.version=${VERSIONTAG}"
 
 	echo ">>> Compile v2ray ..."
-	env CGO_ENABLED=0 go build -o $TMP/v2ray${EXESUFFIX} -ldflags "-s -w $LDFLAGS" ./main
+	env CGO_ENABLED=0 go build -o $TMP/v2ray${EXESUFFIX} -ldflags "$LDFLAGS" ./main
 	if [[ $GOOS == "windows" ]];then
-	  env CGO_ENABLED=0 go build -o $TMP/wv2ray${EXESUFFIX} -ldflags "-s -w -H windowsgui $LDFLAGS" ./main
+	  env CGO_ENABLED=0 go build -o $TMP/wv2ray${EXESUFFIX} -ldflags "-H windowsgui $LDFLAGS" ./main
 	fi
 
 	echo ">>> Compile v2ctl ..."
-	env CGO_ENABLED=0 go build -o $TMP/v2ctl${EXESUFFIX} -tags confonly -ldflags "-s -w $LDFLAGS" ./infra/control/main
+	env CGO_ENABLED=0 go build -o $TMP/v2ctl${EXESUFFIX} -tags confonly -ldflags "$LDFLAGS" ./infra/control/main
 	popd
 }
 
