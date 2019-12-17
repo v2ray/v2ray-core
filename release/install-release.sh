@@ -163,6 +163,36 @@ tarballUrl() {
     return 0
 }
 
+tarballRoot(){
+    unzip -lqq "$1" | awk -e '
+        NR == 1 {
+            prefix = $4;
+        }
+        NR != 1 {
+            prefix_len = length(prefix);
+            cur_len = length($4);
+
+            for (len = prefix_len < cur_len ? prefix_len : cur_len; len >= 1; len -= 1) {
+                sub_prefix = substr(prefix, 1, len);
+                sub_cur = substr($4, 1, len);
+
+                if (sub_prefix == sub_cur) {
+                    prefix = sub_prefix;
+                    break;
+                }
+            }
+
+            if (len == 0) {
+                prefix = "";
+                nextfile;
+            }
+        }
+        END {
+            print prefix;
+        }
+    '
+}
+
 CMD_INSTALL=""
 CMD_UPDATE=""
 SOFTWARE_UPDATED=0
@@ -304,11 +334,11 @@ SERVICE_CMD=$(command -v service 2>/dev/null)
 
 installInitScript(){
     if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ ! -f "/etc/systemd/system/v2ray.service" && ! -f "/lib/systemd/system/v2ray.service" ]]; then
-        unzip -oj "$1" 'systemd/v2ray.service' -d '/etc/systemd/system' && \
+        unzip -oj "$1" "$2systemd/v2ray.service" -d '/etc/systemd/system' && \
         systemctl enable v2ray.service
     elif [[ -n "${SERVICE_CMD}" ]] && [[ ! -f "/etc/init.d/v2ray" ]]; then
         installSoftware "daemon" && \
-        unzip -oj "$1" 'systemv/v2ray' -d '/etc/init.d' && \
+        unzip -oj "$1" "$2systemv/v2ray" -d '/etc/init.d' && \
         chmod +x "/etc/init.d/v2ray" && \
         update-rc.d v2ray defaults
     fi
@@ -355,7 +385,7 @@ stopV2ray(){
 installV2Ray(){
     # Install V2Ray binary to /usr/bin/v2ray
     mkdir -p '/etc/v2ray' '/var/log/v2ray' && \
-    unzip -oj "$1" 'v2ray' 'v2ctl' 'geoip.dat' 'geosite.dat' -d '/usr/bin/v2ray' && \
+    unzip -oj "$1" "$2v2ray" "$2v2ctl" "$2geoip.dat" "$2geosite.dat" -d '/usr/bin/v2ray' && \
     chmod +x '/usr/bin/v2ray/v2ray' '/usr/bin/v2ray/v2ctl' || {
         colorEcho ${RED} "Failed to copy V2Ray binary and resources."
         return 1
@@ -370,7 +400,7 @@ installV2Ray(){
         colorEcho ${BLUE} "PORT:${PORT}"
         colorEcho ${BLUE} "UUID:${UUID}"
 
-        unzip -pq "$1" 'vpoint_vmess_freedom.json' | \
+        unzip -pq "$1" "$2vpoint_vmess_freedom.json" | \
         sed -e "s/10086/${PORT}/g; s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${UUID}/g" - > \
         '/etc/v2ray/config.json' || {
             colorEcho ${YELLOW} "Failed to create V2Ray configuration file. Please create it manually."
@@ -438,6 +468,7 @@ main(){
         fi
     fi
 
+    local ziproot="$(tarballRoot "${ZIPFILE}")"
     installSoftware unzip || return $?
 
     if [ -n "${EXTRACT_ONLY}" ]; then
@@ -452,8 +483,8 @@ main(){
         V2RAY_RUNNING=1
         stopV2ray
     fi
-    installV2Ray "${ZIPFILE}" || return $?
-    installInitScript "${ZIPFILE}" || return $?
+    installV2Ray "${ZIPFILE}" "$ziproot" || return $?
+    installInitScript "${ZIPFILE}" "$ziproot" || return $?
     if [[ ${V2RAY_RUNNING} -eq 1 ]];then
         colorEcho ${BLUE} "Restarting V2Ray service."
         startV2ray
