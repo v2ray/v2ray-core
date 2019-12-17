@@ -17,9 +17,11 @@ __root="$(cd "$(dirname "${__dir}")" && pwd)" # <-- change this as it depends on
 
 NOW=$(date '+%Y%m%d-%H%M%S')
 TMP=$(mktemp -d)
+SRCDIR=$(pwd)
 
 CODENAME="user"
 BUILDNAME=$NOW
+VERSIONTAG=$(git describe --tags)
 GOPATH=$(go env GOPATH)
 
 cleanup () { rm -rf $TMP; }
@@ -28,27 +30,21 @@ trap cleanup INT TERM ERR
 get_source() {
 	echo ">>> Getting v2ray sources ..."
 	go get -insecure -v -t v2ray.com/core/...
+	SRCDIR="$GOPATH/src/v2ray.com/core"
 }
 
 build_v2() {
-	pushd $GOPATH/src/v2ray.com/core
-	echo ">>> Update source code name ..."
-	sed -i "s/^[ \t]\+codename.\+$/\tcodename = \"${CODENAME}\"/;s/^[ \t]\+build.\+$/\tbuild = \"${BUILDNAME}\"/;" core.go
+	pushd $SRCDIR
+	LDFLAGS="-X v2ray.com/core.codename=${CODENAME} -X v2ray.com/core.build=${BUILDNAME}  -X v2ray.com/core.version=${VERSIONTAG}"
 
 	echo ">>> Compile v2ray ..."
-	pushd $GOPATH/src/v2ray.com/core/main
-	env CGO_ENABLED=0 go build -o $TMP/v2ray${EXESUFFIX} -ldflags "-s -w"
+	env CGO_ENABLED=0 go build -o $TMP/v2ray${EXESUFFIX} -ldflags "-s -w $LDFLAGS" ./main
 	if [[ $GOOS == "windows" ]];then
-	  env CGO_ENABLED=0 go build -o $TMP/wv2ray${EXESUFFIX} -ldflags "-s -w -H windowsgui"
+	  env CGO_ENABLED=0 go build -o $TMP/wv2ray${EXESUFFIX} -ldflags "-s -w -H windowsgui $LDFLAGS" ./main
 	fi
-	popd
-
-	git checkout -- core.go
-	popd
 
 	echo ">>> Compile v2ctl ..."
-	pushd $GOPATH/src/v2ray.com/core/infra/control/main
-	env CGO_ENABLED=0 go build -o $TMP/v2ctl${EXESUFFIX} -tags confonly -ldflags "-s -w"
+	env CGO_ENABLED=0 go build -o $TMP/v2ctl${EXESUFFIX} -tags confonly -ldflags "-s -w $LDFLAGS" ./infra/control/main
 	popd
 }
 
@@ -66,7 +62,7 @@ build_dat() {
 
 copyconf() {
 	echo ">>> Copying config..."
-	pushd $GOPATH/src/v2ray.com/core/release/config
+	pushd $SRCDIR/release/config
 	tar c --exclude "*.dat" . | tar x -C $TMP
 }
 
