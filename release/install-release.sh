@@ -303,21 +303,15 @@ SYSTEMCTL_CMD=$(command -v systemctl 2>/dev/null)
 SERVICE_CMD=$(command -v service 2>/dev/null)
 
 installInitScript(){
-    if [[ -n "${SYSTEMCTL_CMD}" ]];then
-        if [[ ! -f "/etc/systemd/system/v2ray.service" ]]; then
-            if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
-                unzip -oj "$1" 'systemd/v2ray.service' -d '/etc/systemd/system' && \
-                systemctl enable v2ray.service
-            fi
-        fi
-        return
+    if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ ! -f "/etc/systemd/system/v2ray.service" && ! -f "/lib/systemd/system/v2ray.service" ]]; then
+        unzip -oj "$1" 'systemd/v2ray.service' -d '/etc/systemd/system' && \
+        systemctl enable v2ray.service
     elif [[ -n "${SERVICE_CMD}" ]] && [[ ! -f "/etc/init.d/v2ray" ]]; then
         installSoftware "daemon" && \
         unzip -oj "$1" 'systemv/v2ray' -d '/etc/init.d' && \
         chmod +x "/etc/init.d/v2ray" && \
         update-rc.d v2ray defaults
     fi
-    return
 }
 
 removeInitScript(){
@@ -332,9 +326,7 @@ removeInitScript(){
 }
 
 startV2ray(){
-    if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ]; then
-        ${SYSTEMCTL_CMD} start v2ray
-    elif [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/etc/systemd/system/v2ray.service" ]; then
+    if [ -n "${SYSTEMCTL_CMD}" ] && [[ -f "/lib/systemd/system/v2ray.service" || -f "/etc/systemd/system/v2ray.service" ]]; then
         ${SYSTEMCTL_CMD} start v2ray
     elif [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
         ${SERVICE_CMD} v2ray start
