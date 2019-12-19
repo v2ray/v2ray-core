@@ -315,20 +315,6 @@ downloadV2Ray(){
 	fi
 }
 
-extract(){
-    colorEcho ${BLUE}"Extracting V2Ray package to /tmp/v2ray."
-    mkdir -p /tmp/v2ray
-    unzip $1 -d ${VSRC_ROOT}
-    if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Failed to extract V2Ray."
-        return 2
-    fi
-    if [[ -d "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}" ]]; then
-      VSRC_ROOT="/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}"
-    fi
-    return 0
-}
-
 SYSTEMCTL_CMD=$(command -v systemctl 2>/dev/null)
 SERVICE_CMD=$(command -v service 2>/dev/null)
 
@@ -472,9 +458,15 @@ main(){
     installSoftware unzip || return $?
 
     if [ -n "${EXTRACT_ONLY}" ]; then
-        extract ${ZIPFILE} || return $?
-        colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT}, and exiting..."
-        return 0
+        colorEcho ${BLUE}"Extracting V2Ray package to ${VSRC_ROOT}."
+
+        if unzip -o "${ZIPFILE}" -d ${VSRC_ROOT}; then
+            colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT%/}${ziproot:+/${ziproot%/}}, and exiting..."
+            return 0
+        else
+            colorEcho ${RED} "Failed to extract V2Ray."
+            return 2
+        fi
     fi
 
     local V2RAY_RUNNING=0
