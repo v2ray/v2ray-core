@@ -5,9 +5,9 @@ After=network.target nss-lookup.target
 Wants=network-online.target nss-lookup.target
 
 [Service]
-# If the version of systemd is earlier than 240, then change Type=exec to Type=simple
-#Type=simple
-Type=exec
+# If the version of systemd is 240 or above,  then change Type=simple to Type=exec
+#Type=exec
+Type=simple
 # This service runs as root. You may consider to run it as another user for security concerns.
 # By uncommenting the following two lines, this service will run as user v2ray/v2ray.
 # More discussion at https://github.com/v2ray/v2ray-core/issues/1011
