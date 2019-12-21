@@ -37,6 +37,8 @@ type UserManager interface {
 
 	// RemoveUser removes a user by email.
 	RemoveUser(context.Context, string) error
+
+	ListUser(context.Context) []*protocol.MemoryUser
 }
 
 type GetInbound interface {

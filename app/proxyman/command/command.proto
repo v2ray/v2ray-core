@@ -40,6 +40,14 @@ message AlterInboundRequest {
 message AlterInboundResponse {
 }
 
+message ListInboundUserRequest {
+  string tag = 1;
+}
+
+message ListInboundUserResponse {
+  repeated v2ray.core.common.protocol.User user = 1;
+}
+
 message AddOutboundRequest {
   core.OutboundHandlerConfig outbound = 1;
 }
@@ -69,6 +77,8 @@ service HandlerService {
   rpc RemoveInbound(RemoveInboundRequest) returns (RemoveInboundResponse) {}
 
   rpc AlterInbound(AlterInboundRequest) returns (AlterInboundResponse) {}
+
+  rpc ListInboundUser(ListInboundUserRequest) returns (ListInboundUserResponse) {}
 
   rpc AddOutbound(AddOutboundRequest) returns (AddOutboundResponse) {}
 

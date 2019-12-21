@@ -306,6 +306,112 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 	}
 }
 
+func TestCommanderListUser(t *testing.T) {
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := tcpServer.Start()
+	common.Must(err)
+	defer tcpServer.Close()
+
+	userAcc := &vmess.Account{Id: protocol.NewID(uuid.New()).String(), AlterId: 4}
+	user := &protocol.User{
+		Email:   "test@example.com",
+		Level:   1,
+		Account: serial.ToTypedMessage(userAcc),
+	}
+
+	cmdPort := tcp.PickPort()
+	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&commander.Config{
+				Tag: "api",
+				Service: []*serial.TypedMessage{
+					serial.ToTypedMessage(&command.Config{}),
+				},
+			}),
+			serial.ToTypedMessage(&router.Config{
+				Rule: []*router.RoutingRule{
+					{
+						InboundTag: []string{"api"},
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "api",
+						},
+					},
+				},
+			}),
+			serial.ToTypedMessage(&policy.Config{
+				Level: map[uint32]*policy.Policy{
+					0: {
+						Timeout: &policy.Policy_Timeout{
+							UplinkOnly:   &policy.Second{Value: 0},
+							DownlinkOnly: &policy.Second{Value: 0},
+						},
+					},
+				},
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				Tag: "v",
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(tcp.PickPort()),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{User: []*protocol.User{user}}),
+			},
+			{
+				Tag: "api",
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(cmdPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address:  net.NewIPOrDomain(dest.Address),
+					Port:     uint32(dest.Port),
+					Networks: []net.Network{net.Network_TCP},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig)
+	common.Must(err)
+	defer CloseAllServers(servers)
+
+	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
+	common.Must(err)
+	defer cmdConn.Close()
+
+	hsClient := command.NewHandlerServiceClient(cmdConn)
+	resp, err := hsClient.ListInboundUser(context.Background(), &command.ListInboundUserRequest{Tag: "v"})
+	common.Must(err)
+	if resp == nil {
+		t.Fatal("nil response")
+	}
+	if len(resp.User) != 1 {
+		t.Fatal("incorrect user list length")
+	}
+	respUser := resp.User[0]
+	if respUser.Level != user.Level || respUser.Email != user.Email {
+		t.Fatal("incorrect user level or email")
+	}
+
+	respAcc, err := respUser.GetAccount().GetInstance()
+	common.Must(err)
+	respAcc2 := respAcc.(*vmess.Account)
+
+	if respAcc2.Id != userAcc.Id || respAcc2.AlterId != userAcc.AlterId {
+		t.Fatal("incorrect user id or alternative id")
+	}
+
+}
+
 func TestCommanderStats(t *testing.T) {
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,

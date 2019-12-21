@@ -4,8 +4,11 @@ package command
 
 import (
 	"context"
-
-	grpc "google.golang.org/grpc"
+	"github.com/golang/protobuf/proto"
+	"google.golang.org/grpc"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/proxy/vmess"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
@@ -80,6 +83,49 @@ func (s *handlerServer) AddInbound(ctx context.Context, request *AddInboundReque
 
 func (s *handlerServer) RemoveInbound(ctx context.Context, request *RemoveInboundRequest) (*RemoveInboundResponse, error) {
 	return &RemoveInboundResponse{}, s.ihm.RemoveHandler(ctx, request.Tag)
+}
+
+func (s *handlerServer) ListInboundUser(ctx context.Context, request *ListInboundUserRequest) (*ListInboundUserResponse, error) {
+	handler, err := s.ihm.GetHandler(ctx, request.Tag)
+	if err != nil {
+		return nil, newError("failed to get handler: ", request.Tag).Base(err)
+	}
+	p, err := getInbound(handler)
+	if err != nil {
+		return nil, err
+	}
+	um, ok := p.(proxy.UserManager)
+	if !ok {
+		return nil, newError("proxy is not a UserManager")
+	}
+
+	mUsers := um.ListUser(ctx)
+	var users []*protocol.User
+	for _, u := range mUsers {
+		msg, err := Account2Message(u.Account)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, &protocol.User{
+			Level:   u.Level,
+			Email:   u.Email,
+			Account: serial.ToTypedMessage(msg),
+		})
+	}
+	return &ListInboundUserResponse{User: users}, nil
+}
+
+func Account2Message(acc protocol.Account) (proto.Message, error) {
+	var accMsg proto.Message
+	u2, ok := interface{}(acc).(*vmess.MemoryAccount)
+	if ok {
+		accMsg = &vmess.Account{
+			Id:      u2.ID.String(),
+			AlterId: uint32(len(u2.AlterIDs)),
+		}
+		return accMsg, nil
+	}
+	return nil, newError("can not cast Account to TypedMessage")
 }
 
 func (s *handlerServer) AlterInbound(ctx context.Context, request *AlterInboundRequest) (*AlterInboundResponse, error) {

@@ -142,6 +142,15 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protoco
 	return nil, 0, false
 }
 
+func (v *TimedUserValidator) List() []*protocol.MemoryUser {
+
+	var rst []*protocol.MemoryUser
+	for _, u := range v.users {
+		rst = append(rst, &u.user)
+	}
+	return rst
+}
+
 func (v *TimedUserValidator) Remove(email string) bool {
 	v.Lock()
 	defer v.Unlock()

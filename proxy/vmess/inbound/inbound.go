@@ -177,6 +177,10 @@ func (h *Handler) RemoveUser(ctx context.Context, email string) error {
 	return nil
 }
 
+func (h *Handler) ListUser(ctx context.Context) []*protocol.MemoryUser {
+	return h.clients.List()
+}
+
 func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSession, request *protocol.RequestHeader, response *protocol.ResponseHeader, input buf.Reader, output *buf.BufferedWriter) error {
 	session.EncodeResponseHeader(response, output)
 
