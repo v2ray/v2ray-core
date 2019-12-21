@@ -102,7 +102,7 @@ func (s *handlerServer) ListInboundUser(ctx context.Context, request *ListInboun
 	mUsers := um.ListUser(ctx)
 	var users []*protocol.User
 	for _, u := range mUsers {
-		msg, err := Account2Message(u.Account)
+		msg, err := account2Message(u.Account)
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +115,7 @@ func (s *handlerServer) ListInboundUser(ctx context.Context, request *ListInboun
 	return &ListInboundUserResponse{User: users}, nil
 }
 
-func Account2Message(acc protocol.Account) (proto.Message, error) {
+func account2Message(acc protocol.Account) (proto.Message, error) {
 	var accMsg proto.Message
 	u2, ok := interface{}(acc).(*vmess.MemoryAccount)
 	if ok {

@@ -142,6 +142,7 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protoco
 	return nil, 0, false
 }
 
+// List Get all users
 func (v *TimedUserValidator) List() []*protocol.MemoryUser {
 
 	var rst []*protocol.MemoryUser

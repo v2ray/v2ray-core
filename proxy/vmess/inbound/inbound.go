@@ -177,6 +177,7 @@ func (h *Handler) RemoveUser(ctx context.Context, email string) error {
 	return nil
 }
 
+// ListUser Get all users
 func (h *Handler) ListUser(ctx context.Context) []*protocol.MemoryUser {
 	return h.clients.List()
 }
