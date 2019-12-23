@@ -216,9 +216,11 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			}
 			if err == nil && shouldOverride(result, sniffingRequest.OverrideDestinationForProtocol) {
 				domain := result.Domain()
-				newError("sniffed domain: ", domain).WriteToLog(session.ExportIDToError(ctx))
-				destination.Address = net.ParseAddress(domain)
-				ob.Target = destination
+				if strings.Compare(domain,"res.res.res.res") != 0 {
+					newError("sniffed domain: ", domain).WriteToLog(session.ExportIDToError(ctx))
+					destination.Address = net.ParseAddress(domain)
+					ob.Target = destination
+				}
 			}
 			d.routedDispatch(ctx, outbound, destination)
 		}()
