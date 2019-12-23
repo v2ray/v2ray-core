@@ -38,6 +38,8 @@ func findOffset(b []byte, o int) *offset {
 	return &offset{line: line, char: char}
 }
 
+// DecodeJSONConfig reads from reader and decode the config into *conf.Config
+// syntax error could be detected.
 func DecodeJSONConfig(reader io.Reader) (*conf.Config, error) {
 	jsonConfig := &conf.Config{}
 

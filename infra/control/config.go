@@ -13,12 +13,15 @@ import (
 	"v2ray.com/core/infra/conf/serial"
 )
 
+// ConfigCommand is the json to pb convert struct
 type ConfigCommand struct{}
 
+// Name for cmd usage
 func (c *ConfigCommand) Name() string {
 	return "config"
 }
 
+// Description for help usage
 func (c *ConfigCommand) Description() Description {
 	return Description{
 		Short: "merge multiple json config",
@@ -26,6 +29,7 @@ func (c *ConfigCommand) Description() Description {
 	}
 }
 
+// Execute real work here.
 func (c *ConfigCommand) Execute(args []string) error {
 	if len(args) < 1 {
 		return newError("empty config list")
@@ -58,6 +62,7 @@ func (c *ConfigCommand) Execute(args []string) error {
 	return nil
 }
 
+// LoadArg loads one arg, maybe an remote url, or local file path
 func (c *ConfigCommand) LoadArg(arg string) (out io.Reader, err error) {
 
 	var data []byte
