@@ -7,6 +7,7 @@ package dns
 import (
 	"context"
 	"log"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -89,24 +90,34 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		address := endpoint.Address.AsAddress()
 		if address.Family().IsDomain() && address.Domain() == "localhost" {
 			server.clients = append(server.clients, NewLocalNameServer())
-		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "DOHL_") {
-			dohHost := address.Domain()[5:]
-			server.clients = append(server.clients, NewDoHLocalNameServer(dohHost, endpoint.Port, server.clientIP))
-		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "DOH_") {
-			// DOH_ prefix makes net.Address think it's a domain
-			dohHost := address.Domain()[4:]
+		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "https+local://") {
+			// URI schemed string treated as domain
+			// DOH Local mode
+			u, err := url.Parse(address.Domain())
+			if err != nil {
+				log.Fatalln(newError("DNS config error").Base(err))
+			}
+			server.clients = append(server.clients, NewDoHLocalNameServer(u, server.clientIP))
+		} else if address.Family().IsDomain() &&
+			strings.HasPrefix(address.Domain(), "https://") {
+			// DOH Remote mode
+			u, err := url.Parse(address.Domain())
+			if err != nil {
+				log.Fatalln(newError("DNS config error").Base(err))
+			}
 			idx := len(server.clients)
 			server.clients = append(server.clients, nil)
 
 			// need the core dispatcher, register DOHClient at callback
 			common.Must(core.RequireFeatures(ctx, func(d routing.Dispatcher) {
-				c, err := NewDoHNameServer(dohHost, endpoint.Port, d, server.clientIP)
+				c, err := NewDoHNameServer(u, d, server.clientIP)
 				if err != nil {
 					log.Fatalln(newError("DNS config error").Base(err))
 				}
 				server.clients[idx] = c
 			}))
 		} else {
+			// UDP classic DNS mode
 			dest := endpoint.AsDestination()
 			if dest.Network == net.Network_Unknown {
 				dest.Network = net.Network_UDP
