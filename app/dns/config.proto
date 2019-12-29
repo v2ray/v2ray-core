@@ -8,6 +8,7 @@ option java_multiple_files = true;
 
 import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/net/destination.proto";
+import "v2ray.com/core/app/router/config.proto";
 
 message NameServer {
   v2ray.core.common.net.Endpoint address = 1;
@@ -18,6 +19,7 @@ message NameServer {
   }
 
   repeated PriorityDomain prioritized_domain = 2;
+  repeated v2ray.core.app.router.GeoIP geoip = 3;
 }
 
 enum DomainMatchingType {
@@ -39,7 +41,7 @@ message Config {
   // Deprecated. Use static_hosts.
   map<string, v2ray.core.common.net.IPOrDomain> Hosts = 2 [deprecated = true];
 
-  // Client IP for EDNS client subnet. Must be 4 bytes (IPv4) or 16 bytes (IPv6). 
+  // Client IP for EDNS client subnet. Must be 4 bytes (IPv4) or 16 bytes (IPv6).
   bytes client_ip = 3;
 
   message HostMapping {

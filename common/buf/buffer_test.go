@@ -46,6 +46,62 @@ func TestBufferString(t *testing.T) {
 	}
 }
 
+func TestBufferByte(t *testing.T) {
+	{
+		buffer := New()
+		common.Must(buffer.WriteByte('m'))
+		if buffer.String() != "m" {
+			t.Error("expect buffer content as ", "m", " but actually ", buffer.String())
+		}
+		buffer.Release()
+	}
+	{
+		buffer := StackNew()
+		common.Must(buffer.WriteByte('n'))
+		if buffer.String() != "n" {
+			t.Error("expect buffer content as ", "n", " but actually ", buffer.String())
+		}
+		buffer.Release()
+	}
+	{
+		buffer := StackNew()
+		common.Must2(buffer.WriteString("HELLOWORLD"))
+		if b := buffer.Byte(5); b != 'W' {
+			t.Error("unexpected byte ", b)
+		}
+
+		buffer.SetByte(5, 'M')
+		if buffer.String() != "HELLOMORLD" {
+			t.Error("expect buffer content as ", "n", " but actually ", buffer.String())
+		}
+		buffer.Release()
+	}
+}
+func TestBufferResize(t *testing.T) {
+	buffer := New()
+	defer buffer.Release()
+
+	const payload = "Test String"
+	common.Must2(buffer.WriteString(payload))
+	if buffer.String() != payload {
+		t.Error("expect buffer content as ", payload, " but actually ", buffer.String())
+	}
+
+	buffer.Resize(-6, -3)
+	if l := buffer.Len(); int(l) != 3 {
+		t.Error("len error ", l)
+	}
+
+	if s := buffer.String(); s != "Str" {
+		t.Error("unexpect buffer ", s)
+	}
+
+	buffer.Resize(int32(len(payload)), 200)
+	if l := buffer.Len(); int(l) != 200-len(payload) {
+		t.Error("len error ", l)
+	}
+}
+
 func TestBufferSlice(t *testing.T) {
 	{
 		b := New()

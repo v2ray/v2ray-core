@@ -75,15 +75,25 @@ func (c *SniffingConfig) Build() (*proxyman.SniffingConfig, error) {
 }
 
 type MuxConfig struct {
-	Enabled     bool   `json:"enabled"`
-	Concurrency uint16 `json:"concurrency"`
+	Enabled     bool  `json:"enabled"`
+	Concurrency int16 `json:"concurrency"`
 }
 
-func (c *MuxConfig) GetConcurrency() uint16 {
-	if c.Concurrency == 0 {
-		return 8
+// Build creates MultiplexingConfig, Concurrency < 0 completely disables mux.
+func (m *MuxConfig) Build() *proxyman.MultiplexingConfig {
+	if m.Concurrency < 0 {
+		return nil
 	}
-	return c.Concurrency
+
+	var con uint32 = 8
+	if m.Concurrency > 0 {
+		con = uint32(m.Concurrency)
+	}
+
+	return &proxyman.MultiplexingConfig{
+		Enabled:     m.Enabled,
+		Concurrency: con,
+	}
 }
 
 type InboundDetourAllocationConfig struct {
@@ -246,11 +256,8 @@ func (c *OutboundDetourConfig) Build() (*core.OutboundHandlerConfig, error) {
 		senderSettings.ProxySettings = ps
 	}
 
-	if c.MuxSettings != nil && c.MuxSettings.Enabled {
-		senderSettings.MultiplexSettings = &proxyman.MultiplexingConfig{
-			Enabled:     true,
-			Concurrency: uint32(c.MuxSettings.GetConcurrency()),
-		}
+	if c.MuxSettings != nil {
+		senderSettings.MultiplexSettings = c.MuxSettings.Build()
 	}
 
 	settings := []byte("{}")
@@ -341,11 +348,15 @@ func (c *Config) Build() (*core.Config, error) {
 		config.App = append(config.App, serial.ToTypedMessage(statsConf))
 	}
 
+	var logConfMsg *serial.TypedMessage
 	if c.LogConfig != nil {
-		config.App = append(config.App, serial.ToTypedMessage(c.LogConfig.Build()))
+		logConfMsg = serial.ToTypedMessage(c.LogConfig.Build())
 	} else {
-		config.App = append(config.App, serial.ToTypedMessage(DefaultLogConfig()))
+		logConfMsg = serial.ToTypedMessage(DefaultLogConfig())
 	}
+	// let logger module be the first App to start,
+	// so that other modules could print log during initiating
+	config.App = append([]*serial.TypedMessage{logConfMsg}, config.App...)
 
 	if c.RouterConfig != nil {
 		routerConfig, err := c.RouterConfig.Build()
