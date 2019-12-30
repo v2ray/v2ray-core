@@ -38,7 +38,9 @@ func findOffset(b []byte, o int) *offset {
 	return &offset{line: line, char: char}
 }
 
-func LoadJSONConfig(reader io.Reader) (*core.Config, error) {
+// DecodeJSONConfig reads from reader and decode the config into *conf.Config
+// syntax error could be detected.
+func DecodeJSONConfig(reader io.Reader) (*conf.Config, error) {
 	jsonConfig := &conf.Config{}
 
 	jsonContent := bytes.NewBuffer(make([]byte, 0, 10240))
@@ -60,6 +62,15 @@ func LoadJSONConfig(reader io.Reader) (*core.Config, error) {
 			return nil, newError("failed to read config file at line ", pos.line, " char ", pos.char).Base(err)
 		}
 		return nil, newError("failed to read config file").Base(err)
+	}
+
+	return jsonConfig, nil
+}
+
+func LoadJSONConfig(reader io.Reader) (*core.Config, error) {
+	jsonConfig, err := DecodeJSONConfig(reader)
+	if err != nil {
+		return nil, err
 	}
 
 	pbConfig, err := jsonConfig.Build()
