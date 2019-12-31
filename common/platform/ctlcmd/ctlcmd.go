@@ -36,7 +36,7 @@ func Run(args []string, input io.Reader) (buf.MultiBuffer, error) {
 	if err := cmd.Wait(); err != nil {
 		msg := "failed to execute v2ctl"
 		if errBuffer.Len() > 0 {
-			msg += ": " + errBuffer.MultiBuffer.String()
+			msg += ": \n" + strings.TrimSpace(errBuffer.MultiBuffer.String())
 		}
 		return nil, newError(msg).Base(err)
 	}

@@ -27,7 +27,6 @@ var (
 	version     = flag.Bool("version", false, "Show current version of V2Ray.")
 	test        = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
 	format      = flag.String("format", "json", "Format of input file.")
-	errNoConfig = newError("no valid config")
 )
 
 func fileExists(file string) bool {
@@ -134,11 +133,8 @@ func main() {
 
 	server, err := startV2Ray()
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(err)
 		// Configuration error. Exit with a special value to prevent systemd from restarting.
-		if err == errNoConfig {
-			flag.PrintDefaults()
-		}
 		os.Exit(23)
 	}
 
