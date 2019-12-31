@@ -86,6 +86,6 @@ func GetConfigurationPath() string {
 
 func GetConfDirPath() string {
 	const name = "v2ray.location.confdir"
-	configPath := NewEnvFlag(name).GetValue(getExecutableDir)
+	configPath := NewEnvFlag(name).GetValue(func() string { return "" })
 	return configPath
 }
