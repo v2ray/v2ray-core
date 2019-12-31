@@ -41,7 +41,9 @@ func (c *ConfigCommand) Execute(args []string) error {
 		r, err := c.LoadArg(arg)
 		common.Must(err)
 		c, err := serial.DecodeJSONConfig(r)
-		common.Must(err)
+		if err != nil {
+			ctllog.Fatalln(err)
+		}
 		conf.Override(c, arg)
 	}
 

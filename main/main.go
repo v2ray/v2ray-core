@@ -46,7 +46,9 @@ func readConfDir(dirPath string) {
 		log.Fatalln(err)
 	}
 	for _, f := range confs {
-		configFiles.Set(path.Join(dirPath, f.Name()))
+		if strings.HasSuffix(f.Name(), ".json") {
+			configFiles.Set(path.Join(dirPath, f.Name()))
+		}
 	}
 }
 
