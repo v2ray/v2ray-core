@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/platform"
@@ -42,7 +43,7 @@ func Run(args []string, input io.Reader) (buf.MultiBuffer, error) {
 
 	// log stderr, info message
 	if !errBuffer.IsEmpty() {
-		newError("v2ctl > \n", errBuffer.MultiBuffer.String()).AtInfo().WriteToLog()
+		newError("<v2ctl message> \n", strings.TrimSpace(errBuffer.MultiBuffer.String())).AtInfo().WriteToLog()
 	}
 
 	return outBuffer.MultiBuffer, nil

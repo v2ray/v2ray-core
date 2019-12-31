@@ -83,3 +83,9 @@ func GetConfigurationPath() string {
 	configPath := NewEnvFlag(name).GetValue(getExecutableDir)
 	return filepath.Join(configPath, "config.json")
 }
+
+func GetConfDirPath() string {
+	const name = "v2ray.location.confdir"
+	configPath := NewEnvFlag(name).GetValue(getExecutableDir)
+	return configPath
+}
