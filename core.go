@@ -13,10 +13,12 @@ package core
 //go:generate errorgen
 
 import (
+	"runtime"
+
 	"v2ray.com/core/common/serial"
 )
 
-const (
+var (
 	version  = "4.22.0"
 	build    = "Custom"
 	codename = "V2Fly, a community-driven edition of V2Ray."
@@ -32,7 +34,7 @@ func Version() string {
 // VersionStatement returns a list of strings representing the full version info.
 func VersionStatement() []string {
 	return []string{
-		serial.Concat("V2Ray ", Version(), " (", codename, ") ", build),
+		serial.Concat("V2Ray ", Version(), " (", codename, ") ", build, " (", runtime.Version(), " ", runtime.GOOS, "/", runtime.GOARCH, ")"),
 		intro,
 	}
 }
