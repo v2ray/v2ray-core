@@ -364,7 +364,7 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 		}
 	}
 
-	return nil, dns.ErrEmptyResponse.Base(lastErr)
+	return nil, newError("returning nil for domain ", domain).Base(lastErr)
 }
 
 func init() {
