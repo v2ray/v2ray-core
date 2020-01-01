@@ -9,8 +9,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/cmdarg"
-	"v2ray.com/core/main/confloader"
 )
 
 // ConfigFormat is a configurable format of V2Ray config file.
@@ -21,7 +19,7 @@ type ConfigFormat struct {
 }
 
 // ConfigLoader is a utility to load V2Ray config from external source.
-type ConfigLoader func(input interface{}) (*Config, error)
+type ConfigLoader func(input io.Reader) (*Config, error)
 
 var (
 	configLoaderByName = make(map[string]*ConfigFormat)
@@ -56,10 +54,7 @@ func getExtension(filename string) string {
 }
 
 // LoadConfig loads config with given format from given source.
-// input accepts 2 different types:
-// * []string slice of multiple filename/url(s) to open to read
-// * io.Reader that reads a config content (the original way)
-func LoadConfig(formatName string, filename string, input interface{}) (*Config, error) {
+func LoadConfig(formatName string, filename string, input io.Reader) (*Config, error) {
 	ext := getExtension(filename)
 	if len(ext) > 0 {
 		if f, found := configLoaderByExt[ext]; found {
@@ -74,8 +69,12 @@ func LoadConfig(formatName string, filename string, input interface{}) (*Config,
 	return nil, newError("Unable to load config in ", formatName).AtWarning()
 }
 
-func loadProtobufConfig(data []byte) (*Config, error) {
+func loadProtobufConfig(input io.Reader) (*Config, error) {
 	config := new(Config)
+	data, err := buf.ReadAllToBytes(input)
+	if err != nil {
+		return nil, err
+	}
 	if err := proto.Unmarshal(data, config); err != nil {
 		return nil, err
 	}
@@ -86,21 +85,6 @@ func init() {
 	common.Must(RegisterConfigLoader(&ConfigFormat{
 		Name:      "Protobuf",
 		Extension: []string{"pb"},
-		Loader: func(input interface{}) (*Config, error) {
-			switch v := input.(type) {
-			case cmdarg.Arg:
-				r, err := confloader.LoadConfig(v[0])
-				common.Must(err)
-				data, err := buf.ReadAllToBytes(r)
-				common.Must(err)
-				return loadProtobufConfig(data)
-			case io.Reader:
-				data, err := buf.ReadAllToBytes(v)
-				common.Must(err)
-				return loadProtobufConfig(data)
-			default:
-				return nil, newError("unknow type")
-			}
-		},
+		Loader:    loadProtobufConfig,
 	}))
 }

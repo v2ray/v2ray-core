@@ -1,86 +1,48 @@
 package external
 
-//go:generate errorgen
-
 import (
-	"bytes"
 	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/platform/ctlcmd"
 	"v2ray.com/core/main/confloader"
 )
 
-func ConfigLoader(arg string) (out io.Reader, err error) {
+//go:generate errorgen
 
-	var data []byte
-	if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
-		data, err = FetchHTTPContent(arg)
-	} else if arg == "stdin:" {
-		data, err = ioutil.ReadAll(os.Stdin)
-	} else {
-		data, err = ioutil.ReadFile(arg)
+func loadConfigFile(configFile string) (io.ReadCloser, error) {
+	if configFile == "stdin:" {
+		return os.Stdin, nil
 	}
 
+	if strings.HasPrefix(configFile, "http://") || strings.HasPrefix(configFile, "https://") {
+		content, err := ctlcmd.Run([]string{"fetch", configFile}, nil)
+		if err != nil {
+			return nil, err
+		}
+		return &buf.MultiBufferContainer{
+			MultiBuffer: content,
+		}, nil
+	}
+
+	fixedFile := os.ExpandEnv(configFile)
+	file, err := os.Open(fixedFile)
 	if err != nil {
-		return
+		return nil, newError("config file not readable").Base(err)
 	}
-	out = bytes.NewBuffer(data)
-	return
-}
+	defer file.Close()
 
-func FetchHTTPContent(target string) ([]byte, error) {
-
-	parsedTarget, err := url.Parse(target)
+	content, err := buf.ReadFrom(file)
 	if err != nil {
-		return nil, newError("invalid URL: ", target).Base(err)
+		return nil, newError("failed to load config file: ", fixedFile).Base(err).AtWarning()
 	}
-
-	if s := strings.ToLower(parsedTarget.Scheme); s != "http" && s != "https" {
-		return nil, newError("invalid scheme: ", parsedTarget.Scheme)
-	}
-
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-	resp, err := client.Do(&http.Request{
-		Method: "GET",
-		URL:    parsedTarget,
-		Close:  true,
-	})
-	if err != nil {
-		return nil, newError("failed to dial to ", target).Base(err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return nil, newError("unexpected HTTP status code: ", resp.StatusCode)
-	}
-
-	content, err := buf.ReadAllToBytes(resp.Body)
-	if err != nil {
-		return nil, newError("failed to read HTTP response").Base(err)
-	}
-
-	return content, nil
-}
-
-func ExtConfigLoader(files []string) (io.Reader, error) {
-	buf, err := ctlcmd.Run(append([]string{"config"}, files...), os.Stdin)
-	if err != nil {
-		return nil, err
-	}
-
-	return strings.NewReader(buf.String()), nil
+	return &buf.MultiBufferContainer{
+		MultiBuffer: content,
+	}, nil
 }
 
 func init() {
-	confloader.EffectiveConfigFileLoader = ConfigLoader
-	confloader.EffectiveExtConfigLoader = ExtConfigLoader
+	confloader.EffectiveConfigFileLoader = loadConfigFile
 }
