@@ -1,4 +1,4 @@
-package jsonem
+package command
 
 import "v2ray.com/core/common/errors"
 
