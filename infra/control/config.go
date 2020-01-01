@@ -37,13 +37,11 @@ func (c *ConfigCommand) Execute(args []string) error {
 
 	conf := &conf.Config{}
 	for _, arg := range args {
-		ctllog.Println("Read config: ", arg)
+		newError("Reading config: ", arg).AtInfo().WriteToLog()
 		r, err := c.LoadArg(arg)
 		common.Must(err)
 		c, err := serial.DecodeJSONConfig(r)
-		if err != nil {
-			ctllog.Fatalln(err)
-		}
+		common.Must(err)
 		conf.Override(c, arg)
 	}
 
