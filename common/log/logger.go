@@ -119,15 +119,6 @@ func CreateStdoutLogWriter() WriterCreator {
 	}
 }
 
-// CreateStderrLogWriter returns a LogWriterCreator that creates LogWriter for stderr.
-func CreateStderrLogWriter() WriterCreator {
-	return func() Writer {
-		return &consoleLogWriter{
-			logger: log.New(os.Stderr, "", log.Ldate|log.Ltime),
-		}
-	}
-}
-
 // CreateFileLogWriter returns a LogWriterCreator that creates LogWriter for the given file.
 func CreateFileLogWriter(path string) (WriterCreator, error) {
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)

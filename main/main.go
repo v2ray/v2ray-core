@@ -5,28 +5,24 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
 	"os/signal"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"syscall"
 
 	"v2ray.com/core"
-	"v2ray.com/core/common/cmdarg"
 	"v2ray.com/core/common/platform"
+	"v2ray.com/core/main/confloader"
 	_ "v2ray.com/core/main/distro/all"
 )
 
 var (
-	configFiles cmdarg.Arg // "Config file for V2Ray.", the option is customed type, parse in main
-	configDir   string
-	version     = flag.Bool("version", false, "Show current version of V2Ray.")
-	test        = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
-	format      = flag.String("format", "json", "Format of input file.")
+	configFile = flag.String("config", "", "Config file for V2Ray.")
+	version    = flag.Bool("version", false, "Show current version of V2Ray.")
+	test       = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
+	format     = flag.String("format", "json", "Format of input file.")
 )
 
 func fileExists(file string) bool {
@@ -34,54 +30,23 @@ func fileExists(file string) bool {
 	return err == nil && !info.IsDir()
 }
 
-func dirExists(file string) bool {
-	info, err := os.Stat(file)
-	return err == nil && info.IsDir()
-}
-
-func readConfDir(dirPath string) {
-	confs, err := ioutil.ReadDir(dirPath)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	for _, f := range confs {
-		if strings.HasSuffix(f.Name(), ".json") {
-			configFiles.Set(path.Join(dirPath, f.Name()))
-		}
-	}
-}
-
-func getConfigFilePath() (cmdarg.Arg, error) {
-	if dirExists(configDir) {
-		readConfDir(configDir)
-	}
-	if len(configFiles) > 0 {
-		return configFiles, nil
+func getConfigFilePath() string {
+	if len(*configFile) > 0 {
+		return *configFile
 	}
 
 	if workingDir, err := os.Getwd(); err == nil {
 		configFile := filepath.Join(workingDir, "config.json")
 		if fileExists(configFile) {
-			log.Println("Using default config: ", configFile)
-			return cmdarg.Arg{configFile}, nil
+			return configFile
 		}
 	}
 
 	if configFile := platform.GetConfigurationPath(); fileExists(configFile) {
-		log.Println("Using config from env: ", configFile)
-		return cmdarg.Arg{configFile}, nil
+		return configFile
 	}
 
-	if envConfDir := platform.GetConfDirPath(); dirExists(envConfDir) {
-		log.Println("Using confdir from env: ", envConfDir)
-		readConfDir(envConfDir)
-		if len(configFiles) > 0 {
-			return configFiles, nil
-		}
-	}
-
-	log.Println("Using config from STDIN")
-	return cmdarg.Arg{"stdin:"}, nil
+	return ""
 }
 
 func GetConfigFormat() string {
@@ -94,14 +59,16 @@ func GetConfigFormat() string {
 }
 
 func startV2Ray() (core.Server, error) {
-	configFiles, err := getConfigFilePath()
+	configFile := getConfigFilePath()
+	configInput, err := confloader.LoadConfig(configFile)
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to load config: ", configFile).Base(err)
 	}
+	defer configInput.Close()
 
-	config, err := core.LoadConfig(GetConfigFormat(), configFiles[0], configFiles)
+	config, err := core.LoadConfig(GetConfigFormat(), configFile, configInput)
 	if err != nil {
-		return nil, newError("failed to read config files: [", configFiles.String(), "]").Base(err)
+		return nil, newError("failed to read config file: ", configFile).Base(err)
 	}
 
 	server, err := core.New(config)
@@ -120,9 +87,6 @@ func printVersion() {
 }
 
 func main() {
-	flag.Var(&configFiles, "config", "Config file for V2Ray. Multiple assign is accepted (only json). Latter ones overrides the former ones.")
-	flag.Var(&configFiles, "c", "Short alias of -config")
-	flag.StringVar(&configDir, "confdir", "", "A dir with multiple json config")
 	flag.Parse()
 
 	printVersion()
@@ -133,7 +97,7 @@ func main() {
 
 	server, err := startV2Ray()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err.Error())
 		// Configuration error. Exit with a special value to prevent systemd from restarting.
 		os.Exit(23)
 	}

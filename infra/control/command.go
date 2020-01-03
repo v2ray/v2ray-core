@@ -2,8 +2,6 @@ package control
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"strings"
 )
 
@@ -20,7 +18,6 @@ type Command interface {
 
 var (
 	commandRegistry = make(map[string]Command)
-	ctllog          = log.New(os.Stderr, "v2ctl> ", 0)
 )
 
 func RegisterCommand(cmd Command) error {
