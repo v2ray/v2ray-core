@@ -177,16 +177,10 @@ func parseResponse(payload []byte) (*IPRecord, error) {
 	}
 
 	now := time.Now()
-	var ipRecExpire time.Time
-	if h.RCode != dnsmessage.RCodeSuccess {
-		// A default TTL, maybe a negtive cache
-		ipRecExpire = now.Add(time.Second * 120)
-	}
-
 	ipRecord := &IPRecord{
 		ReqID:  h.ID,
 		RCode:  h.RCode,
-		Expire: ipRecExpire,
+		Expire: now.Add(time.Second * 600),
 	}
 
 L:
@@ -197,6 +191,15 @@ L:
 				newError("failed to parse answer section for domain: ", ah.Name.String()).Base(err).WriteToLog()
 			}
 			break
+		}
+
+		ttl := ah.TTL
+		if ttl == 0 {
+			ttl = 600
+		}
+		expire := now.Add(time.Duration(ttl) * time.Second)
+		if ipRecord.Expire.After(expire) {
+			ipRecord.Expire = expire
 		}
 
 		switch ah.Type {
@@ -220,16 +223,6 @@ L:
 				break L
 			}
 			continue
-		}
-
-		if ipRecord.Expire.IsZero() {
-			ttl := ah.TTL
-			if ttl < 600 {
-				// at least 10 mins TTL
-				ipRecord.Expire = now.Add(time.Minute * 10)
-			} else {
-				ipRecord.Expire = now.Add(time.Duration(ttl) * time.Second)
-			}
 		}
 	}
 
