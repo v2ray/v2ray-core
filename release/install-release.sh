@@ -9,16 +9,26 @@
 # 2: Application error
 # 3: Network error
 
+# CLI arguments
+PROXY=''
+HELP=''
+FORCE=''
+CHECK=''
+REMOVE=''
+VERSION=''
+VSRC_ROOT='/tmp/v2ray'
+EXTRACT_ONLY=''
+LOCAL=''
+LOCAL_INSTALL=''
+DIST_SRC='github'
+ERROR_IF_UPTODATE=''
+
 CUR_VER=""
 NEW_VER=""
 ARCH=""
 VDIS="64"
 ZIPFILE="/tmp/v2ray/v2ray.zip"
 V2RAY_RUNNING=0
-VSRC_ROOT="/tmp/v2ray"
-EXTRACT_ONLY=0
-ERROR_IF_UPTODATE=0
-DIST_SRC="github"
 
 CMD_INSTALL=""
 CMD_UPDATE=""
@@ -26,10 +36,6 @@ SOFTWARE_UPDATED=0
 
 SYSTEMCTL_CMD=$(command -v systemctl 2>/dev/null)
 SERVICE_CMD=$(command -v service 2>/dev/null)
-
-CHECK=""
-FORCE=""
-HELP=""
 
 #######color code########
 RED="31m"      # Error message
@@ -39,9 +45,8 @@ BLUE="36m"     # Info message
 
 
 #########################
-while [[ $# > 0 ]];do
-    key="$1"
-    case $key in
+while [[ $# > 0 ]]; do
+    case "$1" in
         -p|--proxy)
         PROXY="-x ${2}"
         shift # past argument
@@ -90,8 +95,7 @@ done
 
 ###############################
 colorEcho(){
-    COLOR=$1
-    echo -e "\033[${COLOR}${@:2}\033[0m"
+    echo -e "\033[${1}${@:2}\033[0m" 1>& 2
 }
 
 sysArch(){
@@ -242,9 +246,7 @@ stopV2ray(){
 }
 
 startV2ray(){
-    if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ]; then
-        ${SYSTEMCTL_CMD} start v2ray
-    elif [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/etc/systemd/system/v2ray.service" ]; then
+    if [ -n "${SYSTEMCTL_CMD}" ] && [[ -f "/lib/systemd/system/v2ray.service" || -f "/etc/systemd/system/v2ray.service" ]]; then
         ${SYSTEMCTL_CMD} start v2ray
     elif [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
         ${SERVICE_CMD} v2ray start
@@ -306,33 +308,28 @@ installV2Ray(){
 
 
 installInitScript(){
-    if [[ -n "${SYSTEMCTL_CMD}" ]];then
-        if [[ ! -f "/etc/systemd/system/v2ray.service" ]]; then
-            if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
-                cp "${VSRC_ROOT}/systemd/v2ray.service" "/etc/systemd/system/"
-                systemctl enable v2ray.service
-            fi
-        fi
-        return
+    if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ ! -f "/etc/systemd/system/v2ray.service" && ! -f "/lib/systemd/system/v2ray.service" ]]; then
+        cp "${VSRC_ROOT}/systemd/v2ray.service" "/etc/systemd/system/"
+        systemctl enable v2ray.service
     elif [[ -n "${SERVICE_CMD}" ]] && [[ ! -f "/etc/init.d/v2ray" ]]; then
         installSoftware "daemon" || return $?
         cp "${VSRC_ROOT}/systemv/v2ray" "/etc/init.d/v2ray"
         chmod +x "/etc/init.d/v2ray"
         update-rc.d v2ray defaults
     fi
-    return
 }
 
 Help(){
-    echo "./install-release.sh [-h] [-c] [--remove] [-p proxy] [-f] [--version vx.y.z] [-l file]"
-    echo "  -h, --help            Show help"
-    echo "  -p, --proxy           To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
-    echo "  -f, --force           Force install"
-    echo "      --version         Install a particular version, use --version v3.15"
-    echo "  -l, --local           Install from a local file"
-    echo "      --remove          Remove installed V2Ray"
-    echo "  -c, --check           Check for update"
-    return 0
+  cat - 1>& 2 << EOF
+./install-release.sh [-h] [-c] [--remove] [-p proxy] [-f] [--version vx.y.z] [-l file]
+  -h, --help            Show help
+  -p, --proxy           To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc
+  -f, --force           Force install
+      --version         Install a particular version, use --version v3.15
+  -l, --local           Install from a local file
+      --remove          Remove installed V2Ray
+  -c, --check           Check for update
+EOF
 }
 
 remove(){
@@ -431,7 +428,7 @@ main(){
         RETVAL="$?"
         if [[ $RETVAL == 0 ]] && [[ "$FORCE" != "1" ]]; then
             colorEcho ${BLUE} "Latest version ${CUR_VER} is already installed."
-            if [[ "${ERROR_IF_UPTODATE}" == "1" ]]; then
+            if [ -n "${ERROR_IF_UPTODATE}" ]; then
               return 10
             fi
             return
@@ -443,9 +440,9 @@ main(){
             installSoftware unzip || return $?
             extract ${ZIPFILE} || return $?
         fi
-    fi 
-    
-    if [[ "${EXTRACT_ONLY}" == "1" ]]; then
+    fi
+
+    if [ -n "${EXTRACT_ONLY}" ]; then
         colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT}, and exiting..."
         return 0
     fi
