@@ -146,11 +146,11 @@ installSoftware(){
     getPMT
     if [[ $? -eq 1 ]]; then
         colorEcho ${RED} "The system package manager tool isn't APT or YUM, please install ${COMPONENT} manually."
-        return 1 
+        return 1
     fi
     if [[ $SOFTWARE_UPDATED -eq 0 ]]; then
         colorEcho ${BLUE} "Updating software repo"
-        $CMD_UPDATE      
+        $CMD_UPDATE
         SOFTWARE_UPDATED=1
     fi
 
@@ -376,7 +376,7 @@ remove(){
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
             return 0
-        fi       
+        fi
     else
         colorEcho ${YELLOW} "V2Ray not found."
         return 0
@@ -404,7 +404,7 @@ main(){
     [[ "$HELP" == "1" ]] && Help && return
     [[ "$CHECK" == "1" ]] && checkUpdate && return
     [[ "$REMOVE" == "1" ]] && remove && return
-    
+
     sysArch
     # extract local file
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
