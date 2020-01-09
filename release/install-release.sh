@@ -230,20 +230,6 @@ getPMT(){
     return 0
 }
 
-extract(){
-    colorEcho ${BLUE}"Extracting V2Ray package to /tmp/v2ray."
-    mkdir -p /tmp/v2ray
-    unzip $1 -d ${VSRC_ROOT}
-    if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Failed to extract V2Ray."
-        return 2
-    fi
-    if [[ -d "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}" ]]; then
-      VSRC_ROOT="/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}"
-    fi
-    return 0
-}
-
 normalizeVersion() {
     if [ -n "$1" ]; then
         case "$1" in
@@ -439,9 +425,8 @@ main(){
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
         colorEcho ${YELLOW} "Installing V2Ray via local file. Please make sure the file is a valid V2Ray package, as we are not able to determine that."
         NEW_VER=local
-        installSoftware unzip || return $?
         rm -rf /tmp/v2ray
-        extract $LOCAL || return $?
+        ZIPFILE="$LOCAL"
         #FILEVDIS=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f4`
         #SYSTEM=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f3`
         #if [[ ${SYSTEM} != "linux" ]]; then
@@ -469,16 +454,22 @@ main(){
         else
             colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
             downloadV2Ray || return $?
-            installSoftware unzip || return $?
-            extract ${ZIPFILE} || return $?
         fi
     fi
 
     local ZIPROOT="$(zipRoot "${ZIPFILE}")"
+    installSoftware unzip || return $?
 
     if [ -n "${EXTRACT_ONLY}" ]; then
-        colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT}, and exiting..."
-        return 0
+        colorEcho ${BLUE} "Extracting V2Ray package to ${VSRC_ROOT}."
+
+        if unzip -o "${ZIPFILE}" -d ${VSRC_ROOT}; then
+            colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT%/}${ZIPROOT:+/${ZIPROOT%/}}, and exiting..."
+            return 0
+        else
+            colorEcho ${RED} "Failed to extract V2Ray."
+            return 2
+        fi
     fi
 
     if pgrep "v2ray" > /dev/null ; then
