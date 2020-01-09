@@ -280,37 +280,21 @@ startV2ray(){
     return 0
 }
 
-copyFile() {
-    NAME=$1
-    ERROR=`cp "${VSRC_ROOT}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
-    if [[ $? -ne 0 ]]; then
-        colorEcho ${YELLOW} "${ERROR}"
-        return 1
-    fi
-    return 0
-}
-
-makeExecutable() {
-    chmod +x "/usr/bin/v2ray/$1"
-}
-
 installV2Ray(){
     # Install V2Ray binary to /usr/bin/v2ray
-    mkdir -p /usr/bin/v2ray
-    copyFile v2ray
-    if [[ $? -ne 0 ]]; then
+    mkdir -p '/usr/bin/v2ray' '/etc/v2ray' '/var/log/v2ray' && \
+    cp "${VSRC_ROOT}/v2ray" \
+        "${VSRC_ROOT}/v2ctl" \
+        "${VSRC_ROOT}/geoip.dat" \
+        "${VSRC_ROOT}/geosite.dat" \
+        "/usr/bin/v2ray/" && \
+    chmod +x '/usr/bin/v2ray/v2ray' '/usr/bin/v2ray/v2ctl' || {
         colorEcho ${RED} "Failed to copy V2Ray binary and resources."
         return 1
-    fi
-    makeExecutable v2ray
-    copyFile v2ctl && makeExecutable v2ctl
-    copyFile geoip.dat
-    copyFile geosite.dat
+    }
 
     # Install V2Ray server config to /etc/v2ray
     if [[ ! -f "/etc/v2ray/config.json" ]]; then
-        mkdir -p /etc/v2ray
-        mkdir -p /var/log/v2ray
         cp "${VSRC_ROOT}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
         if [[ $? -ne 0 ]]; then
             colorEcho ${YELLOW} "Failed to create V2Ray configuration file. Please create it manually."
