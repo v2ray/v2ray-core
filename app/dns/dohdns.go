@@ -185,7 +185,6 @@ func (s *DoHNameServer) Cleanup() error {
 
 func (s *DoHNameServer) updateIP(req *dnsRequest, ipRec *IPRecord) {
 	elapsed := time.Since(req.start)
-	newError(s.name, " got answere: ", req.domain, " ", req.reqType, " -> ", ipRec.IP, " ", elapsed).AtInfo().WriteToLog()
 
 	s.Lock()
 	rec := s.ips[req.domain]
@@ -198,11 +197,19 @@ func (s *DoHNameServer) updateIP(req *dnsRequest, ipRec *IPRecord) {
 			updated = true
 		}
 	case dnsmessage.TypeAAAA:
+		addr := make([]net.Address, 0)
+		for _, ip := range ipRec.IP {
+			if len(ip.IP()) == net.IPv6len {
+				addr = append(addr, ip)
+			}
+		}
+		ipRec.IP = addr
 		if isNewer(rec.AAAA, ipRec) {
 			rec.AAAA = ipRec
 			updated = true
 		}
 	}
+	newError(s.name, " got answere: ", req.domain, " ", req.reqType, " -> ", ipRec.IP, " ", elapsed).AtInfo().WriteToLog()
 
 	if updated {
 		s.ips[req.domain] = rec
