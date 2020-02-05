@@ -158,9 +158,13 @@ func (s *ClassicNameServer) updateIP(domain string, newRec record) {
 
 	if updated {
 		s.ips[domain] = rec
-		s.pub.Publish(domain, nil)
 	}
-
+	if newRec.A != nil {
+		s.pub.Publish(domain+"4", nil)
+	}
+	if newRec.AAAA != nil {
+		s.pub.Publish(domain+"6", nil)
+	}
 	s.Unlock()
 	common.Must(s.cleanup.Start())
 }
@@ -245,9 +249,32 @@ func (s *ClassicNameServer) QueryIP(ctx context.Context, domain string, option I
 		return ips, err
 	}
 
-	sub := s.pub.Subscribe(fqdn)
-	defer sub.Close()
-
+	// ipv4 and ipv6 belong to different subscription groups
+	var sub4, sub6 *pubsub.Subscriber
+	if option.IPv4Enable {
+		sub4 = s.pub.Subscribe(fqdn + "4")
+		defer sub4.Close()
+	}
+	if option.IPv6Enable {
+		sub6 = s.pub.Subscribe(fqdn + "6")
+		defer sub6.Close()
+	}
+	done := make(chan interface{})
+	go func() {
+		if sub4 != nil {
+			select {
+			case <-sub4.Wait():
+			case <-ctx.Done():
+			}
+		}
+		if sub6 != nil {
+			select {
+			case <-sub6.Wait():
+			case <-ctx.Done():
+			}
+		}
+		close(done)
+	}()
 	s.sendQuery(ctx, fqdn, option)
 
 	for {
@@ -259,7 +286,7 @@ func (s *ClassicNameServer) QueryIP(ctx context.Context, domain string, option I
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case <-sub.Wait():
+		case <-done:
 		}
 	}
 }
