@@ -106,6 +106,7 @@ type DnsConfig struct {
 	Hosts    map[string]*Address `json:"hosts"`
 	ClientIP *Address            `json:"clientIp"`
 	Tag      string              `json:"tag"`
+	UseFake  StringList          `json:"useFake"`
 }
 
 func getHostMapping(addr *Address) *dns.Config_HostMapping {
@@ -215,6 +216,8 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 			config.StaticHosts = append(config.StaticHosts, mappings...)
 		}
 	}
+
+	config.UseFake = (c.UseFake != nil)
 
 	return config, nil
 }

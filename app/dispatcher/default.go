@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"v2ray.com/core"
+	"v2ray.com/core/app/dns"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/log"
@@ -202,7 +203,15 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 		ctx = session.ContextWithContent(ctx, content)
 	}
 	sniffingRequest := content.SniffingRequest
-	if destination.Network != net.Network_TCP || !sniffingRequest.Enabled {
+	fake_domain := dns.GetDomainForFakeIP(destination.Address)
+	if fake_domain != "" {
+		go func() {
+			newError("got domain ", fake_domain, " from fake ip").WriteToLog()
+			destination.Address = net.ParseAddress(fake_domain)
+			ob.Target = destination
+			d.routedDispatch(ctx, outbound, destination)
+		}()
+	} else if destination.Network != net.Network_TCP || !sniffingRequest.Enabled {
 		go d.routedDispatch(ctx, outbound, destination)
 	} else {
 		go func() {

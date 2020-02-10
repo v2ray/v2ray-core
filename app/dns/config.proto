@@ -59,4 +59,6 @@ message Config {
 
   // Tag is the inbound tag of DNS client.
   string tag = 6;
+
+  bool UseFake = 7;
 }

@@ -35,6 +35,7 @@ type Server struct {
 	domainIndexMap map[uint32]uint32
 	ipIndexMap     map[uint32]*MultiGeoIPMatcher
 	tag            string
+	useFake        bool
 }
 
 // MultiGeoIPMatcher for match
@@ -69,6 +70,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	server := &Server{
 		clients: make([]Client, 0, len(config.NameServers)+len(config.NameServer)),
 		tag:     config.Tag,
+		useFake: config.UseFake,
 	}
 	if server.tag == "" {
 		server.tag = generateRandomTag()
@@ -316,6 +318,10 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 	if ips != nil && ips[0].Family().IsIP() {
 		newError("returning ", len(ips), " IPs for domain ", domain).WriteToLog()
 		return toNetIP(ips), nil
+	}
+
+	if s.useFake {
+		return toNetIP(GetFakeIPForDomain(domain)), nil
 	}
 
 	if ips != nil && ips[0].Family().IsDomain() {
