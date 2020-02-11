@@ -190,7 +190,9 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		server.clients = append(server.clients, NewLocalNameServer())
 	}
 
-	InitFakeIPServer(config.UseFake, rawExternalRules)
+	if err := InitFakeIPServer(config.Fake, rawExternalRules); err != nil {
+		return nil, newError("failed to initilaize fake ip server").Base(err)
+	}
 
 	return server, nil
 }

@@ -41,6 +41,26 @@ func (c *NameServerConfig) UnmarshalJSON(data []byte) error {
 	return newError("failed to parse name server: ", string(data))
 }
 
+type FakeIPConfig struct {
+	FakeRules []string
+	FakeNet   string
+}
+
+func (c *FakeIPConfig) UnmarshalJSON(data []byte) error {
+	var advanced struct {
+		FakeRules []string `json:"fakeRules"`
+		FakeNet   string   `json:"fakeNet"`
+	}
+
+	if err := json.Unmarshal(data, &advanced); err == nil {
+		c.FakeRules = advanced.FakeRules
+		c.FakeNet = advanced.FakeNet
+		return nil
+	}
+
+	return newError("failed to parse fake config: ", string(data))
+}
+
 func toDomainMatchingType(t router.Domain_Type) dns.DomainMatchingType {
 	switch t {
 	case router.Domain_Domain:
@@ -106,7 +126,7 @@ type DnsConfig struct {
 	Hosts    map[string]*Address `json:"hosts"`
 	ClientIP *Address            `json:"clientIp"`
 	Tag      string              `json:"tag"`
-	UseFake  StringList          `json:"useFake"`
+	Fake     *FakeIPConfig       `json:"fake"`
 }
 
 func getHostMapping(addr *Address) *dns.Config_HostMapping {
@@ -161,18 +181,18 @@ func loadExternalRules(pattern string, c *dns.Config) error {
 	if err != nil {
 		return newError("invalid external settings from ", filename, ": ", arg).Base(err)
 	}
-	extern_rules := &dns.ConfigPatterns{
+	externRules := &dns.ConfigPatterns{
 		Patterns: make([]string, len(domains)),
 	}
 	index := 0
 	for _, d := range domains {
-		extern_rules.Patterns[index] = typeMapper[d.Type] + d.Value
+		externRules.Patterns[index] = typeMapper[d.Type] + d.Value
 		index++
 	}
 	if c.ExternalRules == nil {
 		c.ExternalRules = make(map[string]*dns.ConfigPatterns)
 	}
-	c.ExternalRules[arg] = extern_rules
+	c.ExternalRules[arg] = externRules
 	return nil
 }
 
@@ -287,18 +307,26 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 		}
 	}
 
-	if c.UseFake != nil {
-		config.UseFake = make([]string, len(c.UseFake))
-		i := 0
-		for _, pattern := range c.UseFake {
-			newPattern := compressPattern(pattern)
-			err := loadExternalRules(newPattern, config)
-			if err == nil {
-				config.UseFake[i] = newPattern
-				i++
-			}
+	if c.Fake != nil {
+		config.Fake = new(dns.Config_Fake)
+		if c.Fake.FakeNet == "" {
+			config.Fake.FakeNet = "224.0.0.0/8"
+		} else {
+			config.Fake.FakeNet = c.Fake.FakeNet
 		}
-		config.UseFake = config.UseFake[:i]
+		if c.Fake.FakeRules != nil {
+			fakeRules := make([]string, len(c.Fake.FakeRules))
+			i := 0
+			for _, pattern := range c.Fake.FakeRules {
+				newPattern := compressPattern(pattern)
+				err := loadExternalRules(newPattern, config)
+				if err == nil {
+					fakeRules[i] = newPattern
+					i++
+				}
+			}
+			config.Fake.FakeRules = fakeRules[:i]
+		}
 	}
 
 	return config, nil

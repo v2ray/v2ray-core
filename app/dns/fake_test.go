@@ -8,13 +8,20 @@ import (
 
 func TestFakeIPServer(t *testing.T) {
 	external := map[string][]string{"geosite.dat:cn": []string{"dbaidu.com"}, "geosite.dat:us": []string{"dgoogle.com"}}
-	InitFakeIPServer([]string{
-		"dv2ray.com",
-		"rv2ray.com",
-		"egeosite.dat:cn",
-		"egeosite.dat:cn",
-		"egeosite.dat:us",
-	}, external)
+	err := InitFakeIPServer(
+		&Config_Fake{
+			FakeRules: []string{
+				"dv2ray.com",
+				"rv2ray.com",
+				"egeosite.dat:cn",
+				"egeosite.dat:cn",
+				"egeosite.dat:us",
+			},
+			FakeNet: "1.1.1.1/29",
+		}, external)
+	if err != nil {
+		t.Error("failed to initialize fake ip server")
+	}
 	cases := []struct {
 		input  string
 		output bool
@@ -51,13 +58,14 @@ func TestFakeIPServer(t *testing.T) {
 			input:  "v2rayxcom",
 			output: true,
 		},
+		// No fake IP now because we reached limit
 		{
 			input:  "www.baidu.com",
-			output: true,
+			output: false,
 		},
 		{
 			input:  "www.google.com",
-			output: true,
+			output: false,
 		},
 	}
 

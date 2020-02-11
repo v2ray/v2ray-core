@@ -91,6 +91,9 @@ func TestDnsConfigParsing(t *testing.T) {
 					"keyword:google": "8.8.8.8",
 					"regexp:.*\\.com": "8.8.4.4"
 				},
+				"fake": {
+					"fakeRules": ["geosite:test"]
+				},
 				"clientIp": "10.0.0.1"
 			}`,
 			Parser: parserCreator(),
@@ -169,6 +172,10 @@ func TestDnsConfigParsing(t *testing.T) {
 							"fexample.com",
 						},
 					},
+				},
+				Fake: &dns.Config_Fake{
+					FakeNet:   "224.0.0.0/8",
+					FakeRules: []string{"egeosite.dat:test"},
 				},
 				ClientIp: []byte{10, 0, 0, 1},
 			},
