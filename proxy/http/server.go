@@ -85,7 +85,8 @@ type readerOnly struct {
 }
 
 func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher routing.Dispatcher) error {
-	if inbound := session.InboundFromContext(ctx); inbound != nil {
+	inbound := session.InboundFromContext(ctx)
+	if inbound != nil {
 		inbound.User = &protocol.MemoryUser{
 			Level: s.config.UserLevel,
 		}
@@ -111,6 +112,9 @@ Start:
 		user, pass, ok := parseBasicAuth(request.Header.Get("Proxy-Authorization"))
 		if !ok || !s.config.HasAccount(user, pass) {
 			return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n")))
+		}
+		if inbound != nil {
+			inbound.User.Email = user
 		}
 	}
 
