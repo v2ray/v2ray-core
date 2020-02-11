@@ -163,3 +163,72 @@ func (g *MatcherGroup) Match(pattern string) uint32 {
 func (g *MatcherGroup) Size() uint32 {
 	return g.count
 }
+
+type OrMatcher struct {
+	fullMatchers   fullGroupMatcher
+	domainMatchers domainGroupMatcher
+	otherMatchers  []Matcher
+}
+
+func (g *OrMatcher) New() {
+	g.fullMatchers.New()
+}
+
+func (g *OrMatcher) Match(pattern string) bool {
+	if g.fullMatchers.Match(pattern) || g.domainMatchers.Match(pattern) {
+		return true
+	}
+
+	for _, e := range g.otherMatchers {
+		if e.Match(pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Add adds a new Matcher into the OrMatcher
+func (g *OrMatcher) Add(m Matcher) {
+	switch tm := m.(type) {
+	case fullMatcher:
+		g.fullMatchers.addMatcher(tm)
+	case domainMatcher:
+		g.domainMatchers.addMatcher(tm)
+	default:
+		g.otherMatchers = append(g.otherMatchers, m)
+	}
+}
+
+func (g *OrMatcher) ParsePattern(pattern string, extern map[string][]string) error {
+	cmd := pattern[0]
+	left := pattern[1:len(pattern)]
+	var m Matcher = nil
+	var err error = nil
+	switch cmd {
+	case 'd': // Domain
+		m = domainMatcher(left)
+	case 'r': // Regexp
+		r, err := regexp.Compile(left)
+		if err != nil {
+			return nil
+		}
+		m = &regexMatcher{
+			pattern: r,
+		}
+	case 'k': // Keyword
+		m = substrMatcher(left)
+	case 'f': // Full
+		m = fullMatcher(left)
+	case 'e': // External
+		for _, newPattern := range extern[left] {
+			g.ParsePattern(newPattern, extern)
+		}
+	default:
+		panic("Unknown type")
+	}
+	if m != nil {
+		g.Add(m)
+	}
+	return err
+}

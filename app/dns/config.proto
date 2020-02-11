@@ -60,7 +60,7 @@ message Config {
   // Tag is the inbound tag of DNS client.
   string tag = 6;
 
-  bool UseFake = 7;
+  repeated string use_fake = 7;
 
   repeated HostMapping host_rules = 8;
 

@@ -35,7 +35,6 @@ type Server struct {
 	domainIndexMap map[uint32]uint32
 	ipIndexMap     map[uint32]*MultiGeoIPMatcher
 	tag            string
-	useFake        bool
 }
 
 // MultiGeoIPMatcher for match
@@ -70,8 +69,13 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	server := &Server{
 		clients: make([]Client, 0, len(config.NameServers)+len(config.NameServer)),
 		tag:     config.Tag,
-		useFake: config.UseFake,
 	}
+
+	rawExternalRules := make(map[string][]string)
+	for key, value := range config.ExternalRules {
+		rawExternalRules[key] = value.Patterns
+	}
+
 	if server.tag == "" {
 		server.tag = generateRandomTag()
 	}
@@ -82,7 +86,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		server.clientIP = net.IP(config.ClientIp)
 	}
 
-	hosts, err := NewStaticHosts(config.HostRules, config.Hosts, config.ExternalRules)
+	hosts, err := NewStaticHosts(config.HostRules, config.Hosts, rawExternalRules)
 	if err != nil {
 		return nil, newError("failed to create hosts").Base(err)
 	}
@@ -184,6 +188,8 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	if len(server.clients) == 0 {
 		server.clients = append(server.clients, NewLocalNameServer())
 	}
+
+	InitFakeIPServer(config.UseFake, rawExternalRules)
 
 	return server, nil
 }
@@ -320,14 +326,16 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 		return toNetIP(ips), nil
 	}
 
-	if s.useFake {
-		return toNetIP(GetFakeIPForDomain(domain)), nil
-	}
-
 	if ips != nil && ips[0].Family().IsDomain() {
 		newdomain := ips[0].Domain()
 		newError("domain replaced: ", domain, " -> ", newdomain).WriteToLog()
 		domain = newdomain
+	}
+
+	ips = GetFakeIPForDomain(domain)
+	if ips != nil {
+		newError("returning fake IP ", ips[0].String(), " for domain ", domain).WriteToLog()
+		return toNetIP(ips), nil
 	}
 
 	var lastErr error

@@ -206,7 +206,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	fake_domain := dns.GetDomainForFakeIP(destination.Address)
 	if fake_domain != "" {
 		go func() {
-			newError("got domain ", fake_domain, " from fake ip").WriteToLog()
+			newError("got domain ", fake_domain, " from fake ip ", destination.Address.String()).WriteToLog(session.ExportIDToError(ctx))
 			destination.Address = net.ParseAddress(fake_domain)
 			ob.Target = destination
 			d.routedDispatch(ctx, outbound, destination)

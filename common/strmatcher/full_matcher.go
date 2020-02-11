@@ -23,3 +23,29 @@ func (g *FullMatcherGroup) Match(str string) uint32 {
 
 	return g.matchers[str]
 }
+
+var fullExists = struct{}{}
+
+type fullGroupMatcher struct {
+	matchers map[string]struct{}
+}
+
+func (g *fullGroupMatcher) New() {
+	g.matchers = make(map[string]struct{})
+}
+
+func (g *fullGroupMatcher) Add(domain string) {
+	g.matchers[domain] = fullExists
+}
+
+func (g *fullGroupMatcher) addMatcher(m fullMatcher) {
+	g.Add(string(m))
+}
+
+func (g *fullGroupMatcher) Match(str string) bool {
+	if len(g.matchers) == 0 {
+		return false
+	}
+	_, exist := g.matchers[str]
+	return exist
+}

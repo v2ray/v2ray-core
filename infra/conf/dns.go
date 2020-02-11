@@ -145,15 +145,49 @@ func compressPattern(pattern string) string {
 	}
 	return "f" + pattern // If no prefix, use full match by default
 }
-func getHostPattern(addr *Address, pattern string) (ret *dns.Config_HostMapping) {
-	ret = new(dns.Config_HostMapping)
-	if addr.Family().IsIP() {
-		ret.Ip = [][]byte{[]byte(addr.IP())}
-	} else {
-		ret.ProxiedDomain = addr.Domain()
+
+func loadExternalRules(pattern string, c *dns.Config) error {
+	cmd := pattern[0]
+	arg := pattern[1:]
+	var filename, country string
+	if cmd == 'e' {
+		kv := strings.Split(arg, ":")
+		if len(kv) != 2 {
+			return newError("invalid external resource: ", arg)
+		}
+		filename, country = kv[0], kv[1]
 	}
-	ret.Pattern = compressPattern(pattern)
-	return
+	domains, err := loadGeositeWithAttr(filename, country)
+	if err != nil {
+		return newError("invalid external settings from ", filename, ": ", arg).Base(err)
+	}
+	extern_rules := &dns.ConfigPatterns{
+		Patterns: make([]string, len(domains)),
+	}
+	index := 0
+	for _, d := range domains {
+		extern_rules.Patterns[index] = typeMapper[d.Type] + d.Value
+		index++
+	}
+	if c.ExternalRules == nil {
+		c.ExternalRules = make(map[string]*dns.ConfigPatterns)
+	}
+	c.ExternalRules[arg] = extern_rules
+	return nil
+}
+
+func getHostPattern(addr *Address, pattern string, c *dns.Config) {
+	item := new(dns.Config_HostMapping)
+	if addr.Family().IsIP() {
+		item.Ip = [][]byte{[]byte(addr.IP())}
+	} else {
+		item.ProxiedDomain = addr.Domain()
+	}
+	item.Pattern = compressPattern(pattern)
+	err := loadExternalRules(item.Pattern, c)
+	if err == nil {
+		c.HostRules = append(c.HostRules, item)
+	}
 }
 
 // Build implements Buildable
@@ -179,34 +213,9 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 
 	if c.Hosts != nil && len(c.Hosts) > 0 {
 		domains := make([]string, 0, len(c.Hosts))
-		config.ExternalRules = make(map[string]*dns.ConfigPatterns)
 		for pattern, address := range c.Hosts {
 			domains = append(domains, pattern)
-			new_rule := getHostPattern(address, pattern)
-			config.HostRules = append(config.HostRules, new_rule)
-			cmd := new_rule.Pattern[0]
-			arg := new_rule.Pattern[1:]
-			var filename, country string
-			if cmd == 'e' {
-				kv := strings.Split(arg, ":")
-				if len(kv) != 2 {
-					return nil, newError("invalid external resource: ", arg)
-				}
-				filename, country = kv[0], kv[1]
-			}
-			domains, err := loadGeositeWithAttr(filename, country)
-			if err != nil {
-				return nil, newError("invalid external settings from ", filename, ": ", arg).Base(err)
-			}
-			extern_rules := &dns.ConfigPatterns{
-				Patterns: make([]string, len(domains)),
-			}
-			index := 0
-			for _, d := range domains {
-				extern_rules.Patterns[index] = typeMapper[d.Type] + d.Value
-				index++
-			}
-			config.ExternalRules[arg] = extern_rules
+			getHostPattern(address, pattern, config)
 		}
 		sort.Strings(domains)
 		for _, domain := range domains {
@@ -278,7 +287,19 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 		}
 	}
 
-	config.UseFake = (c.UseFake != nil)
+	if c.UseFake != nil {
+		config.UseFake = make([]string, len(c.UseFake))
+		i := 0
+		for _, pattern := range c.UseFake {
+			newPattern := compressPattern(pattern)
+			err := loadExternalRules(newPattern, config)
+			if err == nil {
+				config.UseFake[i] = newPattern
+				i++
+			}
+		}
+		config.UseFake = config.UseFake[:i]
+	}
 
 	return config, nil
 }
