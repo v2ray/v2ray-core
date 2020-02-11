@@ -172,8 +172,8 @@ func (g *MatcherGroup) Size() uint32 {
 }
 
 type OrMatcher struct {
-	fullMatchers   fullGroupMatcher
-	domainMatchers domainGroupMatcher
+	fullMatchers   FullGroupMatcher
+	domainMatchers DomainGroupMatcher
 	otherMatchers  []Matcher
 }
 

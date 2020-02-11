@@ -67,3 +67,65 @@ func TestEmptyDomainMatcherGroup(t *testing.T) {
 		t.Error("Expect 0, but ", r)
 	}
 }
+
+func TestDomainGroupMatcher(t *testing.T) {
+	g := new(DomainGroupMatcher)
+	g.Add("v2ray.com")
+	g.Add("google.com")
+	g.Add("x.a.com")
+	g.Add("a.b.com")
+	g.Add("c.a.b.com")
+
+	testCases := []struct {
+		Domain string
+		Result bool
+	}{
+		{
+			Domain: "x.v2ray.com",
+			Result: true,
+		},
+		{
+			Domain: "y.com",
+			Result: false,
+		},
+		{
+			Domain: "a.b.com",
+			Result: true,
+		},
+		{
+			Domain: "c.a.b.com",
+			Result: true,
+		},
+		{
+			Domain: "c.a..b.com",
+			Result: false,
+		},
+		{
+			Domain: ".com",
+			Result: false,
+		},
+		{
+			Domain: "com",
+			Result: false,
+		},
+		{
+			Domain: "",
+			Result: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		r := g.Match(testCase.Domain)
+		if r != testCase.Result {
+			t.Error("Failed to match domain: ", testCase.Domain, ", expect ", testCase.Result, ", but got ", r)
+		}
+	}
+}
+
+func TestEmptyDomainGroupMatcher(t *testing.T) {
+	g := new(DomainGroupMatcher)
+	r := g.Match("v2ray.com")
+	if r != false {
+		t.Error("Expect false, but ", r)
+	}
+}

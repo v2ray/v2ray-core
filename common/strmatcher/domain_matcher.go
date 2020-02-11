@@ -88,29 +88,33 @@ func (g *DomainMatcherGroup) Match(domain string) uint32 {
 }
 
 type domainNode struct {
-	sub map[string]*domainNode
+	isLeaf bool
+	sub    map[string]*domainNode
 }
 
-// domainGroupMatcher is a Matcher for a large set of Domain matchers.
-type domainGroupMatcher struct {
+// DomainGroupMatcher is a Matcher for a large set of Domain matchers.
+// Visible for testing only.
+type DomainGroupMatcher struct {
 	root *domainNode
 }
 
-func (g *domainGroupMatcher) Add(domain string) {
+func (g *DomainGroupMatcher) Add(domain string) {
 	if g.root == nil {
 		g.root = new(domainNode)
 	}
+
 	current := g.root
 	parts := breakDomain(domain)
 	for i := len(parts) - 1; i >= 0; i-- {
-		// if current node is already a match, it is not necessary to match further.
-		if current.sub != nil && len(current.sub) == 0 {
+		if current.isLeaf {
+			// if current node is already a match, it is not necessary to match further.
 			return
 		}
+
+		part := parts[i]
 		if current.sub == nil {
 			current.sub = make(map[string]*domainNode)
 		}
-		part := parts[i]
 		next := current.sub[part]
 		if next == nil {
 			next = new(domainNode)
@@ -119,14 +123,15 @@ func (g *domainGroupMatcher) Add(domain string) {
 		current = next
 	}
 
-	current.sub = make(map[string]*domainNode) // shortcut sub nodes as current node is a match.
+	current.isLeaf = true
+	current.sub = nil // shortcut sub nodes as current node is a match.
 }
 
-func (g *domainGroupMatcher) addMatcher(m domainMatcher) {
+func (g *DomainGroupMatcher) addMatcher(m domainMatcher) {
 	g.Add(string(m))
 }
 
-func (g *domainGroupMatcher) Match(domain string) bool {
+func (g *DomainGroupMatcher) Match(domain string) bool {
 	if domain == "" {
 		return false
 	}
@@ -136,31 +141,26 @@ func (g *domainGroupMatcher) Match(domain string) bool {
 		return false
 	}
 
-	nextPart := func(idx int) int {
-		for i := idx - 1; i >= 0; i-- {
-			if domain[i] == '.' {
-				return i
+	var next *domainNode
+	idx := len(domain)
+	var nidx int
+	for {
+		if idx == -1 || current.sub == nil {
+			break
+		}
+
+		for nidx = idx - 1; nidx >= 0; nidx-- {
+			if domain[nidx] == '.' {
+				break
 			}
 		}
-		return -1
-	}
-
-	idx := len(domain)
-	for {
-		if len(current.sub) == 0 {
-			return true
-		}
-		if idx == -1 {
-			return false
-		}
-
-		nidx := nextPart(idx)
-		part := domain[nidx+1 : idx]
-		next := current.sub[part]
+		next = current.sub[domain[nidx+1:idx]]
 		if next == nil {
-			return false
+			break
 		}
+
 		current = next
 		idx = nidx
 	}
+	return current.isLeaf
 }

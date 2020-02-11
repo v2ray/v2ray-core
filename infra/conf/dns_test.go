@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
@@ -42,6 +43,21 @@ func init() {
 	common.Must(err)
 	common.Must2(geositeFile.Write(listBytes))
 }
+
+type hostRulesWarpper struct {
+	mappings []*dns.Config_HostMapping
+}
+
+func (hrw hostRulesWarpper) Len() int {
+	return len(hrw.mappings)
+}
+func (hrw hostRulesWarpper) Swap(i, j int) {
+	hrw.mappings[i], hrw.mappings[j] = hrw.mappings[j], hrw.mappings[i]
+}
+func (hrw hostRulesWarpper) Less(i, j int) bool {
+	return hrw.mappings[i].Pattern < hrw.mappings[j].Pattern
+}
+
 func TestDnsConfigParsing(t *testing.T) {
 	geositePath := platform.GetAssetLocation("geosite.dat")
 	defer func() {
@@ -54,7 +70,9 @@ func TestDnsConfigParsing(t *testing.T) {
 			if err := json.Unmarshal([]byte(s), config); err != nil {
 				return nil, err
 			}
-			return config.Build()
+			con, err := config.Build()
+			sort.Sort(hostRulesWarpper{con.HostRules})
+			return con, err
 		}
 	}
 
@@ -99,28 +117,57 @@ func TestDnsConfigParsing(t *testing.T) {
 				StaticHosts: []*dns.Config_HostMapping{
 					{
 						Type:          dns.DomainMatchingType_Subdomain,
-						Domain:        "example.com",
+						Pattern:       "example.com",
 						ProxiedDomain: "google.com",
 					},
 					{
-						Type:   dns.DomainMatchingType_Full,
-						Domain: "example.com",
-						Ip:     [][]byte{{10, 0, 0, 1}},
+						Type:    dns.DomainMatchingType_Full,
+						Pattern: "example.com",
+						Ip:      [][]byte{{10, 0, 0, 1}},
 					},
 					{
-						Type:   dns.DomainMatchingType_Keyword,
-						Domain: "google",
-						Ip:     [][]byte{{8, 8, 8, 8}},
+						Type:    dns.DomainMatchingType_Keyword,
+						Pattern: "google",
+						Ip:      [][]byte{{8, 8, 8, 8}},
 					},
 					{
-						Type:   dns.DomainMatchingType_Regex,
-						Domain: ".*\\.com",
-						Ip:     [][]byte{{8, 8, 4, 4}},
+						Type:    dns.DomainMatchingType_Regex,
+						Pattern: ".*\\.com",
+						Ip:      [][]byte{{8, 8, 4, 4}},
 					},
 					{
-						Type:   dns.DomainMatchingType_Full,
-						Domain: "v2ray.com",
-						Ip:     [][]byte{{127, 0, 0, 1}},
+						Type:    dns.DomainMatchingType_Full,
+						Pattern: "v2ray.com",
+						Ip:      [][]byte{{127, 0, 0, 1}},
+					},
+				},
+				HostRules: []*dns.Config_HostMapping{
+					{
+						Pattern:       "dexample.com",
+						ProxiedDomain: "google.com",
+					},
+					{
+						Pattern: "egeosite.dat:test",
+						Ip:      [][]byte{{10, 0, 0, 1}},
+					},
+					{
+						Pattern: "fv2ray.com",
+						Ip:      [][]byte{{127, 0, 0, 1}},
+					},
+					{
+						Pattern: "kgoogle",
+						Ip:      [][]byte{{8, 8, 8, 8}},
+					},
+					{
+						Pattern: "r.*\\.com",
+						Ip:      [][]byte{{8, 8, 4, 4}},
+					},
+				},
+				ExternalRules: map[string]*dns.ConfigPatterns{
+					"geosite.dat:test": {
+						Patterns: []string{
+							"fexample.com",
+						},
 					},
 				},
 				ClientIp: []byte{10, 0, 0, 1},

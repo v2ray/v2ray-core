@@ -390,10 +390,9 @@ func TestStaticHostDomain(t *testing.T) {
 						Port: uint32(port),
 					},
 				},
-				StaticHosts: []*Config_HostMapping{
+				HostRules: []*Config_HostMapping{
 					{
-						Type:          DomainMatchingType_Full,
-						Domain:        "example.com",
+						Pattern:       "fexample.com",
 						ProxiedDomain: "google.com",
 					},
 				},

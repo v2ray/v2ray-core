@@ -25,29 +25,24 @@ func (g *FullMatcherGroup) Match(str string) uint32 {
 	return g.matchers[str]
 }
 
-var fullExists = struct{}{}
-
-// A implemention of Matcher
-type fullGroupMatcher struct {
-	matchers map[string]struct{}
+// An implemention of Matcher
+// Visible for testing only.
+type FullGroupMatcher struct {
+	matchers map[string]bool
 }
 
-func (g *fullGroupMatcher) New() {
-	g.matchers = make(map[string]struct{})
+func (g *FullGroupMatcher) New() {
+	g.matchers = make(map[string]bool)
 }
 
-func (g *fullGroupMatcher) Add(domain string) {
-	g.matchers[domain] = fullExists
+func (g *FullGroupMatcher) Add(domain string) {
+	g.matchers[domain] = true
 }
 
-func (g *fullGroupMatcher) addMatcher(m fullMatcher) {
+func (g *FullGroupMatcher) addMatcher(m fullMatcher) {
 	g.Add(string(m))
 }
 
-func (g *fullGroupMatcher) Match(str string) bool {
-	if len(g.matchers) == 0 {
-		return false
-	}
-	_, exist := g.matchers[str]
-	return exist
+func (g *FullGroupMatcher) Match(str string) bool {
+	return g.matchers[str]
 }

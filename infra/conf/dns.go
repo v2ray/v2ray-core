@@ -156,7 +156,7 @@ func loadExternalRules(pattern string, c *dns.Config) error {
 	if len(kv) != 2 {
 		return newError("invalid external resource: ", arg)
 	}
-  filename, country := kv[0], kv[1]
+	filename, country := kv[0], kv[1]
 	domains, err := loadGeositeWithAttr(filename, country)
 	if err != nil {
 		return newError("invalid external settings from ", filename, ": ", arg).Base(err)

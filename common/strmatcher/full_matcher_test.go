@@ -41,3 +41,41 @@ func TestEmptyFullMatcherGroup(t *testing.T) {
 		t.Error("Expect 0, but ", r)
 	}
 }
+
+func TestFullGroupMatcher(t *testing.T) {
+	g := new(FullGroupMatcher)
+	g.New()
+	g.Add("v2ray.com")
+	g.Add("google.com")
+	g.Add("x.a.com")
+
+	testCases := []struct {
+		Domain string
+		Result bool
+	}{
+		{
+			Domain: "v2ray.com",
+			Result: true,
+		},
+		{
+			Domain: "y.com",
+			Result: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		r := g.Match(testCase.Domain)
+		if r != testCase.Result {
+			t.Error("Failed to match domain: ", testCase.Domain, ", expect ", testCase.Result, ", but got ", r)
+		}
+	}
+}
+
+func TestEmptyFullGroupMatcher(t *testing.T) {
+	g := new(FullGroupMatcher)
+	g.New()
+	r := g.Match("v2ray.com")
+	if r != false {
+		t.Error("Expect false, but ", r)
+	}
+}

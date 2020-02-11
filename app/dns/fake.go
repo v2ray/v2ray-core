@@ -45,3 +45,10 @@ func GetDomainForFakeIP(ip net.Address) string {
 	}
 	return ipMapper[ip]
 }
+
+// For testing only
+func ResetFakeIPServer() {
+	domainMapper = make(map[string][]net.Address)
+	ipMapper = make(map[net.Address]string)
+	matcher = new(strmatcher.OrMatcher)
+}
