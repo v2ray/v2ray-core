@@ -82,7 +82,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		server.clientIP = net.IP(config.ClientIp)
 	}
 
-	hosts, err := NewStaticHosts(config.StaticHosts, config.Hosts)
+	hosts, err := NewStaticHosts(config.HostRules, config.Hosts, config.ExternalRules)
 	if err != nil {
 		return nil, newError("failed to create hosts").Base(err)
 	}

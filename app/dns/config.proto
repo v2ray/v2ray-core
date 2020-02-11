@@ -45,8 +45,8 @@ message Config {
   bytes client_ip = 3;
 
   message HostMapping {
-    DomainMatchingType type = 1;
-    string domain = 2;
+    DomainMatchingType type = 1 [deprecated = true];
+    string pattern = 2;
 
     repeated bytes ip = 3;
 
@@ -55,10 +55,18 @@ message Config {
     string proxied_domain = 4;
   }
 
-  repeated HostMapping static_hosts = 4;
+  repeated HostMapping static_hosts = 4 [deprecated = true];
 
   // Tag is the inbound tag of DNS client.
   string tag = 6;
 
   bool UseFake = 7;
+
+  repeated HostMapping host_rules = 8;
+
+  message patterns {
+    repeated string patterns = 1;
+  }
+
+  map<string, patterns> external_rules = 9;
 }

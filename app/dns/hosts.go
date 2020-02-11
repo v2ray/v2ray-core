@@ -35,7 +35,7 @@ func toStrMatcher(t DomainMatchingType, domain string) (strmatcher.Matcher, erro
 }
 
 // NewStaticHosts creates a new StaticHosts instance.
-func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain) (*StaticHosts, error) {
+func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain, externRules map[string]*ConfigPatterns) (*StaticHosts, error) {
 	g := new(strmatcher.MatcherGroup)
 	sh := &StaticHosts{
 		ips:      make([][]net.Address, len(hosts)+len(legacy)+16),
@@ -46,9 +46,8 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 		features.PrintDeprecatedFeatureWarning("simple host mapping")
 
 		for domain, ip := range legacy {
-			matcher, err := strmatcher.Full.New(domain)
+			id, err := g.ParsePattern("f"+domain, make(map[string][]string))
 			common.Must(err)
-			id := g.Add(matcher)
 
 			address := ip.AsAddress()
 			if address.Family().IsDomain() {
@@ -59,12 +58,15 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 		}
 	}
 
+	rawExternalRules := make(map[string][]string)
+	for key, value := range externRules {
+		rawExternalRules[key] = value.Patterns
+	}
 	for _, mapping := range hosts {
-		matcher, err := toStrMatcher(mapping.Type, mapping.Domain)
+		id, err := g.ParsePattern(mapping.Pattern, rawExternalRules)
 		if err != nil {
 			return nil, newError("failed to create domain matcher").Base(err)
 		}
-		id := g.Add(matcher)
 		ips := make([]net.Address, 0, len(mapping.Ip)+1)
 		if len(mapping.Ip) > 0 {
 			for _, ip := range mapping.Ip {
@@ -77,7 +79,7 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 		} else if len(mapping.ProxiedDomain) > 0 {
 			ips = append(ips, net.DomainAddress(mapping.ProxiedDomain))
 		} else {
-			return nil, newError("neither IP address nor proxied domain specified for domain: ", mapping.Domain).AtWarning()
+			return nil, newError("neither IP address nor proxied domain specified for domain: ", mapping.Pattern).AtWarning()
 		}
 
 		// Special handling for localhost IPv6. This is a dirty workaround as JSON config supports only single IP mapping.

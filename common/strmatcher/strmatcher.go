@@ -66,6 +66,60 @@ type MatcherGroup struct {
 	otherMatchers []matcherEntry
 }
 
+// Add adds a new Matcher into the MatcherGroup without adding index
+func (g *MatcherGroup) addChild(m Matcher) {
+	c := g.count
+	switch tm := m.(type) {
+	case fullMatcher:
+		g.fullMatcher.addMatcher(tm, c)
+	case domainMatcher:
+		g.domainMatcher.addMatcher(tm, c)
+	default:
+		g.otherMatchers = append(g.otherMatchers, matcherEntry{
+			m:  m,
+			id: c,
+		})
+	}
+}
+
+func (mg *MatcherGroup) subPattern(pattern string, extern map[string][]string) error {
+	cmd := pattern[0]
+	left := pattern[1:len(pattern)]
+	var m Matcher = nil
+	var err error = nil
+	switch cmd {
+	case 'd': // Domain
+		m = domainMatcher(left)
+	case 'r': // Regexp
+		r, err := regexp.Compile(left)
+		if err != nil {
+			return nil
+		}
+		m = &regexMatcher{
+			pattern: r,
+		}
+	case 'k': // Keyword
+		m = substrMatcher(left)
+	case 'f': // Full
+		m = fullMatcher(left)
+	case 'e': // External
+		for _, newPattern := range extern[left] {
+			mg.subPattern(newPattern, extern)
+		}
+	default:
+		panic("Unknown type")
+	}
+	if m != nil {
+		mg.addChild(m)
+	}
+	return err
+}
+
+func (mg *MatcherGroup) ParsePattern(pattern string, extern map[string][]string) (uint32, error) {
+	mg.count++
+	return mg.count, mg.subPattern(pattern, extern)
+}
+
 // Add adds a new Matcher into the MatcherGroup, and returns its index. The index will never be 0.
 func (g *MatcherGroup) Add(m Matcher) uint32 {
 	g.count++
