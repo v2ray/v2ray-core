@@ -11,12 +11,15 @@ var domainMapper map[string][]net.Address = make(map[string][]net.Address)
 var ipMapper map[net.Address]string = make(map[net.Address]string)
 var matcher *strmatcher.OrMatcher = new(strmatcher.OrMatcher)
 
+// Initialize matcher for domain name checking
 func InitFakeIPServer(patterns []string, externalRules map[string][]string) {
 	matcher.New()
 	for _, pattern := range patterns {
 		matcher.ParsePattern(pattern, externalRules)
 	}
 }
+
+// Check if we should response with a fake IP for a domain name
 func GetFakeIPForDomain(domain string) []net.Address {
 	if !matcher.Match(domain) {
 		return nil
@@ -34,6 +37,8 @@ func GetFakeIPForDomain(domain string) []net.Address {
 	}
 	return domainMapper[domain]
 }
+
+// Check if a IP is a fake IP and return its corresponding domain name
 func GetDomainForFakeIP(ip net.Address) string {
 	if len(ipMapper) == 0 {
 		return ""

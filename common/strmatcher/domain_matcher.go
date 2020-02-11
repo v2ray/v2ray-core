@@ -91,6 +91,7 @@ type domainNode struct {
 	sub map[string]*domainNode
 }
 
+// domainGroupMatcher is a Matcher for a large set of Domain matchers.
 type domainGroupMatcher struct {
 	root *domainNode
 }

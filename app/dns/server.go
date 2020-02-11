@@ -71,6 +71,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		tag:     config.Tag,
 	}
 
+	// Prepare external rules for matchers generating
 	rawExternalRules := make(map[string][]string)
 	for key, value := range config.ExternalRules {
 		rawExternalRules[key] = value.Patterns

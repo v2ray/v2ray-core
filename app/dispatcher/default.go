@@ -203,11 +203,12 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 		ctx = session.ContextWithContent(ctx, content)
 	}
 	sniffingRequest := content.SniffingRequest
-	fake_domain := dns.GetDomainForFakeIP(destination.Address)
-	if fake_domain != "" {
+	// Check if this is a fake ip
+	fakeDomain := dns.GetDomainForFakeIP(destination.Address)
+	if fakeDomain != "" {
 		go func() {
-			newError("got domain ", fake_domain, " from fake ip ", destination.Address.String()).WriteToLog(session.ExportIDToError(ctx))
-			destination.Address = net.ParseAddress(fake_domain)
+			newError("got domain ", fakeDomain, " from fake ip ", destination.Address.String()).WriteToLog(session.ExportIDToError(ctx))
+			destination.Address = net.ParseAddress(fakeDomain)
 			ob.Target = destination
 			d.routedDispatch(ctx, outbound, destination)
 		}()

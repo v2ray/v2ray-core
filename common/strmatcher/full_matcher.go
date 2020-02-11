@@ -1,5 +1,6 @@
 package strmatcher
 
+// A implemention of IndexMatcher
 type FullMatcherGroup struct {
 	matchers map[string]uint32
 }
@@ -26,6 +27,7 @@ func (g *FullMatcherGroup) Match(str string) uint32 {
 
 var fullExists = struct{}{}
 
+// A implemention of Matcher
 type fullGroupMatcher struct {
 	matchers map[string]struct{}
 }

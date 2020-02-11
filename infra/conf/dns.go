@@ -140,7 +140,7 @@ var typeMapper = map[router.Domain_Type]string{
 func compressPattern(pattern string) string {
 	for prefix, cmd := range prefixMapper {
 		if strings.HasPrefix(pattern, prefix) {
-			return cmd + pattern[len(prefix):len(pattern)]
+			return cmd + pattern[len(prefix):]
 		}
 	}
 	return "f" + pattern // If no prefix, use full match by default
@@ -148,15 +148,15 @@ func compressPattern(pattern string) string {
 
 func loadExternalRules(pattern string, c *dns.Config) error {
 	cmd := pattern[0]
-	arg := pattern[1:]
-	var filename, country string
-	if cmd == 'e' {
-		kv := strings.Split(arg, ":")
-		if len(kv) != 2 {
-			return newError("invalid external resource: ", arg)
-		}
-		filename, country = kv[0], kv[1]
+	if cmd != 'e' {
+		return nil
 	}
+	arg := pattern[1:]
+	kv := strings.Split(arg, ":")
+	if len(kv) != 2 {
+		return newError("invalid external resource: ", arg)
+	}
+  filename, country := kv[0], kv[1]
 	domains, err := loadGeositeWithAttr(filename, country)
 	if err != nil {
 		return newError("invalid external settings from ", filename, ": ", arg).Base(err)

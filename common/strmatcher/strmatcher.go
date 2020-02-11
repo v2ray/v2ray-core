@@ -82,27 +82,33 @@ func (g *MatcherGroup) addChild(m Matcher) {
 	}
 }
 
+// Parse a pattern to a part of MatcherGroup
 func (mg *MatcherGroup) subPattern(pattern string, extern map[string][]string) error {
 	cmd := pattern[0]
-	left := pattern[1:len(pattern)]
+	left := pattern[1:]
 	var m Matcher = nil
-	var err error = nil
 	switch cmd {
-	case 'd': // Domain
+	case 'd':
+		// Domain
 		m = domainMatcher(left)
-	case 'r': // Regexp
+	case 'r':
+		// Regexp
+		// Return error at the end of function
 		r, err := regexp.Compile(left)
 		if err != nil {
-			return nil
+			return err
 		}
 		m = &regexMatcher{
 			pattern: r,
 		}
-	case 'k': // Keyword
+	case 'k':
+		// Keyword
 		m = substrMatcher(left)
-	case 'f': // Full
+	case 'f':
+		// Full
 		m = fullMatcher(left)
-	case 'e': // External
+	case 'e':
+		// External
 		for _, newPattern := range extern[left] {
 			mg.subPattern(newPattern, extern)
 		}
@@ -112,9 +118,10 @@ func (mg *MatcherGroup) subPattern(pattern string, extern map[string][]string) e
 	if m != nil {
 		mg.addChild(m)
 	}
-	return err
+	return nil
 }
 
+// Parse a pattern to a part of MatcherGroup and return its index. The index will never be 0.
 func (mg *MatcherGroup) ParsePattern(pattern string, extern map[string][]string) (uint32, error) {
 	mg.count++
 	return mg.count, mg.subPattern(pattern, extern)
@@ -174,6 +181,7 @@ func (g *OrMatcher) New() {
 	g.fullMatchers.New()
 }
 
+// Match implements Matcher.Match.
 func (g *OrMatcher) Match(pattern string) bool {
 	if g.fullMatchers.Match(pattern) || g.domainMatchers.Match(pattern) {
 		return true
@@ -200,35 +208,41 @@ func (g *OrMatcher) Add(m Matcher) {
 	}
 }
 
-func (g *OrMatcher) ParsePattern(pattern string, extern map[string][]string) error {
+// Parse a pattern to a part of OrMatcher
+func (mg *OrMatcher) ParsePattern(pattern string, extern map[string][]string) error {
 	cmd := pattern[0]
-	left := pattern[1:len(pattern)]
+	left := pattern[1:]
 	var m Matcher = nil
-	var err error = nil
 	switch cmd {
-	case 'd': // Domain
+	case 'd':
+		// Domain
 		m = domainMatcher(left)
-	case 'r': // Regexp
+	case 'r':
+		// Regexp
+		// Return error at the end of function
 		r, err := regexp.Compile(left)
 		if err != nil {
-			return nil
+			return err
 		}
 		m = &regexMatcher{
 			pattern: r,
 		}
-	case 'k': // Keyword
+	case 'k':
+		// Keyword
 		m = substrMatcher(left)
-	case 'f': // Full
+	case 'f':
+		// Full
 		m = fullMatcher(left)
-	case 'e': // External
+	case 'e':
+		// External
 		for _, newPattern := range extern[left] {
-			g.ParsePattern(newPattern, extern)
+			mg.ParsePattern(newPattern, extern)
 		}
 	default:
 		panic("Unknown type")
 	}
 	if m != nil {
-		g.Add(m)
+		mg.Add(m)
 	}
-	return err
+	return nil
 }
