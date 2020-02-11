@@ -41,11 +41,13 @@ func (c *NameServerConfig) UnmarshalJSON(data []byte) error {
 	return newError("failed to parse name server: ", string(data))
 }
 
+// FakeIPConfig contains configurations for fake IP function
 type FakeIPConfig struct {
 	FakeRules []string
 	FakeNet   string
 }
 
+// UnmarshalJSON is an implemention for unmarshal json data
 func (c *FakeIPConfig) UnmarshalJSON(data []byte) error {
 	var advanced struct {
 		FakeRules []string `json:"fakeRules"`

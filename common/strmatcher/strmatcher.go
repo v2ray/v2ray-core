@@ -67,15 +67,15 @@ type MatcherGroup struct {
 }
 
 // Add adds a new Matcher into the MatcherGroup without adding index
-func (g *MatcherGroup) addChild(m Matcher) {
-	c := g.count
+func (mg *MatcherGroup) addChild(m Matcher) {
+	c := mg.count
 	switch tm := m.(type) {
 	case fullMatcher:
-		g.fullMatcher.addMatcher(tm, c)
+		mg.fullMatcher.addMatcher(tm, c)
 	case domainMatcher:
-		g.domainMatcher.addMatcher(tm, c)
+		mg.domainMatcher.addMatcher(tm, c)
 	default:
-		g.otherMatchers = append(g.otherMatchers, matcherEntry{
+		mg.otherMatchers = append(mg.otherMatchers, matcherEntry{
 			m:  m,
 			id: c,
 		})
@@ -86,7 +86,7 @@ func (g *MatcherGroup) addChild(m Matcher) {
 func (mg *MatcherGroup) subPattern(pattern string, extern map[string][]string) error {
 	cmd := pattern[0]
 	left := pattern[1:]
-	var m Matcher = nil
+	var m Matcher
 	switch cmd {
 	case 'd':
 		// Domain
@@ -121,24 +121,24 @@ func (mg *MatcherGroup) subPattern(pattern string, extern map[string][]string) e
 	return nil
 }
 
-// Parse a pattern to a part of MatcherGroup and return its index. The index will never be 0.
+// ParsePattern parses a pattern to a part of MatcherGroup and return its index. The index will never be 0.
 func (mg *MatcherGroup) ParsePattern(pattern string, extern map[string][]string) (uint32, error) {
 	mg.count++
 	return mg.count, mg.subPattern(pattern, extern)
 }
 
 // Add adds a new Matcher into the MatcherGroup, and returns its index. The index will never be 0.
-func (g *MatcherGroup) Add(m Matcher) uint32 {
-	g.count++
-	c := g.count
+func (mg *MatcherGroup) Add(m Matcher) uint32 {
+	mg.count++
+	c := mg.count
 
 	switch tm := m.(type) {
 	case fullMatcher:
-		g.fullMatcher.addMatcher(tm, c)
+		mg.fullMatcher.addMatcher(tm, c)
 	case domainMatcher:
-		g.domainMatcher.addMatcher(tm, c)
+		mg.domainMatcher.addMatcher(tm, c)
 	default:
-		g.otherMatchers = append(g.otherMatchers, matcherEntry{
+		mg.otherMatchers = append(mg.otherMatchers, matcherEntry{
 			m:  m,
 			id: c,
 		})
@@ -148,16 +148,16 @@ func (g *MatcherGroup) Add(m Matcher) uint32 {
 }
 
 // Match implements IndexMatcher.Match.
-func (g *MatcherGroup) Match(pattern string) uint32 {
-	if c := g.fullMatcher.Match(pattern); c > 0 {
+func (mg *MatcherGroup) Match(pattern string) uint32 {
+	if c := mg.fullMatcher.Match(pattern); c > 0 {
 		return c
 	}
 
-	if c := g.domainMatcher.Match(pattern); c > 0 {
+	if c := mg.domainMatcher.Match(pattern); c > 0 {
 		return c
 	}
 
-	for _, e := range g.otherMatchers {
+	for _, e := range mg.otherMatchers {
 		if e.m.Match(pattern) {
 			return e.id
 		}
@@ -167,16 +167,18 @@ func (g *MatcherGroup) Match(pattern string) uint32 {
 }
 
 // Size returns the number of matchers in the MatcherGroup.
-func (g *MatcherGroup) Size() uint32 {
-	return g.count
+func (mg *MatcherGroup) Size() uint32 {
+	return mg.count
 }
 
+// OrMatcher is a implementation of Matcher
 type OrMatcher struct {
 	fullMatchers   FullGroupMatcher
 	domainMatchers DomainGroupMatcher
 	otherMatchers  []Matcher
 }
 
+// New an OrMatcher
 func (g *OrMatcher) New() {
 	g.fullMatchers.New()
 }
@@ -208,11 +210,11 @@ func (g *OrMatcher) Add(m Matcher) {
 	}
 }
 
-// Parse a pattern to a part of OrMatcher
-func (mg *OrMatcher) ParsePattern(pattern string, extern map[string][]string) error {
+// ParsePattern parses a pattern to a part of OrMatcher
+func (g *OrMatcher) ParsePattern(pattern string, extern map[string][]string) error {
 	cmd := pattern[0]
 	left := pattern[1:]
-	var m Matcher = nil
+	var m Matcher
 	switch cmd {
 	case 'd':
 		// Domain
@@ -236,13 +238,13 @@ func (mg *OrMatcher) ParsePattern(pattern string, extern map[string][]string) er
 	case 'e':
 		// External
 		for _, newPattern := range extern[left] {
-			mg.ParsePattern(newPattern, extern)
+			g.ParsePattern(newPattern, extern)
 		}
 	default:
 		panic("Unknown type")
 	}
 	if m != nil {
-		mg.Add(m)
+		g.Add(m)
 	}
 	return nil
 }

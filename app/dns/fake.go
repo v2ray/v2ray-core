@@ -8,9 +8,9 @@ import (
 	"v2ray.com/core/common/strmatcher"
 )
 
-var domainMapper map[string][]net.Address = make(map[string][]net.Address)
-var ipMapper map[uint32]string = make(map[uint32]string)
-var matcher *strmatcher.OrMatcher = new(strmatcher.OrMatcher)
+var domainMapper = make(map[string][]net.Address)
+var ipMapper = make(map[uint32]string)
+var matcher = new(strmatcher.OrMatcher)
 var ip net.IP
 
 // Begin of ipMapper index
@@ -21,7 +21,7 @@ func getIPSum(i net.IP) uint32 {
 	return (uint32(i[0]) << 24) | (uint32(i[1]) << 16) | (uint32(i[2]) << 8) | uint32(i[3])
 }
 
-// Initialize matcher for domain name checking
+// InitFakeIPServer initializes matcher for domain name checking
 func InitFakeIPServer(fake *Config_Fake, externalRules map[string][]string) error {
 	if fake != nil {
 		matcher.New()
@@ -46,7 +46,7 @@ func InitFakeIPServer(fake *Config_Fake, externalRules map[string][]string) erro
 	return nil
 }
 
-// Check if we should response with a fake IP for a domain name
+// GetFakeIPForDomain checks if we should response with a fake IP for a domain name
 func GetFakeIPForDomain(domain string) []net.Address {
 	if !matcher.Match(domain) {
 		return nil
@@ -78,7 +78,7 @@ func GetFakeIPForDomain(domain string) []net.Address {
 	return domainMapper[domain]
 }
 
-// Check if a IP is a fake IP and return its corresponding domain name
+// GetDomainForFakeIP checks if a IP is a fake IP and return its corresponding domain name
 func GetDomainForFakeIP(ip net.Address) string {
 	if len(ipMapper) == 0 {
 		return ""
@@ -86,7 +86,7 @@ func GetDomainForFakeIP(ip net.Address) string {
 	return ipMapper[begin|getIPSum(ip.IP())]
 }
 
-// For testing only
+// ResetFakeIPServer is for testing only
 func ResetFakeIPServer() {
 	domainMapper = make(map[string][]net.Address)
 	ipMapper = make(map[uint32]string)

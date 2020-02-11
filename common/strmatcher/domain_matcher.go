@@ -98,6 +98,7 @@ type DomainGroupMatcher struct {
 	root *domainNode
 }
 
+// Add a domain for matching
 func (g *DomainGroupMatcher) Add(domain string) {
 	if g.root == nil {
 		g.root = new(domainNode)
@@ -131,6 +132,7 @@ func (g *DomainGroupMatcher) addMatcher(m domainMatcher) {
 	g.Add(string(m))
 }
 
+// Match is an implementation of Matcher.Match.
 func (g *DomainGroupMatcher) Match(domain string) bool {
 	if domain == "" {
 		return false
