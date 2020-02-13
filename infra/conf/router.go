@@ -63,6 +63,8 @@ func (c *RouterConfig) getDomainStrategy() router.Config_DomainStrategy {
 	}
 }
 
+var externalRouterRules = make(map[string][]string)
+
 func (c *RouterConfig) Build() (*router.Config, error) {
 	config := new(router.Config)
 	config.DomainStrategy = c.getDomainStrategy()
@@ -84,6 +86,14 @@ func (c *RouterConfig) Build() (*router.Config, error) {
 			return nil, err
 		}
 		config.BalancingRule = append(config.BalancingRule, balancer)
+	}
+	if len(externalRouterRules) != 0 {
+		config.ExternalRules = make(map[string]*router.ConfigPatterns)
+		for key, value := range externalRouterRules {
+			config.ExternalRules[key] = &router.ConfigPatterns{
+				Patterns: value,
+			}
+		}
 	}
 	return config, nil
 }
@@ -251,49 +261,16 @@ func loadGeositeWithAttr(file string, siteWithAttr string) ([]*router.Domain, er
 	return filteredDomains, nil
 }
 
-func parseDomainRule(domain string) ([]*router.Domain, error) {
-	if strings.HasPrefix(domain, "geosite:") {
-		country := strings.ToUpper(domain[8:])
-		domains, err := loadGeositeWithAttr("geosite.dat", country)
-		if err != nil {
-			return nil, newError("failed to load geosite: ", country).Base(err)
-		}
-		return domains, nil
+func parseDomainRule(domain string) (*router.Domain, error) {
+	newPattern, err := compressPattern(domain, externalRouterRules, "k")
+	if err != nil {
+		return nil, newError("invalid domain rule: ", domain).Base(err)
 	}
-
-	if strings.HasPrefix(domain, "ext:") {
-		kv := strings.Split(domain[4:], ":")
-		if len(kv) != 2 {
-			return nil, newError("invalid external resource: ", domain)
-		}
-		filename := kv[0]
-		country := kv[1]
-		domains, err := loadGeositeWithAttr(filename, country)
-		if err != nil {
-			return nil, newError("failed to load external sites: ", country, " from ", filename).Base(err)
-		}
-		return domains, nil
+	ret := &router.Domain{
+		Type:  router.Domain_New,
+		Value: newPattern,
 	}
-
-	domainRule := new(router.Domain)
-	switch {
-	case strings.HasPrefix(domain, "regexp:"):
-		domainRule.Type = router.Domain_Regex
-		domainRule.Value = domain[7:]
-	case strings.HasPrefix(domain, "domain:"):
-		domainRule.Type = router.Domain_Domain
-		domainRule.Value = domain[7:]
-	case strings.HasPrefix(domain, "full:"):
-		domainRule.Type = router.Domain_Full
-		domainRule.Value = domain[5:]
-	case strings.HasPrefix(domain, "keyword:"):
-		domainRule.Type = router.Domain_Plain
-		domainRule.Value = domain[8:]
-	default:
-		domainRule.Type = router.Domain_Plain
-		domainRule.Value = domain
-	}
-	return []*router.Domain{domainRule}, nil
+	return ret, nil
 }
 
 func toCidrList(ips StringList) ([]*router.GeoIP, error) {
@@ -386,11 +363,11 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 
 	if rawFieldRule.Domain != nil {
 		for _, domain := range *rawFieldRule.Domain {
-			rules, err := parseDomainRule(domain)
+			newRule, err := parseDomainRule(domain)
 			if err != nil {
 				return nil, newError("failed to parse domain rule: ", domain).Base(err)
 			}
-			rule.Domain = append(rule.Domain, rules...)
+			rule.Domain = append(rule.Domain, newRule)
 		}
 	}
 

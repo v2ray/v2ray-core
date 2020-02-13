@@ -21,10 +21,12 @@ message Domain {
     Domain = 2;
     // The value is a domain.
     Full = 3;
+    // The value is a pattern in new style.
+    New = 4;
   }
 
   // Domain matching type.
-  Type type = 1;
+  Type type = 1 [deprecated = true];
 
   // Domain value.
   string value = 2;
@@ -139,4 +141,10 @@ message Config {
   DomainStrategy domain_strategy = 1;
   repeated RoutingRule rule = 2;
   repeated BalancingRule balancing_rule = 3;
+
+  message patterns {
+    repeated string patterns = 1;
+  }
+
+  map<string, patterns> external_rules = 4;
 }

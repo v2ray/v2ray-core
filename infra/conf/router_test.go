@@ -75,12 +75,12 @@ func TestRouterConfig(t *testing.T) {
 					{
 						Domain: []*router.Domain{
 							{
-								Type:  router.Domain_Plain,
-								Value: "baidu.com",
+								Type:  router.Domain_New,
+								Value: "kbaidu.com",
 							},
 							{
-								Type:  router.Domain_Plain,
-								Value: "qq.com",
+								Type:  router.Domain_New,
+								Value: "kqq.com",
 							},
 						},
 						TargetTag: &router.RoutingRule_Tag{
@@ -163,12 +163,12 @@ func TestRouterConfig(t *testing.T) {
 					{
 						Domain: []*router.Domain{
 							{
-								Type:  router.Domain_Plain,
-								Value: "baidu.com",
+								Type:  router.Domain_New,
+								Value: "kbaidu.com",
 							},
 							{
-								Type:  router.Domain_Plain,
-								Value: "qq.com",
+								Type:  router.Domain_New,
+								Value: "kqq.com",
 							},
 						},
 						TargetTag: &router.RoutingRule_Tag{
@@ -226,12 +226,12 @@ func TestRouterConfig(t *testing.T) {
 					{
 						Domain: []*router.Domain{
 							{
-								Type:  router.Domain_Plain,
-								Value: "baidu.com",
+								Type:  router.Domain_New,
+								Value: "kbaidu.com",
 							},
 							{
-								Type:  router.Domain_Plain,
-								Value: "qq.com",
+								Type:  router.Domain_New,
+								Value: "kqq.com",
 							},
 						},
 						TargetTag: &router.RoutingRule_Tag{

@@ -50,9 +50,15 @@ func (r *Router) Init(config *Config, d dns.Client, ohm outbound.Manager) error 
 		r.balancers[rule.Tag] = balancer
 	}
 
+	// Prepare external rules for matchers generating
+	rawExternalRules := make(map[string][]string)
+	for key, value := range config.ExternalRules {
+		rawExternalRules[key] = value.Patterns
+	}
+
 	r.rules = make([]*Rule, 0, len(config.Rule))
 	for _, rule := range config.Rule {
-		cond, err := rule.BuildCondition()
+		cond, err := rule.BuildCondition(rawExternalRules)
 		if err != nil {
 			return err
 		}

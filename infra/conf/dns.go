@@ -60,7 +60,7 @@ func (c *FakeIPConfig) UnmarshalJSON(data []byte) error {
 	return newError("failed to parse fake config: ", string(data))
 }
 
-var externalRules = make(map[string][]string)
+var externalDNSRules = make(map[string][]string)
 
 func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 	if c.Address == nil {
@@ -70,7 +70,7 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 	var domains []*dns.NameServer_PriorityDomain
 
 	for _, d := range c.Domains {
-		newPattern, err := compressPattern(d, externalRules)
+		newPattern, err := compressPattern(d, externalDNSRules, "d")
 		if err != nil {
 			return nil, newError("invalid domain rule: ", d).Base(err)
 		}
@@ -114,7 +114,7 @@ func getHostMapping(addr *Address, pattern string) (*dns.Config_HostMapping, err
 	} else {
 		item.ProxiedDomain = addr.Domain()
 	}
-	newPattern, err := compressPattern(pattern, externalRules)
+	newPattern, err := compressPattern(pattern, externalDNSRules, "f")
 	if err != nil {
 		return nil, newError("invalid domain rule: ", pattern).Base(err)
 	}
@@ -162,7 +162,7 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 			fakeRules := make([]string, len(c.Fake.FakeRules))
 			i := 0
 			for _, pattern := range c.Fake.FakeRules {
-				newPattern, err := compressPattern(pattern, externalRules)
+				newPattern, err := compressPattern(pattern, externalDNSRules, "f")
 				if err == nil {
 					fakeRules[i] = newPattern
 					i++
@@ -172,14 +172,14 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 		}
 	}
 
-  if len(externalRules) != 0 {
-    config.ExternalRules = make(map[string]*dns.ConfigPatterns)
-    for key, value := range externalRules {
-      config.ExternalRules[key] = &dns.ConfigPatterns {
-        Patterns: value,
-      }
-    }
-  }
+	if len(externalDNSRules) != 0 {
+		config.ExternalRules = make(map[string]*dns.ConfigPatterns)
+		for key, value := range externalDNSRules {
+			config.ExternalRules[key] = &dns.ConfigPatterns{
+				Patterns: value,
+			}
+		}
+	}
 
 	return config, nil
 }

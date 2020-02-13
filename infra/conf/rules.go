@@ -1,7 +1,7 @@
-package conf;
+package conf
 
 import (
-  "strings"
+	"strings"
 
 	"v2ray.com/core/app/router"
 )
@@ -50,7 +50,7 @@ func loadExternalRules(pattern string, external map[string][]string) error {
 	return nil
 }
 
-func compressPattern(pattern string, external map[string][]string) (string, error) {
+func compressPattern(pattern string, external map[string][]string, def string) (string, error) {
 	for prefix, cmd := range prefixMapper {
 		if strings.HasPrefix(pattern, prefix) {
 			newPattern := cmd + pattern[len(prefix):]
@@ -62,6 +62,6 @@ func compressPattern(pattern string, external map[string][]string) (string, erro
 			return newPattern, nil
 		}
 	}
-	// If no prefix, use full match by default
-	return "f" + pattern, nil
+	// If no prefix, use specified
+	return def + pattern, nil
 }

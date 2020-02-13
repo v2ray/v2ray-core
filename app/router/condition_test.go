@@ -49,16 +49,16 @@ func TestRoutingRule(t *testing.T) {
 			rule: &RoutingRule{
 				Domain: []*Domain{
 					{
-						Value: "v2ray.com",
-						Type:  Domain_Plain,
+						Value: "kv2ray.com",
+						Type:  Domain_New,
 					},
 					{
-						Value: "google.com",
-						Type:  Domain_Domain,
+						Value: "dgoogle.com",
+						Type:  Domain_New,
 					},
 					{
-						Value: "^facebook\\.com$",
-						Type:  Domain_Regex,
+						Value: "r^facebook\\.com$",
+						Type:  Domain_New,
 					},
 				},
 			},
@@ -279,7 +279,7 @@ func TestRoutingRule(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		cond, err := test.rule.BuildCondition()
+		cond, err := test.rule.BuildCondition(make(map[string][]string))
 		common.Must(err)
 
 		for _, subtest := range test.test {
@@ -314,7 +314,7 @@ func TestChinaSites(t *testing.T) {
 	domains, err := loadGeoSite("CN")
 	common.Must(err)
 
-	matcher, err := NewDomainMatcher(domains)
+	matcher, err := NewDomainMatcher(domains, make(map[string][]string))
 	common.Must(err)
 
 	type TestCase struct {

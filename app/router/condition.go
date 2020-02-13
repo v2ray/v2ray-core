@@ -41,39 +41,30 @@ func (v *ConditionChan) Len() int {
 	return len(*v)
 }
 
-var matcherTypeMap = map[Domain_Type]strmatcher.Type{
-	Domain_Plain:  strmatcher.Substr,
-	Domain_Regex:  strmatcher.Regex,
-	Domain_Domain: strmatcher.Domain,
-	Domain_Full:   strmatcher.Full,
-}
-
-func domainToMatcher(domain *Domain) (strmatcher.Matcher, error) {
-	matcherType, f := matcherTypeMap[domain.Type]
-	if !f {
-		return nil, newError("unsupported domain type", domain.Type)
-	}
-
-	matcher, err := matcherType.New(domain.Value)
-	if err != nil {
-		return nil, newError("failed to create domain matcher").Base(err)
-	}
-
-	return matcher, nil
-}
-
+// DomainMatcher is a warpper for matching domain names
 type DomainMatcher struct {
-	matchers strmatcher.IndexMatcher
+	matchers strmatcher.Matcher
 }
 
-func NewDomainMatcher(domains []*Domain) (*DomainMatcher, error) {
-	g := new(strmatcher.MatcherGroup)
+var typeMapper = map[Domain_Type]string{
+	Domain_Plain:  "k",
+	Domain_Regex:  "r",
+	Domain_Domain: "d",
+	Domain_Full:   "f",
+}
+
+// NewDomainMatcher generate a matcher for matching domain names
+func NewDomainMatcher(domains []*Domain, external map[string][]string) (*DomainMatcher, error) {
+	g := new(strmatcher.OrMatcher)
+  g.New()
 	for _, d := range domains {
-		m, err := domainToMatcher(d)
+		if d.Type != Domain_New {
+			d.Value = typeMapper[d.Type] + d.Value
+		}
+		err := g.ParsePattern(d.Value, external)
 		if err != nil {
 			return nil, err
 		}
-		g.Add(m)
 	}
 
 	return &DomainMatcher{
@@ -82,7 +73,7 @@ func NewDomainMatcher(domains []*Domain) (*DomainMatcher, error) {
 }
 
 func (m *DomainMatcher) ApplyDomain(domain string) bool {
-	return m.matchers.Match(domain) > 0
+	return m.matchers.Match(domain)
 }
 
 func (m *DomainMatcher) Apply(ctx *Context) bool {

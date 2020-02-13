@@ -63,11 +63,12 @@ func (r *Rule) Apply(ctx *Context) bool {
 	return r.Condition.Apply(ctx)
 }
 
-func (rr *RoutingRule) BuildCondition() (Condition, error) {
+// BuildCondition generate a Condition for matching a routing rule
+func (rr *RoutingRule) BuildCondition(external map[string][]string) (Condition, error) {
 	conds := NewConditionChan()
 
 	if len(rr.Domain) > 0 {
-		matcher, err := NewDomainMatcher(rr.Domain)
+		matcher, err := NewDomainMatcher(rr.Domain, external)
 		if err != nil {
 			return nil, newError("failed to build domain condition").Base(err)
 		}
