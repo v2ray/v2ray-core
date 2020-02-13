@@ -87,7 +87,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		server.clientIP = net.IP(config.ClientIp)
 	}
 
-	hosts, err := NewStaticHosts(config.HostRules, config.StaticHosts, config.Hosts, rawExternalRules)
+	hosts, err := NewStaticHosts(config.StaticHosts, config.Hosts, rawExternalRules)
 	if err != nil {
 		return nil, newError("failed to create hosts").Base(err)
 	}
@@ -158,11 +158,13 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 			idx := addNameServer(ns.Address)
 
 			for _, domain := range ns.PrioritizedDomain {
-				matcher, err := toStrMatcher(domain.Type, domain.Domain)
+				if domain.Type != DomainMatchingType_New {
+					domain.Domain = typeMapper[domain.Type] + domain.Domain
+				}
+				midx, err := domainMatcher.ParsePattern(domain.Domain, rawExternalRules)
 				if err != nil {
 					return nil, newError("failed to create prioritized domain").Base(err).AtWarning()
 				}
-				midx := domainMatcher.Add(matcher)
 				domainIndexMap[midx] = uint32(idx)
 			}
 

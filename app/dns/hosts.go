@@ -42,10 +42,10 @@ var typeMapper = map[DomainMatchingType]string{
 }
 
 // NewStaticHosts creates a new StaticHosts instance.
-func NewStaticHosts(host_rules []*Config_HostMapping, hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain, externalRules map[string][]string) (*StaticHosts, error) {
+func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain, externalRules map[string][]string) (*StaticHosts, error) {
 	g := new(strmatcher.MatcherGroup)
 	sh := &StaticHosts{
-		ips:      make([][]net.Address, len(host_rules)+len(hosts)+len(legacy)+16),
+		ips:      make([][]net.Address, len(hosts)+len(legacy)+16),
 		matchers: g,
 	}
 
@@ -66,12 +66,10 @@ func NewStaticHosts(host_rules []*Config_HostMapping, hosts []*Config_HostMappin
 	}
 
 	for _, mapping := range hosts {
-		mapping.Pattern = typeMapper[mapping.Type] + mapping.Pattern
-		host_rules = append(host_rules, mapping)
-	}
-
-	for _, mapping := range host_rules {
-		id, err := g.ParsePattern(mapping.Pattern, externalRules)
+		if mapping.Type != DomainMatchingType_New {
+			mapping.Domain = typeMapper[mapping.Type] + mapping.Domain
+		}
+		id, err := g.ParsePattern(mapping.Domain, externalRules)
 		if err != nil {
 			return nil, newError("failed to create domain matcher").Base(err)
 		}
@@ -87,7 +85,7 @@ func NewStaticHosts(host_rules []*Config_HostMapping, hosts []*Config_HostMappin
 		} else if len(mapping.ProxiedDomain) > 0 {
 			ips = append(ips, net.DomainAddress(mapping.ProxiedDomain))
 		} else {
-			return nil, newError("neither IP address nor proxied domain specified for domain: ", mapping.Pattern).AtWarning()
+			return nil, newError("neither IP address nor proxied domain specified for domain: ", mapping.Domain).AtWarning()
 		}
 
 		// Special handling for localhost IPv6. This is a dirty workaround as JSON config supports only single IP mapping.

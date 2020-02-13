@@ -14,7 +14,7 @@ message NameServer {
   v2ray.core.common.net.Endpoint address = 1;
 
   message PriorityDomain {
-    DomainMatchingType type = 1;
+    DomainMatchingType type = 1 [deprecated = true];
     string domain = 2;
   }
 
@@ -27,6 +27,7 @@ enum DomainMatchingType {
   Subdomain = 1;
   Keyword = 2;
   Regex = 3;
+  New = 4;
 }
 
 message Config {
@@ -46,7 +47,7 @@ message Config {
 
   message HostMapping {
     DomainMatchingType type = 1 [deprecated = true];
-    string pattern = 2;
+    string domain = 2;
 
     repeated bytes ip = 3;
 
@@ -55,7 +56,7 @@ message Config {
     string proxied_domain = 4;
   }
 
-  repeated HostMapping static_hosts = 4 [deprecated = true];
+  repeated HostMapping static_hosts = 4;
 
   // Tag is the inbound tag of DNS client.
   string tag = 6;
@@ -66,11 +67,9 @@ message Config {
   }
   Fake fake = 7;
 
-  repeated HostMapping host_rules = 8;
-
   message patterns {
     repeated string patterns = 1;
   }
 
-  map<string, patterns> external_rules = 9;
+  map<string, patterns> external_rules = 8;
 }

@@ -55,7 +55,7 @@ func (hrw hostRulesWarpper) Swap(i, j int) {
 	hrw.mappings[i], hrw.mappings[j] = hrw.mappings[j], hrw.mappings[i]
 }
 func (hrw hostRulesWarpper) Less(i, j int) bool {
-	return hrw.mappings[i].Pattern < hrw.mappings[j].Pattern
+	return hrw.mappings[i].Domain < hrw.mappings[j].Domain
 }
 
 func TestDnsConfigParsing(t *testing.T) {
@@ -71,7 +71,7 @@ func TestDnsConfigParsing(t *testing.T) {
 				return nil, err
 			}
 			con, err := config.Build()
-			sort.Sort(hostRulesWarpper{con.HostRules})
+			sort.Sort(hostRulesWarpper{con.StaticHosts})
 			return con, err
 		}
 	}
@@ -111,32 +111,37 @@ func TestDnsConfigParsing(t *testing.T) {
 						},
 						PrioritizedDomain: []*dns.NameServer_PriorityDomain{
 							{
-								Type:   dns.DomainMatchingType_Subdomain,
-								Domain: "v2ray.com",
+								Type:   dns.DomainMatchingType_New,
+								Domain: "dv2ray.com",
 							},
 						},
 					},
 				},
-				HostRules: []*dns.Config_HostMapping{
+				StaticHosts: []*dns.Config_HostMapping{
 					{
-						Pattern:       "dexample.com",
+						Type:          dns.DomainMatchingType_New,
+						Domain:        "dexample.com",
 						ProxiedDomain: "google.com",
 					},
 					{
-						Pattern: "egeosite.dat:test",
-						Ip:      [][]byte{{10, 0, 0, 1}},
+						Type:   dns.DomainMatchingType_New,
+						Domain: "egeosite.dat:test",
+						Ip:     [][]byte{{10, 0, 0, 1}},
 					},
 					{
-						Pattern: "fv2ray.com",
-						Ip:      [][]byte{{127, 0, 0, 1}},
+						Type:   dns.DomainMatchingType_New,
+						Domain: "fv2ray.com",
+						Ip:     [][]byte{{127, 0, 0, 1}},
 					},
 					{
-						Pattern: "kgoogle",
-						Ip:      [][]byte{{8, 8, 8, 8}},
+						Type:   dns.DomainMatchingType_New,
+						Domain: "kgoogle",
+						Ip:     [][]byte{{8, 8, 8, 8}},
 					},
 					{
-						Pattern: "r.*\\.com",
-						Ip:      [][]byte{{8, 8, 4, 4}},
+						Type:   dns.DomainMatchingType_New,
+						Domain: "r.*\\.com",
+						Ip:     [][]byte{{8, 8, 4, 4}},
 					},
 				},
 				ExternalRules: map[string]*dns.ConfigPatterns{

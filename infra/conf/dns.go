@@ -62,19 +62,68 @@ func (c *FakeIPConfig) UnmarshalJSON(data []byte) error {
 	return newError("failed to parse fake config: ", string(data))
 }
 
-func toDomainMatchingType(t router.Domain_Type) dns.DomainMatchingType {
-	switch t {
-	case router.Domain_Domain:
-		return dns.DomainMatchingType_Subdomain
-	case router.Domain_Full:
-		return dns.DomainMatchingType_Full
-	case router.Domain_Plain:
-		return dns.DomainMatchingType_Keyword
-	case router.Domain_Regex:
-		return dns.DomainMatchingType_Regex
-	default:
-		panic("unknown domain type")
+var prefixMapper = map[string]string{
+	"domain:":  "d",
+	"regexp:":  "r",
+	"keyword:": "k",
+	"full:":    "f",
+	"geosite:": "egeosite.dat:",
+	"ext:":     "e",
+	"geoip:":   "i",
+}
+
+var typeMapper = map[router.Domain_Type]string{
+	router.Domain_Full:   "f",
+	router.Domain_Domain: "d",
+	router.Domain_Plain:  "k",
+	router.Domain_Regex:  "r",
+}
+
+var externalRules = make(map[string]*dns.ConfigPatterns)
+
+func loadExternalRules(pattern string) error {
+	// Loaded rules
+	if externalRules[pattern] != nil {
+		return nil
 	}
+
+	kv := strings.Split(pattern, ":")
+	if len(kv) != 2 {
+		return newError("invalid external resource: ", pattern)
+	}
+	filename, country := kv[0], kv[1]
+	domains, err := loadGeositeWithAttr(filename, country)
+	if err != nil {
+		return newError("invalid external settings from ", filename, ": ", pattern).Base(err)
+	}
+	externalRule := &dns.ConfigPatterns{
+		Patterns: make([]string, len(domains)),
+	}
+	index := 0
+	for _, d := range domains {
+		externalRule.Patterns[index] = typeMapper[d.Type] + d.Value
+		index++
+	}
+
+	externalRules[pattern] = externalRule
+
+	return nil
+}
+
+func compressPattern(pattern string) (string, error) {
+	for prefix, cmd := range prefixMapper {
+		if strings.HasPrefix(pattern, prefix) {
+			newPattern := cmd + pattern[len(prefix):]
+			if newPattern[0] == 'e' {
+				if err := loadExternalRules(newPattern[1:]); err != nil {
+					return "", err
+				}
+			}
+			return newPattern, nil
+		}
+	}
+	// If no prefix, use full match by default
+	return "f" + pattern, nil
 }
 
 func (c *NameServerConfig) Build() (*dns.NameServer, error) {
@@ -85,17 +134,14 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 	var domains []*dns.NameServer_PriorityDomain
 
 	for _, d := range c.Domains {
-		parsedDomain, err := parseDomainRule(d)
+		newPattern, err := compressPattern(d)
 		if err != nil {
 			return nil, newError("invalid domain rule: ", d).Base(err)
 		}
-
-		for _, pd := range parsedDomain {
-			domains = append(domains, &dns.NameServer_PriorityDomain{
-				Type:   toDomainMatchingType(pd.Type),
-				Domain: pd.Value,
-			})
-		}
+		domains = append(domains, &dns.NameServer_PriorityDomain{
+			Type:   dns.DomainMatchingType_New,
+			Domain: newPattern,
+		})
 	}
 
 	geoipList, err := toCidrList(c.ExpectIPs)
@@ -114,13 +160,6 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 	}, nil
 }
 
-var typeMap = map[router.Domain_Type]dns.DomainMatchingType{
-	router.Domain_Full:   dns.DomainMatchingType_Full,
-	router.Domain_Domain: dns.DomainMatchingType_Subdomain,
-	router.Domain_Plain:  dns.DomainMatchingType_Keyword,
-	router.Domain_Regex:  dns.DomainMatchingType_Regex,
-}
-
 // DnsConfig is a JSON serializable object for dns.Config.
 type DnsConfig struct {
 	Servers  []*NameServerConfig `json:"servers"`
@@ -130,73 +169,21 @@ type DnsConfig struct {
 	Fake     *FakeIPConfig       `json:"fake"`
 }
 
-var prefixMapper = map[string]string{
-	"domain:":  "d",
-	"regexp:":  "r",
-	"keyword:": "k",
-	"full:":    "f",
-	"geosite:": "egeosite.dat:",
-	"ext:":     "e",
-	"geoip:":   "i",
-}
-var typeMapper = map[router.Domain_Type]string{
-	router.Domain_Full:   "f",
-	router.Domain_Domain: "d",
-	router.Domain_Plain:  "k",
-	router.Domain_Regex:  "r",
-}
-
-func compressPattern(pattern string) string {
-	for prefix, cmd := range prefixMapper {
-		if strings.HasPrefix(pattern, prefix) {
-			return cmd + pattern[len(prefix):]
-		}
+func getHostMapping(addr *Address, pattern string) (*dns.Config_HostMapping, error) {
+	item := &dns.Config_HostMapping{
+		Type: dns.DomainMatchingType_New,
 	}
-	return "f" + pattern // If no prefix, use full match by default
-}
-
-func loadExternalRules(pattern string, c *dns.Config) error {
-	cmd := pattern[0]
-	if cmd != 'e' {
-		return nil
-	}
-	arg := pattern[1:]
-	kv := strings.Split(arg, ":")
-	if len(kv) != 2 {
-		return newError("invalid external resource: ", arg)
-	}
-	filename, country := kv[0], kv[1]
-	domains, err := loadGeositeWithAttr(filename, country)
-	if err != nil {
-		return newError("invalid external settings from ", filename, ": ", arg).Base(err)
-	}
-	externRules := &dns.ConfigPatterns{
-		Patterns: make([]string, len(domains)),
-	}
-	index := 0
-	for _, d := range domains {
-		externRules.Patterns[index] = typeMapper[d.Type] + d.Value
-		index++
-	}
-	if c.ExternalRules == nil {
-		c.ExternalRules = make(map[string]*dns.ConfigPatterns)
-	}
-	c.ExternalRules[arg] = externRules
-	return nil
-}
-
-func getHostPattern(addr *Address, pattern string, c *dns.Config) {
-	item := new(dns.Config_HostMapping)
 	if addr.Family().IsIP() {
 		item.Ip = [][]byte{[]byte(addr.IP())}
 	} else {
 		item.ProxiedDomain = addr.Domain()
 	}
-	item.Pattern = compressPattern(pattern)
-	err := loadExternalRules(item.Pattern, c)
-	if err == nil {
-		c.HostRules = append(c.HostRules, item)
+	newPattern, err := compressPattern(pattern)
+	if err != nil {
+		return nil, newError("invalid domain rule: ", pattern).Base(err)
 	}
+	item.Domain = newPattern
+	return item, nil
 }
 
 // Build implements Buildable
@@ -221,7 +208,11 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 	}
 
 	for pattern, address := range c.Hosts {
-		getHostPattern(address, pattern, config)
+		mapping, err := getHostMapping(address, pattern)
+		if err != nil {
+			return nil, newError("failed to build host rules").Base(err)
+		}
+		config.StaticHosts = append(config.StaticHosts, mapping)
 	}
 
 	if c.Fake != nil {
@@ -235,8 +226,7 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 			fakeRules := make([]string, len(c.Fake.FakeRules))
 			i := 0
 			for _, pattern := range c.Fake.FakeRules {
-				newPattern := compressPattern(pattern)
-				err := loadExternalRules(newPattern, config)
+				newPattern, err := compressPattern(pattern)
 				if err == nil {
 					fakeRules[i] = newPattern
 					i++
@@ -245,6 +235,8 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 			config.Fake.FakeRules = fakeRules[:i]
 		}
 	}
+
+	config.ExternalRules = externalRules
 
 	return config, nil
 }

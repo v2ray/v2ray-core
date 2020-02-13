@@ -13,26 +13,29 @@ import (
 func TestStaticHosts(t *testing.T) {
 	pb := []*Config_HostMapping{
 		{
-			Pattern: "fv2ray.com",
+			Type:   DomainMatchingType_New,
+			Domain: "fv2ray.com",
 			Ip: [][]byte{
 				{1, 1, 1, 1},
 			},
 		},
 		{
-			Pattern: "dv2ray.cn",
+			Type:   DomainMatchingType_New,
+			Domain: "dv2ray.cn",
 			Ip: [][]byte{
 				{2, 2, 2, 2},
 			},
 		},
 		{
-			Pattern: "dbaidu.com",
+			Type:   DomainMatchingType_New,
+			Domain: "dbaidu.com",
 			Ip: [][]byte{
 				{127, 0, 0, 1},
 			},
 		},
 	}
 
-	hosts, err := NewStaticHosts(pb, nil, nil, make(map[string][]string))
+	hosts, err := NewStaticHosts(pb, nil, make(map[string][]string))
 	common.Must(err)
 
 	{
