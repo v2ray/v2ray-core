@@ -32,7 +32,7 @@ func TestStaticHosts(t *testing.T) {
 		},
 	}
 
-	hosts, err := NewStaticHosts(pb, nil, make(map[string][]string))
+	hosts, err := NewStaticHosts(pb, nil, nil, make(map[string][]string))
 	common.Must(err)
 
 	{

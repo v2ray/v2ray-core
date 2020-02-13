@@ -34,11 +34,18 @@ func toStrMatcher(t DomainMatchingType, domain string) (strmatcher.Matcher, erro
 	return matcher, nil
 }
 
+var typeMapper = map[DomainMatchingType]string{
+	DomainMatchingType_Full:      "f",
+	DomainMatchingType_Subdomain: "d",
+	DomainMatchingType_Keyword:   "k",
+	DomainMatchingType_Regex:     "r",
+}
+
 // NewStaticHosts creates a new StaticHosts instance.
-func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain, externalRules map[string][]string) (*StaticHosts, error) {
+func NewStaticHosts(host_rules []*Config_HostMapping, hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain, externalRules map[string][]string) (*StaticHosts, error) {
 	g := new(strmatcher.MatcherGroup)
 	sh := &StaticHosts{
-		ips:      make([][]net.Address, len(hosts)+len(legacy)+16),
+		ips:      make([][]net.Address, len(host_rules)+len(hosts)+len(legacy)+16),
 		matchers: g,
 	}
 
@@ -59,6 +66,11 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 	}
 
 	for _, mapping := range hosts {
+		mapping.Pattern = typeMapper[mapping.Type] + mapping.Pattern
+		host_rules = append(host_rules, mapping)
+	}
+
+	for _, mapping := range host_rules {
 		id, err := g.ParsePattern(mapping.Pattern, externalRules)
 		if err != nil {
 			return nil, newError("failed to create domain matcher").Base(err)
