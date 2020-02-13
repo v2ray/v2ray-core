@@ -13,7 +13,7 @@ var prefixMapper = map[string]string{
 	"full:":    "f",
 	"geosite:": "egeosite.dat:",
 	"ext:":     "e",
-	"geoip:":   "i",
+	"not:":     "!",
 }
 
 var typeMapper = map[router.Domain_Type]string{
@@ -54,10 +54,17 @@ func compressPattern(pattern string, external map[string][]string, def string) (
 	for prefix, cmd := range prefixMapper {
 		if strings.HasPrefix(pattern, prefix) {
 			newPattern := cmd + pattern[len(prefix):]
-			if newPattern[0] == 'e' {
+			switch newPattern[0] {
+			case 'e':
 				if err := loadExternalRules(newPattern[1:], external); err != nil {
 					return "", err
 				}
+			case '!':
+				subPattern, err := compressPattern(newPattern[1:], external, def)
+				if err != nil {
+					return "", err
+				}
+				newPattern = "!" + subPattern
 			}
 			return newPattern, nil
 		}

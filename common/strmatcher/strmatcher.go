@@ -100,6 +100,13 @@ func subPattern(mg groupMatcher, pattern string, extern map[string][]string) err
 		for _, newPattern := range extern[left] {
 			subPattern(mg, newPattern, extern)
 		}
+	case '!':
+		// Not
+		smg := NewOrMatcher()
+		smg.ParsePattern(left, extern)
+		m = &notMatcher{
+			matcher: smg,
+		}
 	default:
 		panic("Unknown type")
 	}

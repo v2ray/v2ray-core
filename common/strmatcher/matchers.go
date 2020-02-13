@@ -34,3 +34,11 @@ type regexMatcher struct {
 func (m *regexMatcher) Match(s string) bool {
 	return m.pattern.MatchString(s)
 }
+
+type notMatcher struct {
+	matcher Matcher
+}
+
+func (m *notMatcher) Match(s string) bool {
+	return !(m.matcher.Match(s))
+}
