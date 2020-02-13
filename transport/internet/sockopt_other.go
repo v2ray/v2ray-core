@@ -1,4 +1,4 @@
-// +build js dragonfly freebsd netbsd openbsd
+// +build js dragonfly netbsd openbsd
 
 package internet
 
