@@ -15,25 +15,6 @@ type StaticHosts struct {
 	matchers *strmatcher.MatcherGroup
 }
 
-var typeMap = map[DomainMatchingType]strmatcher.Type{
-	DomainMatchingType_Full:      strmatcher.Full,
-	DomainMatchingType_Subdomain: strmatcher.Domain,
-	DomainMatchingType_Keyword:   strmatcher.Substr,
-	DomainMatchingType_Regex:     strmatcher.Regex,
-}
-
-func toStrMatcher(t DomainMatchingType, domain string) (strmatcher.Matcher, error) {
-	strMType, f := typeMap[t]
-	if !f {
-		return nil, newError("unknown mapping type", t).AtWarning()
-	}
-	matcher, err := strMType.New(domain)
-	if err != nil {
-		return nil, newError("failed to create str matcher").Base(err)
-	}
-	return matcher, nil
-}
-
 var typeMapper = map[DomainMatchingType]string{
 	DomainMatchingType_Full:      "f",
 	DomainMatchingType_Subdomain: "d",
