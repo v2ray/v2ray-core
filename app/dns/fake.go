@@ -25,6 +25,9 @@ func getIPSum(i net.IP) uint32 {
 func InitFakeIPServer(fake *Config_Fake, externalRules map[string][]string) error {
 	if fake != nil {
 		matcher.New()
+		if fake.FakeRules == nil {
+			return newError("no rules for fake ip").AtWarning()
+		}
 		for _, pattern := range fake.FakeRules {
 			if err := matcher.ParsePattern(pattern, externalRules); err != nil {
 				newError("failed to parse pattern: ", pattern).Base(err).AtWarning().WriteToLog()
