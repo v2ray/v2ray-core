@@ -117,33 +117,6 @@ func TestDnsConfigParsing(t *testing.T) {
 						},
 					},
 				},
-				StaticHosts: []*dns.Config_HostMapping{
-					{
-						Type:          dns.DomainMatchingType_Subdomain,
-						Pattern:       "example.com",
-						ProxiedDomain: "google.com",
-					},
-					{
-						Type:    dns.DomainMatchingType_Full,
-						Pattern: "example.com",
-						Ip:      [][]byte{{10, 0, 0, 1}},
-					},
-					{
-						Type:    dns.DomainMatchingType_Keyword,
-						Pattern: "google",
-						Ip:      [][]byte{{8, 8, 8, 8}},
-					},
-					{
-						Type:    dns.DomainMatchingType_Regex,
-						Pattern: ".*\\.com",
-						Ip:      [][]byte{{8, 8, 4, 4}},
-					},
-					{
-						Type:    dns.DomainMatchingType_Full,
-						Pattern: "v2ray.com",
-						Ip:      [][]byte{{127, 0, 0, 1}},
-					},
-				},
 				HostRules: []*dns.Config_HostMapping{
 					{
 						Pattern:       "dexample.com",

@@ -2,7 +2,6 @@ package conf
 
 import (
 	"encoding/json"
-	"sort"
 	"strings"
 
 	"v2ray.com/core/app/dns"
@@ -131,18 +130,6 @@ type DnsConfig struct {
 	Fake     *FakeIPConfig       `json:"fake"`
 }
 
-func getHostMapping(addr *Address) *dns.Config_HostMapping {
-	if addr.Family().IsIP() {
-		return &dns.Config_HostMapping{
-			Ip: [][]byte{[]byte(addr.IP())},
-		}
-	} else {
-		return &dns.Config_HostMapping{
-			ProxiedDomain: addr.Domain(),
-		}
-	}
-}
-
 var prefixMapper = map[string]string{
 	"domain:":  "d",
 	"regexp:":  "r",
@@ -233,80 +220,8 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 		config.NameServer = append(config.NameServer, ns)
 	}
 
-	if c.Hosts != nil && len(c.Hosts) > 0 {
-		domains := make([]string, 0, len(c.Hosts))
-		for pattern, address := range c.Hosts {
-			domains = append(domains, pattern)
-			getHostPattern(address, pattern, config)
-		}
-		sort.Strings(domains)
-		for _, domain := range domains {
-			addr := c.Hosts[domain]
-			var mappings []*dns.Config_HostMapping
-			if strings.HasPrefix(domain, "domain:") {
-				mapping := getHostMapping(addr)
-				mapping.Type = dns.DomainMatchingType_Subdomain
-				mapping.Pattern = domain[7:]
-
-				mappings = append(mappings, mapping)
-			} else if strings.HasPrefix(domain, "geosite:") {
-				domains, err := loadGeositeWithAttr("geosite.dat", strings.ToUpper(domain[8:]))
-				if err != nil {
-					return nil, newError("invalid geosite settings: ", domain).Base(err)
-				}
-				for _, d := range domains {
-					mapping := getHostMapping(addr)
-					mapping.Type = typeMap[d.Type]
-					mapping.Pattern = d.Value
-
-					mappings = append(mappings, mapping)
-				}
-			} else if strings.HasPrefix(domain, "regexp:") {
-				mapping := getHostMapping(addr)
-				mapping.Type = dns.DomainMatchingType_Regex
-				mapping.Pattern = domain[7:]
-
-				mappings = append(mappings, mapping)
-			} else if strings.HasPrefix(domain, "keyword:") {
-				mapping := getHostMapping(addr)
-				mapping.Type = dns.DomainMatchingType_Keyword
-				mapping.Pattern = domain[8:]
-
-				mappings = append(mappings, mapping)
-			} else if strings.HasPrefix(domain, "full:") {
-				mapping := getHostMapping(addr)
-				mapping.Type = dns.DomainMatchingType_Full
-				mapping.Pattern = domain[5:]
-
-				mappings = append(mappings, mapping)
-			} else if strings.HasPrefix(domain, "ext:") {
-				kv := strings.Split(domain[4:], ":")
-				if len(kv) != 2 {
-					return nil, newError("invalid external resource: ", domain)
-				}
-				filename := kv[0]
-				country := kv[1]
-				domains, err := loadGeositeWithAttr(filename, country)
-				if err != nil {
-					return nil, newError("failed to load domains: ", country, " from ", filename).Base(err)
-				}
-				for _, d := range domains {
-					mapping := getHostMapping(addr)
-					mapping.Type = typeMap[d.Type]
-					mapping.Pattern = d.Value
-
-					mappings = append(mappings, mapping)
-				}
-			} else {
-				mapping := getHostMapping(addr)
-				mapping.Type = dns.DomainMatchingType_Full
-				mapping.Pattern = domain
-
-				mappings = append(mappings, mapping)
-			}
-
-			config.StaticHosts = append(config.StaticHosts, mappings...)
-		}
+	for pattern, address := range c.Hosts {
+		getHostPattern(address, pattern, config)
 	}
 
 	if c.Fake != nil {
