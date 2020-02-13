@@ -51,10 +51,7 @@ func (s *statsServer) GetStats(ctx context.Context, request *GetStatsRequest) (*
 }
 
 func (s *statsServer) QueryStats(ctx context.Context, request *QueryStatsRequest) (*QueryStatsResponse, error) {
-	matcher, err := strmatcher.Substr.New(request.Pattern)
-	if err != nil {
-		return nil, err
-	}
+	matcher := strmatcher.NewSubstrMatcher(request.Pattern)
 
 	response := &QueryStatsResponse{}
 

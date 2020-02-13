@@ -24,26 +24,10 @@ const (
 	Regex
 )
 
-// New creates a new Matcher based on the given pattern.
-func (t Type) New(pattern string) (Matcher, error) {
-	switch t {
-	case Full:
-		return fullMatcher(pattern), nil
-	case Substr:
-		return substrMatcher(pattern), nil
-	case Domain:
-		return domainMatcher(pattern), nil
-	case Regex:
-		r, err := regexp.Compile(pattern)
-		if err != nil {
-			return nil, err
-		}
-		return &regexMatcher{
-			pattern: r,
-		}, nil
-	default:
-		panic("Unknown type")
-	}
+// NewSubstrMatcher creates a new substr matcher
+// For app/stats/command/command.go only
+func NewSubstrMatcher(pattern string) Matcher {
+	return substrMatcher(pattern)
 }
 
 // IndexMatcher is the interface for matching with a group of matchers.
@@ -67,7 +51,7 @@ type MatcherGroup struct {
 }
 
 // Add adds a new Matcher into the MatcherGroup without adding index
-func (mg *MatcherGroup) addChild(m Matcher) {
+func (mg *MatcherGroup) Add(m Matcher) {
 	c := mg.count
 	switch tm := m.(type) {
 	case fullMatcher:
@@ -82,8 +66,12 @@ func (mg *MatcherGroup) addChild(m Matcher) {
 	}
 }
 
+type groupMatcher interface {
+	Add(m Matcher)
+}
+
 // Parse a pattern to a part of MatcherGroup
-func (mg *MatcherGroup) subPattern(pattern string, extern map[string][]string) error {
+func subPattern(mg groupMatcher, pattern string, extern map[string][]string) error {
 	cmd := pattern[0]
 	left := pattern[1:]
 	var m Matcher
@@ -110,13 +98,13 @@ func (mg *MatcherGroup) subPattern(pattern string, extern map[string][]string) e
 	case 'e':
 		// External
 		for _, newPattern := range extern[left] {
-			mg.subPattern(newPattern, extern)
+			subPattern(mg, newPattern, extern)
 		}
 	default:
 		panic("Unknown type")
 	}
 	if m != nil {
-		mg.addChild(m)
+		mg.Add(m)
 	}
 	return nil
 }
@@ -124,27 +112,7 @@ func (mg *MatcherGroup) subPattern(pattern string, extern map[string][]string) e
 // ParsePattern parses a pattern to a part of MatcherGroup and return its index. The index will never be 0.
 func (mg *MatcherGroup) ParsePattern(pattern string, extern map[string][]string) (uint32, error) {
 	mg.count++
-	return mg.count, mg.subPattern(pattern, extern)
-}
-
-// Add adds a new Matcher into the MatcherGroup, and returns its index. The index will never be 0.
-func (mg *MatcherGroup) Add(m Matcher) uint32 {
-	mg.count++
-	c := mg.count
-
-	switch tm := m.(type) {
-	case fullMatcher:
-		mg.fullMatcher.addMatcher(tm, c)
-	case domainMatcher:
-		mg.domainMatcher.addMatcher(tm, c)
-	default:
-		mg.otherMatchers = append(mg.otherMatchers, matcherEntry{
-			m:  m,
-			id: c,
-		})
-	}
-
-	return c
+	return mg.count, subPattern(mg, pattern, extern)
 }
 
 // Match implements IndexMatcher.Match.
@@ -166,11 +134,6 @@ func (mg *MatcherGroup) Match(pattern string) uint32 {
 	return 0
 }
 
-// Size returns the number of matchers in the MatcherGroup.
-func (mg *MatcherGroup) Size() uint32 {
-	return mg.count
-}
-
 // OrMatcher is a implementation of Matcher
 type OrMatcher struct {
 	fullMatchers   FullGroupMatcher
@@ -178,9 +141,11 @@ type OrMatcher struct {
 	otherMatchers  []Matcher
 }
 
-// New an OrMatcher
-func (g *OrMatcher) New() {
+// NewOrMatcher creates an OrMatcher
+func NewOrMatcher() (g *OrMatcher) {
+	g = new(OrMatcher)
 	g.fullMatchers.New()
+	return
 }
 
 // Match implements Matcher.Match.
@@ -212,39 +177,5 @@ func (g *OrMatcher) Add(m Matcher) {
 
 // ParsePattern parses a pattern to a part of OrMatcher
 func (g *OrMatcher) ParsePattern(pattern string, extern map[string][]string) error {
-	cmd := pattern[0]
-	left := pattern[1:]
-	var m Matcher
-	switch cmd {
-	case 'd':
-		// Domain
-		m = domainMatcher(left)
-	case 'r':
-		// Regexp
-		// Return error at the end of function
-		r, err := regexp.Compile(left)
-		if err != nil {
-			return err
-		}
-		m = &regexMatcher{
-			pattern: r,
-		}
-	case 'k':
-		// Keyword
-		m = substrMatcher(left)
-	case 'f':
-		// Full
-		m = fullMatcher(left)
-	case 'e':
-		// External
-		for _, newPattern := range extern[left] {
-			g.ParsePattern(newPattern, extern)
-		}
-	default:
-		panic("Unknown type")
-	}
-	if m != nil {
-		g.Add(m)
-	}
-	return nil
+	return subPattern(g, pattern, extern)
 }

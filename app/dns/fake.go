@@ -10,7 +10,7 @@ import (
 
 var domainMapper = make(map[string][]net.Address)
 var ipMapper = make(map[uint32]string)
-var matcher = new(strmatcher.OrMatcher)
+var matcher = strmatcher.NewOrMatcher()
 var ip net.IP
 
 // Begin of ipMapper index
@@ -24,7 +24,6 @@ func getIPSum(i net.IP) uint32 {
 // InitFakeIPServer initializes matcher for domain name checking
 func InitFakeIPServer(fake *Config_Fake, externalRules map[string][]string) error {
 	if fake != nil {
-		matcher.New()
 		if fake.FakeRules == nil {
 			return newError("no rules for fake ip").AtWarning()
 		}

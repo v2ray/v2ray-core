@@ -55,8 +55,7 @@ var typeMapper = map[Domain_Type]string{
 
 // NewDomainMatcher generate a matcher for matching domain names
 func NewDomainMatcher(domains []*Domain, external map[string][]string) (*DomainMatcher, error) {
-	g := new(strmatcher.OrMatcher)
-  g.New()
+	g := strmatcher.NewOrMatcher()
 	for _, d := range domains {
 		if d.Type != Domain_New {
 			d.Value = typeMapper[d.Type] + d.Value

@@ -36,10 +36,10 @@ func BenchmarkFullMatcherGroup(b *testing.B) {
 
 func BenchmarkMarchGroup(b *testing.B) {
 	g := new(MatcherGroup)
+	empty := make(map[string][]string)
 	for i := 1; i <= 1024; i++ {
-		m, err := Domain.New(strconv.Itoa(i) + ".v2ray.com")
+		_, err := g.ParsePattern("d"+strconv.Itoa(i)+".v2ray.com", empty)
 		common.Must(err)
-		g.Add(m)
 	}
 
 	b.ResetTimer()
@@ -76,8 +76,7 @@ func BenchmarkFullGroupMatcher(b *testing.B) {
 }
 
 func BenchmarkOrMatcher(b *testing.B) {
-	g := new(OrMatcher)
-	g.New()
+	g := NewOrMatcher()
 
 	external := make(map[string][]string)
 	for i := 1; i <= 1024; i++ {
