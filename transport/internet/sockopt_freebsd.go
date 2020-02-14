@@ -53,7 +53,7 @@ func (nl *pfiocNatlook) setPort(remote, local int) {
 	binary.BigEndian.PutUint16((*[2]byte)(unsafe.Pointer(&nl.Dport))[:], uint16(local))
 }
 
-// use ioctl to read original destination from /dev/pf
+// OriginalDst uses ioctl to read original destination from /dev/pf
 func OriginalDst(la, ra net.Addr) (net.IP, int, error) {
 	f, err := os.Open("/dev/pf")
 	if err != nil {

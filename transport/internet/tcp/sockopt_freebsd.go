@@ -8,7 +8,7 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-// GetOriginalDestination
+// GetOriginalDestination from tcp conn
 func GetOriginalDestination(conn internet.Connection) (net.Destination, error) {
 	la := conn.LocalAddr()
 	ra := conn.RemoteAddr()

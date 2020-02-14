@@ -11,7 +11,7 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-// RetrieveOriginalDest
+// RetrieveOriginalDest from stored laddr, caddr
 func RetrieveOriginalDest(oob []byte) net.Destination {
 	dec := gob.NewDecoder(bytes.NewBuffer(oob))
 	var la, ra net.UDPAddr
@@ -24,7 +24,7 @@ func RetrieveOriginalDest(oob []byte) net.Destination {
 	return net.UDPDestination(net.IPAddress(ip), net.Port(port))
 }
 
-// store laddr, caddr for later use
+// ReadUDPMsg stores laddr, caddr for later use
 func ReadUDPMsg(conn *net.UDPConn, payload []byte, oob []byte) (int, int, int, *net.UDPAddr, error) {
 	nBytes, addr, err := conn.ReadFromUDP(payload)
 	var buf bytes.Buffer
