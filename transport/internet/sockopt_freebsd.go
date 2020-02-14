@@ -6,20 +6,16 @@ import (
 	"os"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/unix"
 )
 
 const (
-	sysAF_INET       = 0x2
-	sysAF_INET6      = 0x1c
-	sysPF_INOUT      = 0x0
-	sysPF_IN         = 0x1
-	sysPF_OUT        = 0x2
-	sysPF_FWD        = 0x3
-	sysDIOCNATLOOK   = 0xc04c4417
-	ianaProtocolIP   = 0x0
-	ianaProtocolTCP  = 0x6
-	ianaProtocolUDP  = 0x11
-	ianaProtocolIPv6 = 0x29
+	sysPFINOUT     = 0x0
+	sysPFIN        = 0x1
+	sysPFOUT       = 0x2
+	sysPFFWD       = 0x3
+	sysDIOCNATLOOK = 0xc04c4417
 )
 
 type pfiocNatlook struct {
@@ -34,15 +30,12 @@ type pfiocNatlook struct {
 	Af        uint8
 	Proto     uint8
 	Direction uint8
-	Pad_cgo_0 [1]byte
+	Pad       [1]byte
 }
 
 const (
 	sizeofPfiocNatlook = 0x4c
-	SO_REUSEPORT_LB    = 0x00010000
-	IP_RECVORIGDSTADDR = 27
-	TCP_FASTOPEN       = 0x401
-	SO_REUSEADDR       = 0x4
+	soReUsePortLB      = 0x00010000
 )
 
 func ioctl(s uintptr, ioc int, b []byte) error {
@@ -59,6 +52,8 @@ func (nl *pfiocNatlook) setPort(remote, local int) {
 	binary.BigEndian.PutUint16((*[2]byte)(unsafe.Pointer(&nl.Sport))[:], uint16(remote))
 	binary.BigEndian.PutUint16((*[2]byte)(unsafe.Pointer(&nl.Dport))[:], uint16(local))
 }
+
+// use ioctl to read original destination from /dev/pf
 func OriginalDst(la, ra net.Addr) (net.IP, int, error) {
 	f, err := os.Open("/dev/pf")
 	if err != nil {
@@ -76,13 +71,13 @@ func OriginalDst(la, ra net.Addr) (net.IP, int, error) {
 		laIP = la.(*net.TCPAddr).IP
 		raPort = ra.(*net.TCPAddr).Port
 		laPort = la.(*net.TCPAddr).Port
-		nl.Proto = ianaProtocolTCP
+		nl.Proto = syscall.IPPROTO_TCP
 	case *net.UDPAddr:
 		raIP = ra.(*net.UDPAddr).IP
 		laIP = la.(*net.UDPAddr).IP
 		raPort = ra.(*net.UDPAddr).Port
 		laPort = la.(*net.UDPAddr).Port
-		nl.Proto = ianaProtocolUDP
+		nl.Proto = syscall.IPPROTO_UDP
 	}
 	if raIP.To4() != nil {
 		if laIP.IsUnspecified() {
@@ -90,7 +85,7 @@ func OriginalDst(la, ra net.Addr) (net.IP, int, error) {
 		}
 		copy(nl.Saddr[:net.IPv4len], raIP.To4())
 		copy(nl.Daddr[:net.IPv4len], laIP.To4())
-		nl.Af = sysAF_INET
+		nl.Af = syscall.AF_INET
 	}
 	if raIP.To16() != nil && raIP.To4() == nil {
 		if laIP.IsUnspecified() {
@@ -98,11 +93,11 @@ func OriginalDst(la, ra net.Addr) (net.IP, int, error) {
 		}
 		copy(nl.Saddr[:], raIP)
 		copy(nl.Daddr[:], laIP)
-		nl.Af = sysAF_INET6
+		nl.Af = syscall.AF_INET6
 	}
 	nl.setPort(raPort, laPort)
 	ioc := uintptr(sysDIOCNATLOOK)
-	for _, dir := range []byte{sysPF_OUT, sysPF_IN} {
+	for _, dir := range []byte{sysPFOUT, sysPFIN} {
 		nl.Direction = dir
 		err = ioctl(fd, int(ioc), b)
 		if err == nil || err != syscall.ENOENT {
@@ -116,10 +111,10 @@ func OriginalDst(la, ra net.Addr) (net.IP, int, error) {
 	odPort := nl.rdPort()
 	var odIP net.IP
 	switch nl.Af {
-	case sysAF_INET:
+	case syscall.AF_INET:
 		odIP = make(net.IP, net.IPv4len)
 		copy(odIP, nl.Rdaddr[:net.IPv4len])
-	case sysAF_INET6:
+	case syscall.AF_INET6:
 		odIP = make(net.IP, net.IPv6len)
 		copy(odIP, nl.Rdaddr[:])
 	}
@@ -136,11 +131,11 @@ func applyOutboundSocketOptions(network string, address string, fd uintptr, conf
 	if isTCPSocket(network) {
 		switch config.Tfo {
 		case SocketConfig_Enable:
-			if err := syscall.SetsockoptInt(int(fd), ianaProtocolTCP, TCP_FASTOPEN, 1); err != nil {
+			if err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_TCP, unix.TCP_FASTOPEN, 1); err != nil {
 				return newError("failed to set TCP_FASTOPEN_CONNECT=1").Base(err)
 			}
 		case SocketConfig_Disable:
-			if err := syscall.SetsockoptInt(int(fd), ianaProtocolTCP, TCP_FASTOPEN, 0); err != nil {
+			if err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_TCP, unix.TCP_FASTOPEN, 0); err != nil {
 				return newError("failed to set TCP_FASTOPEN_CONNECT=0").Base(err)
 			}
 		}
@@ -149,11 +144,11 @@ func applyOutboundSocketOptions(network string, address string, fd uintptr, conf
 	if config.Tproxy.IsEnabled() {
 		ip, _, _ := net.SplitHostPort(address)
 		if net.ParseIP(ip).To4() != nil {
-			if err := syscall.SetsockoptInt(int(fd), ianaProtocolIP, syscall.IP_BINDANY, 1); err != nil {
+			if err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_BINDANY, 1); err != nil {
 				return newError("failed to set outbound IP_BINDANY").Base(err)
 			}
 		} else {
-			if err := syscall.SetsockoptInt(int(fd), ianaProtocolIPv6, syscall.IPV6_BINDANY, 1); err != nil {
+			if err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IPV6, syscall.IPV6_BINDANY, 1); err != nil {
 				return newError("failed to set outbound IPV6_BINDANY").Base(err)
 			}
 		}
@@ -170,19 +165,19 @@ func applyInboundSocketOptions(network string, fd uintptr, config *SocketConfig)
 	if isTCPSocket(network) {
 		switch config.Tfo {
 		case SocketConfig_Enable:
-			if err := syscall.SetsockoptInt(int(fd), ianaProtocolTCP, TCP_FASTOPEN, 1); err != nil {
+			if err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_TCP, unix.TCP_FASTOPEN, 1); err != nil {
 				return newError("failed to set TCP_FASTOPEN=1").Base(err)
 			}
 		case SocketConfig_Disable:
-			if err := syscall.SetsockoptInt(int(fd), ianaProtocolTCP, TCP_FASTOPEN, 0); err != nil {
+			if err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_TCP, unix.TCP_FASTOPEN, 0); err != nil {
 				return newError("failed to set TCP_FASTOPEN=0").Base(err)
 			}
 		}
 	}
 
 	if config.Tproxy.IsEnabled() {
-		if err := syscall.SetsockoptInt(int(fd), ianaProtocolIPv6, syscall.IPV6_BINDANY, 1); err != nil {
-			if err := syscall.SetsockoptInt(int(fd), ianaProtocolIP, syscall.IP_BINDANY, 1); err != nil {
+		if err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IPV6, syscall.IPV6_BINDANY, 1); err != nil {
+			if err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_BINDANY, 1); err != nil {
 				return newError("failed to set inbound IP_BINDANY").Base(err)
 			}
 		}
@@ -192,11 +187,11 @@ func applyInboundSocketOptions(network string, fd uintptr, config *SocketConfig)
 }
 
 func bindAddr(fd uintptr, ip []byte, port uint32) error {
-	if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, SO_REUSEADDR, 1); err != nil {
+	if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1); err != nil {
 		return newError("failed to set resuse_addr").Base(err).AtWarning()
 	}
 
-	if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, SO_REUSEPORT_LB, 1); err != nil {
+	if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, soReUsePortLB, 1); err != nil {
 		return newError("failed to set resuse_port").Base(err).AtWarning()
 	}
 
