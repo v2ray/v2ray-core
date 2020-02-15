@@ -28,7 +28,7 @@ type Handler struct {
 	proxy           proxy.Outbound
 	outboundManager outbound.Manager
 	mux             *mux.ClientManager
-	failingAttempts stats.Counter
+	failedAttempts  stats.Counter
 }
 
 // NewHandler create a new Handler based on the given configuration.
@@ -96,14 +96,14 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (outbou
 	return h, nil
 }
 
-// FailedAttempts implements outbound.Handler.
+// Tag implements outbound.Handler.
 func (h *Handler) Tag() string {
 	return h.tag
 }
 
-// Tag implements outbound.Handler.
+// FailedAttempts implements outbound.Handler.
 func (h *Handler) FailedAttempts() stats2.Counter {
-	return &h.failingAttempts
+	return &h.failedAttempts
 }
 
 // Dispatch implements proxy.Outbound.Dispatch.
@@ -112,25 +112,25 @@ func (h *Handler) Dispatch(ctx context.Context, link *transport.Link) {
 		if err := h.mux.Dispatch(ctx, link); err != nil {
 			e := newError("failed to process mux outbound traffic").Base(err)
 			if e.Severity() <= log.Severity_Warning {
-				h.failingAttempts.Add(1)
+				h.failedAttempts.Add(1)
 			}
 			e.WriteToLog(session.ExportIDToError(ctx))
 			common.Interrupt(link.Writer)
 		} else {
-			h.failingAttempts.Set(0)
+			h.failedAttempts.Set(0)
 		}
 	} else {
 		if err := h.proxy.Process(ctx, link, h); err != nil {
 			// Ensure outbound ray is properly closed.
 			e := newError("failed to process outbound traffic").Base(err)
 			if e.Severity() <= log.Severity_Warning {
-				h.failingAttempts.Add(1)
+				h.failedAttempts.Add(1)
 			}
 			e.WriteToLog(session.ExportIDToError(ctx))
 			common.Interrupt(link.Writer)
 		} else {
 			common.Must(common.Close(link.Writer))
-			h.failingAttempts.Set(0)
+			h.failedAttempts.Set(0)
 		}
 		common.Interrupt(link.Reader)
 	}

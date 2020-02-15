@@ -59,6 +59,14 @@ func TestRouterConfig(t *testing.T) {
 					{
 						"tag": "b1",
 						"selector": ["test"]
+					},
+					{
+						"tag": "b2",
+						"selector": ["test"],
+						"strategy": "fallback",
+						"fallbackSettings": {
+							"maxAttempts": 3
+						}
 					}
 				]
 			}`,
@@ -69,6 +77,16 @@ func TestRouterConfig(t *testing.T) {
 					{
 						Tag:              "b1",
 						OutboundSelector: []string{"test"},
+						Strategy:         router.BalancingRule_Random,
+						FallbackSettings: nil,
+					},
+					{
+						Tag:              "b2",
+						OutboundSelector: []string{"test"},
+						Strategy:         router.BalancingRule_Fallback,
+						FallbackSettings: &router.FallbackSettings{
+							MaxAttempts: 3,
+						},
 					},
 				},
 				Rule: []*router.RoutingRule{

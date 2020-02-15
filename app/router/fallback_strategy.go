@@ -26,7 +26,7 @@ func (s *FallbackStrategy) PickOutbound(ohm outbound.Manager, tags []string) str
 	}
 	handler := ohm.GetHandler(s.tags[s.curIndex])
 	attempts := handler.FailedAttempts()
-	if attempts.Value() > s.maxAttempts {
+	if attempts.Value() >= s.maxAttempts {
 		attempts.Set(0)
 		s.curIndex = (s.curIndex + 1) % len(s.tags)
 		newError("balancer: switched to fallback " + s.tags[s.curIndex]).AtInfo().WriteToLog()
