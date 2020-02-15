@@ -140,11 +140,28 @@ archAffix(){
 	return 0
 }
 
+normalizeVersion() {
+    if [ -n "$1" ]; then
+        case "$1" in
+            v*)
+                echo "$1"
+            ;;
+            *)
+                echo "v$1"
+            ;;
+        esac
+    else
+        echo ""
+    fi
+}
+
 downloadV2Ray(){
     rm -rf /tmp/v2ray
     mkdir -p /tmp/v2ray
     if [[ "${DIST_SRC}" == "jsdelivr" ]]; then
-        DOWNLOAD_LINK="https://cdn.jsdelivr.net/gh/v2ray/dist/v2ray-linux-${VDIS}.zip"
+        TAG_URL="https://api.github.com/repos/v2ray/dist/tags"
+        DIST_LATEST_VER="$(normalizeVersion "$(curl ${PROXY} -s "${TAG_URL}" --connect-timeout 10| grep 'name' | awk 'NR==1{print}' | cut -d\" -f4)")"
+        DOWNLOAD_LINK="https://cdn.jsdelivr.net/gh/v2ray/dist@${DIST_LATEST_VER}/v2ray-linux-${VDIS}.zip"
     else
         DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
     fi
@@ -212,21 +229,6 @@ extract(){
       VSRC_ROOT="/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}"
     fi
     return 0
-}
-
-normalizeVersion() {
-    if [ -n "$1" ]; then
-        case "$1" in
-            v*)
-                echo "$1"
-            ;;
-            *)
-                echo "v$1"
-            ;;
-        esac
-    else
-        echo ""
-    fi
 }
 
 # 1: new V2Ray. 0: no. 2: not installed. 3: check failed. 4: don't check.
