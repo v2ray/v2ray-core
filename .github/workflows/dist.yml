@@ -44,5 +44,5 @@ jobs:
         
         git commit -m "Version ${NEW_VER}"
         git tag -a "${NEW_VER}" -m "Version ${NEW_VER}"
-        git remote add origin "https://${{ secrets.DistAccessToken }}@github.com/v2ray/dist"
+        git remote add origin "https://${{ secrets.GITHUB_TOKEN }}@github.com/v2ray/dist"
         git push -u --force --follow-tags origin master
