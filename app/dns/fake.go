@@ -82,7 +82,7 @@ func GetFakeIPForDomain(domain string) []net.Address {
 
 // GetDomainForFakeIP checks if a IP is a fake IP and return its corresponding domain name
 func GetDomainForFakeIP(ip net.Address) string {
-	if len(ipMapper) == 0 {
+	if !ip.Family().IsIP() || len(ipMapper) == 0 {
 		return ""
 	}
 	return ipMapper[begin|getIPSum(ip.IP())]
