@@ -5,11 +5,14 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/app/stats"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/mux"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/features/outbound"
+	stats2 "v2ray.com/core/features/stats"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
@@ -25,6 +28,7 @@ type Handler struct {
 	proxy           proxy.Outbound
 	outboundManager outbound.Manager
 	mux             *mux.ClientManager
+	failingAttempts stats.Counter
 }
 
 // NewHandler create a new Handler based on the given configuration.
@@ -92,25 +96,41 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (outbou
 	return h, nil
 }
 
-// Tag implements outbound.Handler.
+// FailedAttempts implements outbound.Handler.
 func (h *Handler) Tag() string {
 	return h.tag
+}
+
+// Tag implements outbound.Handler.
+func (h *Handler) FailedAttempts() stats2.Counter {
+	return &h.failingAttempts
 }
 
 // Dispatch implements proxy.Outbound.Dispatch.
 func (h *Handler) Dispatch(ctx context.Context, link *transport.Link) {
 	if h.mux != nil && (h.mux.Enabled || session.MuxPreferedFromContext(ctx)) {
 		if err := h.mux.Dispatch(ctx, link); err != nil {
-			newError("failed to process mux outbound traffic").Base(err).WriteToLog(session.ExportIDToError(ctx))
+			e := newError("failed to process mux outbound traffic").Base(err)
+			if e.Severity() <= log.Severity_Warning {
+				h.failingAttempts.Add(1)
+			}
+			e.WriteToLog(session.ExportIDToError(ctx))
 			common.Interrupt(link.Writer)
+		} else {
+			h.failingAttempts.Set(0)
 		}
 	} else {
 		if err := h.proxy.Process(ctx, link, h); err != nil {
 			// Ensure outbound ray is properly closed.
-			newError("failed to process outbound traffic").Base(err).WriteToLog(session.ExportIDToError(ctx))
+			e := newError("failed to process outbound traffic").Base(err)
+			if e.Severity() <= log.Severity_Warning {
+				h.failingAttempts.Add(1)
+			}
+			e.WriteToLog(session.ExportIDToError(ctx))
 			common.Interrupt(link.Writer)
 		} else {
 			common.Must(common.Close(link.Writer))
+			h.failingAttempts.Set(0)
 		}
 		common.Interrupt(link.Reader)
 	}

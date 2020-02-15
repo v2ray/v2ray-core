@@ -18,8 +18,14 @@ type RouterRulesConfig struct {
 }
 
 type BalancingRule struct {
-	Tag       string     `json:"tag"`
-	Selectors StringList `json:"selector"`
+	Tag              string            `json:"tag"`
+	Strategy         string            `json:"strategy"`
+	FallbackSettings *FallbackSettings `json:"fallbackSettings"`
+	Selectors        StringList        `json:"selector"`
+}
+
+type FallbackSettings struct {
+	MaxAttempts int64 `json:"maxAttempts"`
 }
 
 func (r *BalancingRule) Build() (*router.BalancingRule, error) {
@@ -30,9 +36,29 @@ func (r *BalancingRule) Build() (*router.BalancingRule, error) {
 		return nil, newError("empty selector list")
 	}
 
+	var strategy router.BalancingRule_BalancingStrategy
+	var fallbackSettings *router.FallbackSettings
+	switch strings.ToLower(r.Strategy) {
+	case "fallback":
+		strategy = router.BalancingRule_Fallback
+		if r.FallbackSettings == nil {
+			return nil, newError("missing fallbackSettings")
+		} else {
+			fallbackSettings = &router.FallbackSettings{
+				MaxAttempts: r.FallbackSettings.MaxAttempts,
+			}
+		}
+	case "random", "":
+		strategy = router.BalancingRule_Random
+	default:
+		return nil, newError("unknown balancing strategy: " + r.Strategy)
+	}
+
 	return &router.BalancingRule{
 		Tag:              r.Tag,
 		OutboundSelector: []string(r.Selectors),
+		Strategy:         strategy,
+		FallbackSettings: fallbackSettings,
 	}, nil
 }
 

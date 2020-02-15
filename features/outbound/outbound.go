@@ -5,6 +5,7 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/features"
+	"v2ray.com/core/features/stats"
 	"v2ray.com/core/transport"
 )
 
@@ -14,6 +15,7 @@ import (
 type Handler interface {
 	common.Runnable
 	Tag() string
+	FailedAttempts() stats.Counter
 	Dispatch(ctx context.Context, link *transport.Link)
 }
 

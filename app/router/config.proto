@@ -118,8 +118,21 @@ message RoutingRule {
 }
 
 message BalancingRule {
+  enum BalancingStrategy{
+    // Choose the tag randomly
+    Random = 0;
+
+    // Choose the tag of the next alive outbound
+    Fallback = 1;
+  }
   string tag = 1;
   repeated string outbound_selector = 2;
+  BalancingStrategy strategy = 3;
+  FallbackSettings fallbackSettings = 4;
+}
+
+message FallbackSettings{
+  int64 max_attempts = 1;
 }
 
 message Config {
