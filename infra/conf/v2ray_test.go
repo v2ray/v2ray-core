@@ -2,15 +2,16 @@ package conf_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-
 	"v2ray.com/core"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
+	"v2ray.com/core/common"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -138,9 +139,6 @@ func TestV2RayConfig(t *testing.T) {
 			Parser: createParser(),
 			Output: &core.Config{
 				App: []*serial.TypedMessage{
-					serial.ToTypedMessage(&dispatcher.Config{}),
-					serial.ToTypedMessage(&proxyman.InboundConfig{}),
-					serial.ToTypedMessage(&proxyman.OutboundConfig{}),
 					serial.ToTypedMessage(&log.Config{
 						ErrorLogType:  log.LogType_File,
 						ErrorLogPath:  "/var/log/v2ray/error.log",
@@ -148,6 +146,9 @@ func TestV2RayConfig(t *testing.T) {
 						AccessLogType: log.LogType_File,
 						AccessLogPath: "/var/log/v2ray/access.log",
 					}),
+					serial.ToTypedMessage(&dispatcher.Config{}),
+					serial.ToTypedMessage(&proxyman.InboundConfig{}),
+					serial.ToTypedMessage(&proxyman.OutboundConfig{}),
 					serial.ToTypedMessage(&router.Config{
 						DomainStrategy: router.Config_AsIs,
 						Rule: []*router.RoutingRule{
@@ -336,4 +337,35 @@ func TestV2RayConfig(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestMuxConfig_Build(t *testing.T) {
+	tests := []struct {
+		name   string
+		fields string
+		want   *proxyman.MultiplexingConfig
+	}{
+		{"default", `{"enabled": true, "concurrency": 16}`, &proxyman.MultiplexingConfig{
+			Enabled:     true,
+			Concurrency: 16,
+		}},
+		{"empty def", `{}`, &proxyman.MultiplexingConfig{
+			Enabled:     false,
+			Concurrency: 8,
+		}},
+		{"not enable", `{"enabled": false, "concurrency": 4}`, &proxyman.MultiplexingConfig{
+			Enabled:     false,
+			Concurrency: 4,
+		}},
+		{"forbidden", `{"enabled": false, "concurrency": -1}`, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &MuxConfig{}
+			common.Must(json.Unmarshal([]byte(tt.fields), m))
+			if got := m.Build(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MuxConfig.Build() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
