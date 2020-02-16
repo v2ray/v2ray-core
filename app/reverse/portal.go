@@ -15,7 +15,6 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/features/outbound"
-	"v2ray.com/core/features/stats"
 	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/pipe"
 )
@@ -95,11 +94,6 @@ type Outbound struct {
 
 func (o *Outbound) Tag() string {
 	return o.tag
-}
-
-// FailedAttempts implements outbound.Handler.
-func (o *Outbound) FailedAttempts() stats.Counter {
-	return nil
 }
 
 func (o *Outbound) Dispatch(ctx context.Context, link *transport.Link) {

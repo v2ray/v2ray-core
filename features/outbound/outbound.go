@@ -5,7 +5,6 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/features"
-	"v2ray.com/core/features/stats"
 	"v2ray.com/core/transport"
 )
 
@@ -15,8 +14,14 @@ import (
 type Handler interface {
 	common.Runnable
 	Tag() string
-	FailedAttempts() stats.Counter
 	Dispatch(ctx context.Context, link *transport.Link)
+}
+
+// FailedAttemptsRecorder is the interface for handlers that can record and report failed attempts
+type FailedAttemptsRecorder interface {
+	GetFailedAttempts() int64
+	RecordFailedAttempts()
+	ResetFailedAttempts()
 }
 
 type HandlerSelector interface {

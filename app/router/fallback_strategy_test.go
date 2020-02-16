@@ -6,7 +6,6 @@ import (
 	"v2ray.com/core/app/proxyman/outbound"
 	"v2ray.com/core/app/stats"
 	"v2ray.com/core/common"
-	stats2 "v2ray.com/core/features/stats"
 	"v2ray.com/core/transport"
 )
 
@@ -27,8 +26,16 @@ func (h *handler) Close() error {
 	return nil
 }
 
-func (h *handler) FailedAttempts() stats2.Counter {
-	return &h.failedAttempts
+func (h *handler) GetFailedAttempts() int64 {
+	return h.failedAttempts.Value()
+}
+
+func (h *handler) ResetFailedAttempts() {
+	h.failedAttempts.Set(0)
+}
+
+func (h *handler) RecordFailedAttempts() {
+	h.failedAttempts.Add(1)
 }
 
 func (h *handler) Dispatch(context.Context, *transport.Link) {

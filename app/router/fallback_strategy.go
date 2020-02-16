@@ -1,6 +1,7 @@
 package router
 
 import (
+	"fmt"
 	"v2ray.com/core/features/outbound"
 )
 
@@ -25,11 +26,15 @@ func (s *FallbackStrategy) PickOutbound(ohm outbound.Manager, tags []string) str
 		s.tags = tags
 	}
 	handler := ohm.GetHandler(s.tags[s.curIndex])
-	attempts := handler.FailedAttempts()
-	if attempts.Value() >= s.maxAttempts {
-		attempts.Set(0)
-		s.curIndex = (s.curIndex + 1) % len(s.tags)
-		newError("balancer: switched to fallback " + s.tags[s.curIndex]).AtInfo().WriteToLog()
+	if recorder, ok := handler.(outbound.FailedAttemptsRecorder); !ok {
+		newError(fmt.Sprintf("invalid tag %s for fallback balancer", handler.Tag())).AtWarning().WriteToLog()
+	} else {
+		attempts := recorder.GetFailedAttempts()
+		if attempts >= s.maxAttempts {
+			recorder.ResetFailedAttempts()
+			s.curIndex = (s.curIndex + 1) % len(s.tags)
+			newError("balancer: switched to fallback " + s.tags[s.curIndex]).AtInfo().WriteToLog()
+		}
 	}
 	return s.tags[s.curIndex]
 }

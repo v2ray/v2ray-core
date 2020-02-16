@@ -9,7 +9,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal/done"
-	"v2ray.com/core/features/stats"
 	"v2ray.com/core/transport"
 )
 
@@ -91,11 +90,6 @@ func (co *Outbound) Dispatch(ctx context.Context, link *transport.Link) {
 // Tag implements outbound.Handler.
 func (co *Outbound) Tag() string {
 	return co.tag
-}
-
-// FailedAttempts implements outbound.Handler.
-func (co *Outbound) FailedAttempts() stats.Counter {
-	return nil
 }
 
 // Start implements common.Runnable.

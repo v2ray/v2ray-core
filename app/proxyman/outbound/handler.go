@@ -2,6 +2,7 @@ package outbound
 
 import (
 	"context"
+	"fmt"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
@@ -12,7 +13,6 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/features/outbound"
-	stats2 "v2ray.com/core/features/stats"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
@@ -101,9 +101,19 @@ func (h *Handler) Tag() string {
 	return h.tag
 }
 
-// FailedAttempts implements outbound.Handler.
-func (h *Handler) FailedAttempts() stats2.Counter {
-	return &h.failedAttempts
+// GetFailedAttempts implements outbound.FailedAttemptsRecorder.
+func (h *Handler) GetFailedAttempts() int64 {
+	return h.failedAttempts.Value()
+}
+
+// ResetFailedAttempts implements outbound.FailedAttemptsRecorder.
+func (h *Handler) ResetFailedAttempts() {
+	h.failedAttempts.Set(0)
+}
+
+// RecordFailedAttempts implements outbound.FailedAttemptsRecorder.
+func (h *Handler) RecordFailedAttempts() {
+	h.failedAttempts.Add(1)
 }
 
 // Dispatch implements proxy.Outbound.Dispatch.
@@ -112,25 +122,22 @@ func (h *Handler) Dispatch(ctx context.Context, link *transport.Link) {
 		if err := h.mux.Dispatch(ctx, link); err != nil {
 			e := newError("failed to process mux outbound traffic").Base(err)
 			if e.Severity() <= log.Severity_Warning {
-				h.failedAttempts.Add(1)
+				h.RecordFailedAttempts()
 			}
 			e.WriteToLog(session.ExportIDToError(ctx))
 			common.Interrupt(link.Writer)
-		} else {
-			h.failedAttempts.Set(0)
 		}
 	} else {
 		if err := h.proxy.Process(ctx, link, h); err != nil {
 			// Ensure outbound ray is properly closed.
 			e := newError("failed to process outbound traffic").Base(err)
 			if e.Severity() <= log.Severity_Warning {
-				h.failedAttempts.Add(1)
+				h.RecordFailedAttempts()
 			}
 			e.WriteToLog(session.ExportIDToError(ctx))
 			common.Interrupt(link.Writer)
 		} else {
 			common.Must(common.Close(link.Writer))
-			h.failedAttempts.Set(0)
 		}
 		common.Interrupt(link.Reader)
 	}
