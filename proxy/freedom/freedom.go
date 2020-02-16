@@ -60,15 +60,15 @@ func (h *Handler) policy() policy.Session {
 }
 
 func (h *Handler) resolveIP(ctx context.Context, domain string, localAddr net.Address) net.Address {
-	var lookupFunc func(string) ([]net.IP, error) = h.dns.LookupIP
+	var lookupFunc func(string) ([]net.IP, error) = h.dns.LookupRealIP
 
 	if h.config.DomainStrategy == Config_USE_IP4 || (localAddr != nil && localAddr.Family().IsIPv4()) {
 		if lookupIPv4, ok := h.dns.(dns.IPv4Lookup); ok {
-			lookupFunc = lookupIPv4.LookupIPv4
+			lookupFunc = lookupIPv4.LookupRealIPv4
 		}
 	} else if h.config.DomainStrategy == Config_USE_IP6 || (localAddr != nil && localAddr.Family().IsIPv6()) {
 		if lookupIPv6, ok := h.dns.(dns.IPv6Lookup); ok {
-			lookupFunc = lookupIPv6.LookupIPv6
+			lookupFunc = lookupIPv6.LookupRealIPv6
 		}
 	}
 

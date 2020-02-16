@@ -267,6 +267,7 @@ func (s *Server) LookupIP(domain string) ([]net.IP, error) {
 	return s.lookupIPInternal(domain, IPOption{
 		IPv4Enable: true,
 		IPv6Enable: true,
+		FakeEnable: true,
 	})
 }
 
@@ -275,6 +276,7 @@ func (s *Server) LookupIPv4(domain string) ([]net.IP, error) {
 	return s.lookupIPInternal(domain, IPOption{
 		IPv4Enable: true,
 		IPv6Enable: false,
+		FakeEnable: true,
 	})
 }
 
@@ -283,6 +285,34 @@ func (s *Server) LookupIPv6(domain string) ([]net.IP, error) {
 	return s.lookupIPInternal(domain, IPOption{
 		IPv4Enable: false,
 		IPv6Enable: true,
+		FakeEnable: true,
+	})
+}
+
+// LookupRealIP implements dns.Client.
+func (s *Server) LookupRealIP(domain string) ([]net.IP, error) {
+	return s.lookupIPInternal(domain, IPOption{
+		IPv4Enable: true,
+		IPv6Enable: true,
+		FakeEnable: false,
+	})
+}
+
+// LookupRealIPv4 implements dns.IPv4Lookup.
+func (s *Server) LookupRealIPv4(domain string) ([]net.IP, error) {
+	return s.lookupIPInternal(domain, IPOption{
+		IPv4Enable: true,
+		IPv6Enable: false,
+		FakeEnable: false,
+	})
+}
+
+// LookupRealIPv6 implements dns.IPv6Lookup.
+func (s *Server) LookupRealIPv6(domain string) ([]net.IP, error) {
+	return s.lookupIPInternal(domain, IPOption{
+		IPv4Enable: false,
+		IPv6Enable: true,
+		FakeEnable: false,
 	})
 }
 
@@ -337,10 +367,12 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 		domain = newdomain
 	}
 
-	ips = GetFakeIPForDomain(domain)
-	if ips != nil {
-		newError("returning fake IP ", ips[0].String(), " for domain ", domain).WriteToLog()
-		return toNetIP(ips), nil
+	if option.FakeEnable {
+		ips = GetFakeIPForDomain(domain)
+		if ips != nil {
+			newError("returning fake IP ", ips[0].String(), " for domain ", domain).WriteToLog()
+			return toNetIP(ips), nil
+		}
 	}
 
 	var lastErr error

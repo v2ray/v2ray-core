@@ -74,6 +74,21 @@ func (c *Client) LookupIPv6(host string) ([]net.IP, error) {
 	return ipv6, nil
 }
 
+// LookupRealIP implements Client.
+func (c *Client) LookupRealIP(host string) ([]net.IP, error) {
+	return c.LookupIP(host)
+}
+
+// LookupRealIPv4 implements IPv4Lookup.
+func (c *Client) LookupRealIPv4(host string) ([]net.IP, error) {
+	return c.LookupIPv4(host)
+}
+
+// LookupRealIPv6 implements IPv6Lookup.
+func (c *Client) LookupRealIPv6(host string) ([]net.IP, error) {
+	return c.LookupIPv6(host)
+}
+
 // New create a new dns.Client that queries localhost for DNS.
 func New() *Client {
 	return &Client{}

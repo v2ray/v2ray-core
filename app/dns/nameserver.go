@@ -13,6 +13,7 @@ import (
 type IPOption struct {
 	IPv4Enable bool
 	IPv6Enable bool
+	FakeEnable bool
 }
 
 // Client is the interface for DNS client.

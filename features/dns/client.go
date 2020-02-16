@@ -13,8 +13,10 @@ import (
 type Client interface {
 	features.Feature
 
-	// LookupIP returns IP address for the given domain. IPs may contain IPv4 and/or IPv6 addresses.
+	// LookupIP returns IP address for the given domain. IPs may contain IPv4 and/or IPv6 addresses, or be faked.
 	LookupIP(domain string) ([]net.IP, error)
+	// LookupRealIP returns IP address for the given domain. IPs may contain IPv4 and/or IPv6 addresses.
+	LookupRealIP(domain string) ([]net.IP, error)
 }
 
 // IPv4Lookup is an optional feature for querying IPv4 addresses only.
@@ -22,6 +24,7 @@ type Client interface {
 // v2ray:api:beta
 type IPv4Lookup interface {
 	LookupIPv4(domain string) ([]net.IP, error)
+	LookupRealIPv4(domain string) ([]net.IP, error)
 }
 
 // IPv6Lookup is an optional feature for querying IPv6 addresses only.
@@ -29,6 +32,7 @@ type IPv4Lookup interface {
 // v2ray:api:beta
 type IPv6Lookup interface {
 	LookupIPv6(domain string) ([]net.IP, error)
+	LookupRealIPv6(domain string) ([]net.IP, error)
 }
 
 // ClientType returns the type of Client interface. Can be used for implementing common.HasType.
