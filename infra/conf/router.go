@@ -24,6 +24,7 @@ type BalancingRule struct {
 	Selectors        StringList        `json:"selector"`
 }
 
+// FallbackSettings is the setting of the fallback strategy of the balancer
 type FallbackSettings struct {
 	MaxAttempts int64 `json:"maxAttempts"`
 }
@@ -43,10 +44,9 @@ func (r *BalancingRule) Build() (*router.BalancingRule, error) {
 		strategy = router.BalancingRule_Fallback
 		if r.FallbackSettings == nil {
 			return nil, newError("missing fallbackSettings")
-		} else {
-			fallbackSettings = &router.FallbackSettings{
-				MaxAttempts: r.FallbackSettings.MaxAttempts,
-			}
+		}
+		fallbackSettings = &router.FallbackSettings{
+			MaxAttempts: r.FallbackSettings.MaxAttempts,
 		}
 	case "random", "":
 		strategy = router.BalancingRule_Random

@@ -5,6 +5,7 @@ import (
 	"v2ray.com/core/features/outbound"
 )
 
+// FallbackStrategy is a balancer strategy that chooses the next alive outbound in the list when an outbound is dead
 type FallbackStrategy struct {
 	tags        []string
 	curIndex    int
