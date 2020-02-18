@@ -140,6 +140,36 @@ archAffix(){
 	return 0
 }
 
+zipRoot() {
+    unzip -lqq "$1" | awk -e '
+        NR == 1 {
+            prefix = $4;
+        }
+        NR != 1 {
+            prefix_len = length(prefix);
+            cur_len = length($4);
+
+            for (len = prefix_len < cur_len ? prefix_len : cur_len; len >= 1; len -= 1) {
+                sub_prefix = substr(prefix, 1, len);
+                sub_cur = substr($4, 1, len);
+
+                if (sub_prefix == sub_cur) {
+                    prefix = sub_prefix;
+                    break;
+                }
+            }
+
+            if (len == 0) {
+                prefix = "";
+                nextfile;
+            }
+        }
+        END {
+            print prefix;
+        }
+    '
+}
+
 downloadV2Ray(){
     rm -rf /tmp/v2ray
     mkdir -p /tmp/v2ray
@@ -196,20 +226,6 @@ getPMT(){
         CMD_UPDATE="zypper ref"
     else
         return 1
-    fi
-    return 0
-}
-
-extract(){
-    colorEcho ${BLUE}"Extracting V2Ray package to /tmp/v2ray."
-    mkdir -p /tmp/v2ray
-    unzip $1 -d ${VSRC_ROOT}
-    if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Failed to extract V2Ray."
-        return 2
-    fi
-    if [[ -d "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}" ]]; then
-      VSRC_ROOT="/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}"
     fi
     return 0
 }
@@ -280,63 +296,41 @@ startV2ray(){
     return 0
 }
 
-copyFile() {
-    NAME=$1
-    ERROR=`cp "${VSRC_ROOT}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
-    if [[ $? -ne 0 ]]; then
-        colorEcho ${YELLOW} "${ERROR}"
-        return 1
-    fi
-    return 0
-}
-
-makeExecutable() {
-    chmod +x "/usr/bin/v2ray/$1"
-}
-
 installV2Ray(){
     # Install V2Ray binary to /usr/bin/v2ray
-    mkdir -p /usr/bin/v2ray
-    copyFile v2ray
-    if [[ $? -ne 0 ]]; then
+    mkdir -p '/etc/v2ray' '/var/log/v2ray' && \
+    unzip -oj "$1" "$2v2ray" "$2v2ctl" "$2geoip.dat" "$2geosite.dat" -d '/usr/bin/v2ray' && \
+    chmod +x '/usr/bin/v2ray/v2ray' '/usr/bin/v2ray/v2ctl' || {
         colorEcho ${RED} "Failed to copy V2Ray binary and resources."
         return 1
-    fi
-    makeExecutable v2ray
-    copyFile v2ctl && makeExecutable v2ctl
-    copyFile geoip.dat
-    copyFile geosite.dat
+    }
 
     # Install V2Ray server config to /etc/v2ray
-    if [[ ! -f "/etc/v2ray/config.json" ]]; then
-        mkdir -p /etc/v2ray
-        mkdir -p /var/log/v2ray
-        cp "${VSRC_ROOT}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
-        if [[ $? -ne 0 ]]; then
+    if [ ! -f '/etc/v2ray/config.json' ]; then
+        local PORT="$(($RANDOM + 10000))"
+        local UUID="$(cat '/proc/sys/kernel/random/uuid')"
+
+        unzip -pq "$1" "$2vpoint_vmess_freedom.json" | \
+        sed -e "s/10086/${PORT}/g; s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${UUID}/g;" - > \
+        '/etc/v2ray/config.json' || {
             colorEcho ${YELLOW} "Failed to create V2Ray configuration file. Please create it manually."
             return 1
-        fi
-        let PORT=$RANDOM+10000
-        UUID=$(cat /proc/sys/kernel/random/uuid)
-
-        sed -i "s/10086/${PORT}/g" "/etc/v2ray/config.json"
-        sed -i "s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${UUID}/g" "/etc/v2ray/config.json"
+        }
 
         colorEcho ${BLUE} "PORT:${PORT}"
         colorEcho ${BLUE} "UUID:${UUID}"
     fi
-    return 0
 }
 
 
 installInitScript(){
     if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ ! -f "/etc/systemd/system/v2ray.service" && ! -f "/lib/systemd/system/v2ray.service" ]]; then
-        cp "${VSRC_ROOT}/systemd/v2ray.service" "/etc/systemd/system/"
+        unzip -oj "$1" "$2systemd/v2ray.service" -d '/etc/systemd/system' && \
         systemctl enable v2ray.service
     elif [[ -n "${SERVICE_CMD}" ]] && [[ ! -f "/etc/init.d/v2ray" ]]; then
-        installSoftware "daemon" || return $?
-        cp "${VSRC_ROOT}/systemv/v2ray" "/etc/init.d/v2ray"
-        chmod +x "/etc/init.d/v2ray"
+        installSoftware 'daemon' && \
+        unzip -oj "$1" "$2systemv/v2ray" -d '/etc/init.d' && \
+        chmod +x '/etc/init.d/v2ray' && \
         update-rc.d v2ray defaults
     fi
 }
@@ -431,9 +425,8 @@ main(){
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
         colorEcho ${YELLOW} "Installing V2Ray via local file. Please make sure the file is a valid V2Ray package, as we are not able to determine that."
         NEW_VER=local
-        installSoftware unzip || return $?
         rm -rf /tmp/v2ray
-        extract $LOCAL || return $?
+        ZIPFILE="$LOCAL"
         #FILEVDIS=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f4`
         #SYSTEM=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f3`
         #if [[ ${SYSTEM} != "linux" ]]; then
@@ -461,22 +454,30 @@ main(){
         else
             colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
             downloadV2Ray || return $?
-            installSoftware unzip || return $?
-            extract ${ZIPFILE} || return $?
         fi
     fi
 
+    local ZIPROOT="$(zipRoot "${ZIPFILE}")"
+    installSoftware unzip || return $?
+
     if [ -n "${EXTRACT_ONLY}" ]; then
-        colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT}, and exiting..."
-        return 0
+        colorEcho ${BLUE} "Extracting V2Ray package to ${VSRC_ROOT}."
+
+        if unzip -o "${ZIPFILE}" -d ${VSRC_ROOT}; then
+            colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT%/}${ZIPROOT:+/${ZIPROOT%/}}, and exiting..."
+            return 0
+        else
+            colorEcho ${RED} "Failed to extract V2Ray."
+            return 2
+        fi
     fi
 
     if pgrep "v2ray" > /dev/null ; then
         V2RAY_RUNNING=1
         stopV2ray
     fi
-    installV2Ray || return $?
-    installInitScript || return $?
+    installV2Ray "${ZIPFILE}" "${ZIPROOT}" || return $?
+    installInitScript "${ZIPFILE}" "${ZIPROOT}" || return $?
     if [[ ${V2RAY_RUNNING} -eq 1 ]];then
         colorEcho ${BLUE} "Restarting V2Ray service."
         startV2ray
