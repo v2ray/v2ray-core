@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/mux"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
@@ -119,6 +120,13 @@ func NewBridgeWorker(domain string, tag string, d routing.Dispatcher) (*BridgeWo
 		tag:        tag,
 	}
 
+	// Initialize the connection by sending a Keepalive frame
+	keepalive := buf.New()
+	mux.FrameMetadata{SessionStatus: mux.SessionStatusKeepAlive}.WriteTo(keepalive)
+	err = link.Writer.WriteMultiBuffer(buf.MultiBuffer{keepalive})
+	if err != nil {
+		return nil, err
+	}
 	worker, err := mux.NewServerWorker(context.Background(), w, link)
 	if err != nil {
 		return nil, err
