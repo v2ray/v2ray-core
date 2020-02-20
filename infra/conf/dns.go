@@ -126,7 +126,7 @@ func getHostMapping(addr *Address, pattern string) (*dns.Config_HostMapping, err
 	return item, nil
 }
 
-var RegenerationTypeMapper = map[string]dns.Config_Fake_RegenerationType{
+var regenerationTypeMapper = map[string]dns.Config_Fake_RegenerationType{
 	"none":   dns.Config_Fake_None,
 	"oldest": dns.Config_Fake_Oldest,
 	"lru":    dns.Config_Fake_LRU,
@@ -180,7 +180,7 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 			}
 			config.Fake.FakeRules = fakeRules[:i]
 		}
-		config.Fake.Regeneration = RegenerationTypeMapper[strings.ToLower(c.Fake.Regeneration)]
+		config.Fake.Regeneration = regenerationTypeMapper[strings.ToLower(c.Fake.Regeneration)]
 	}
 
 	if len(externalDNSRules) != 0 {
