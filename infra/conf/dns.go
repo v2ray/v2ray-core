@@ -2,6 +2,7 @@ package conf
 
 import (
 	"encoding/json"
+	"strings"
 
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/common/net"
@@ -40,20 +41,23 @@ func (c *NameServerConfig) UnmarshalJSON(data []byte) error {
 
 // FakeIPConfig contains configurations for fake IP function
 type FakeIPConfig struct {
-	FakeRules []string
-	FakeNet   string
+	FakeRules    []string
+	FakeNet      string
+	Regeneration string
 }
 
 // UnmarshalJSON is an implemention for unmarshal json data
 func (c *FakeIPConfig) UnmarshalJSON(data []byte) error {
 	var advanced struct {
-		FakeRules []string `json:"fakeRules"`
-		FakeNet   string   `json:"fakeNet"`
+		FakeRules    []string `json:"fakeRules"`
+		FakeNet      string   `json:"fakeNet"`
+		Regeneration string   `json:"regeneration"`
 	}
 
 	if err := json.Unmarshal(data, &advanced); err == nil {
 		c.FakeRules = advanced.FakeRules
 		c.FakeNet = advanced.FakeNet
+		c.Regeneration = advanced.Regeneration
 		return nil
 	}
 
@@ -122,6 +126,12 @@ func getHostMapping(addr *Address, pattern string) (*dns.Config_HostMapping, err
 	return item, nil
 }
 
+var RegenerationTypeMapper = map[string]dns.Config_Fake_RegenerationType{
+	"none":   dns.Config_Fake_None,
+	"oldest": dns.Config_Fake_Oldest,
+	"lru":    dns.Config_Fake_LRU,
+}
+
 // Build implements Buildable
 func (c *DnsConfig) Build() (*dns.Config, error) {
 	config := &dns.Config{
@@ -154,7 +164,7 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 	if c.Fake != nil {
 		config.Fake = new(dns.Config_Fake)
 		if c.Fake.FakeNet == "" {
-			config.Fake.FakeNet = "224.0.0.0/8"
+			config.Fake.FakeNet = "224.0.0.0/22"
 		} else {
 			config.Fake.FakeNet = c.Fake.FakeNet
 		}
@@ -170,6 +180,7 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 			}
 			config.Fake.FakeRules = fakeRules[:i]
 		}
+		config.Fake.Regeneration = RegenerationTypeMapper[strings.ToLower(c.Fake.Regeneration)]
 	}
 
 	if len(externalDNSRules) != 0 {

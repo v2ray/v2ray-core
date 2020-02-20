@@ -64,6 +64,15 @@ message Config {
   message Fake {
     repeated string fake_rules = 1;
     string fake_net = 2;
+    enum RegenerationType {
+      // Discard the LRU (Least recently used) IP (Default)
+      LRU = 0;
+      // Discard the oldest IP
+      Oldest = 1;
+      // Don't regenerate IP
+      None = 2;
+    }
+    RegenerationType regeneration = 3;
   }
   Fake fake = 7;
 

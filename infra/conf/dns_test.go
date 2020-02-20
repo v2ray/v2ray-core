@@ -152,8 +152,9 @@ func TestDnsConfigParsing(t *testing.T) {
 					},
 				},
 				Fake: &dns.Config_Fake{
-					FakeNet:   "224.0.0.0/8",
-					FakeRules: []string{"egeosite.dat:test"},
+					FakeNet:      "224.0.0.0/8",
+					FakeRules:    []string{"egeosite.dat:test"},
+					Regeneration: dns.Config_Fake_LRU,
 				},
 				ClientIp: []byte{10, 0, 0, 1},
 			},
