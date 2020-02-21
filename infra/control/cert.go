@@ -48,7 +48,7 @@ func (c *CertificateCommand) Description() Description {
 			"Generate new TLS certificate",
 			"--ca The new certificate is a CA certificate",
 			"--domain Common name for the certificate",
-			"--exipre Time until certificate expires. 240h = 10 days.",
+			"--expire Time until certificate expires. 240h = 10 days.",
 		},
 	}
 }
