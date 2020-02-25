@@ -5,6 +5,7 @@ package udp
 import (
 	"syscall"
 
+	"golang.org/x/sys/unix"
 	"v2ray.com/core/common/net"
 )
 
@@ -18,7 +19,7 @@ func RetrieveOriginalDest(oob []byte) net.Destination {
 			ip := net.IPAddress(msg.Data[4:8])
 			port := net.PortFromBytes(msg.Data[2:4])
 			return net.UDPDestination(ip, port)
-		} else if msg.Header.Level == syscall.SOL_IPV6 && msg.Header.Type == syscall.IP_RECVORIGDSTADDR {
+		} else if msg.Header.Level == syscall.SOL_IPV6 && msg.Header.Type == unix.IPV6_RECVORIGDSTADDR {
 			ip := net.IPAddress(msg.Data[8:24])
 			port := net.PortFromBytes(msg.Data[2:4])
 			return net.UDPDestination(ip, port)

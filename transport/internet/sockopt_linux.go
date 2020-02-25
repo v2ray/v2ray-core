@@ -3,6 +3,7 @@ package internet
 import (
 	"net"
 	"syscall"
+
 	"golang.org/x/sys/unix"
 )
 
@@ -99,8 +100,10 @@ func applyInboundSocketOptions(network string, fd uintptr, config *SocketConfig)
 	}
 
 	if config.ReceiveOriginalDestAddress && isUDPSocket(network) {
-		if err := syscall.SetsockoptInt(int(fd), syscall.SOL_IP, syscall.IP_RECVORIGDSTADDR, 1); err != nil {
-			return err
+		if err := syscall.SetsockoptInt(int(fd), syscall.SOL_IPV6, unix.IPV6_RECVORIGDSTADDR, 1); err != nil {
+			if err := syscall.SetsockoptInt(int(fd), syscall.SOL_IP, syscall.IP_RECVORIGDSTADDR, 1); err != nil {
+				return err
+			}
 		}
 	}
 
