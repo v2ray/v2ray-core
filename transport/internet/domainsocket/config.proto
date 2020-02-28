@@ -6,10 +6,13 @@ option go_package = "domainsocket";
 option java_package = "com.v2ray.core.transport.internet.domainsocket";
 option java_multiple_files = true;
 
+import "v2ray.com/core/common/serial/typed_message.proto";
+
 message Config {
  // Path of the domain socket. This overrides the IP/Port parameter from upstream caller.
  string path = 1;
  // Abstract speicifies whether to use abstract namespace or not.
  // Traditionally Unix domain socket is file system based. Abstract domain socket can be used without acquiring file lock. 
  bool abstract = 2;
+ v2ray.core.common.serial.TypedMessage header_settings = 3;
 }
