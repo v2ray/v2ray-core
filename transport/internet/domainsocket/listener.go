@@ -24,6 +24,7 @@ type Listener struct {
 	config    *Config
 	addConn   internet.ConnHandler
 	locker    *fileLocker
+	authConfig internet.ConnectionAuthenticator
 }
 
 func Listen(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, handler internet.ConnHandler) (internet.Listener, error) {
@@ -59,6 +60,18 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 		ln.tlsConfig = config.GetTLSConfig()
 	}
 
+	if settings.HeaderSettings != nil {
+		headerConfig, err := settings.HeaderSettings.GetInstance()
+		if err != nil {
+			return nil, newError("invalid header settings").Base(err).AtError()
+		}
+		auth, err := internet.CreateConnectionAuthenticator(headerConfig)
+		if err != nil {
+			return nil, newError("invalid header settings.").Base(err).AtError()
+		}
+		ln.authConfig = auth
+	}
+
 	go ln.run()
 
 	return ln, nil
@@ -88,6 +101,11 @@ func (ln *Listener) run() {
 
 		if ln.tlsConfig != nil {
 			conn = tls.Server(conn, ln.tlsConfig)
+		}
+
+		if ln.authConfig != nil {
+		        newError("Adding auth to server! " ).Base(err).WriteToLog()
+			conn = ln.authConfig.Server(conn)
 		}
 
 		ln.addConn(internet.Connection(conn))

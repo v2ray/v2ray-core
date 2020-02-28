@@ -210,13 +210,27 @@ func (c *QUICConfig) Build() (proto.Message, error) {
 type DomainSocketConfig struct {
 	Path     string `json:"path"`
 	Abstract bool   `json:"abstract"`
+	HeaderConfig json.RawMessage `json:"header"`
 }
 
 func (c *DomainSocketConfig) Build() (proto.Message, error) {
-	return &domainsocket.Config{
+	config := &domainsocket.Config{
 		Path:     c.Path,
 		Abstract: c.Abstract,
-	}, nil
+	}
+	if len(c.HeaderConfig) > 0 {
+		headerConfig, _, err := tcpHeaderLoader.Load(c.HeaderConfig)
+		if err != nil {
+			return nil, newError("invalid DomainSocket header config").Base(err).AtError()
+		}
+		ts, err := headerConfig.(Buildable).Build()
+		if err != nil {
+			return nil, newError("invalid DomainSocket header config").Base(err).AtError()
+		}
+		config.HeaderSettings = serial.ToTypedMessage(ts)
+	}
+	return config, nil
+
 }
 
 type TLSCertConfig struct {
