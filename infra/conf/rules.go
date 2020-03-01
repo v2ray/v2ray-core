@@ -14,6 +14,7 @@ var prefixMapper = map[string]string{
 	"geosite:": "egeosite.dat:",
 	"ext:":     "e",
 	"not:":     "!",
+	"and:":     "&",
 }
 
 var typeMapper = map[router.Domain_Type]string{
@@ -50,25 +51,59 @@ func loadExternalRules(pattern string, external map[string][]string) error {
 	return nil
 }
 
-func compressPattern(pattern string, external map[string][]string, def string) (string, error) {
+var unparsedNumber int
+var nextPatternPosition int
+
+func parsePattern(pattern string, external map[string][]string, def string) (string, error) {
 	for prefix, cmd := range prefixMapper {
 		if strings.HasPrefix(pattern, prefix) {
 			newPattern := cmd + pattern[len(prefix):]
+			// These command will handle the next position themselves
+			if unparsedNumber != 0 && cmd != "&" && cmd != "!" {
+				for pos, char := range newPattern {
+					if char == ' ' {
+						nextPatternPosition = pos
+						break
+					}
+				}
+			}
 			switch newPattern[0] {
 			case 'e':
-				if err := loadExternalRules(newPattern[1:], external); err != nil {
+				if err := loadExternalRules(newPattern[1:nextPatternPosition], external); err != nil {
 					return "", err
 				}
 			case '!':
-				subPattern, err := compressPattern(newPattern[1:], external, def)
+				subPattern, err := parsePattern(newPattern[1:], external, def)
 				if err != nil {
 					return "", err
 				}
+        nextPatternPosition++
 				newPattern = "!" + subPattern
+			case '&':
+				unparsedNumber += 2
+				partA, err := parsePattern(newPattern[1:], external, def)
+				if err != nil {
+					return "", err
+				}
+				newPattern = "&" + partA[:nextPatternPosition]
+				unparsedNumber--
+				partB, err := parsePattern(partA[nextPatternPosition+1:], external, def)
+				if err != nil {
+					return "", err
+				}
+				unparsedNumber--
+				nextPatternPosition = len(newPattern) + 1 + nextPatternPosition
+				newPattern += " " + partB
 			}
 			return newPattern, nil
 		}
 	}
 	// If no prefix, use specified
 	return def + pattern, nil
+}
+
+func compressPattern(pattern string, external map[string][]string, def string) (string, error) {
+	unparsedNumber = 0
+	nextPatternPosition = 0
+	return parsePattern(pattern, external, def)
 }

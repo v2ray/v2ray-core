@@ -70,10 +70,22 @@ type groupMatcher interface {
 	Add(m Matcher)
 }
 
+var unparsedNumber int
+var nextPatternPosition int
+
 // Parse a pattern to a part of MatcherGroup
 func subPattern(mg groupMatcher, pattern string, extern map[string][]string) error {
 	cmd := pattern[0]
-	left := pattern[1:]
+	nextPatternPosition = len(pattern)
+	if unparsedNumber != 0 && cmd != '&' && cmd != '!' {
+		for pos, char := range pattern {
+			if char == ' ' {
+				nextPatternPosition = pos
+				break
+			}
+		}
+	}
+	left := pattern[1:nextPatternPosition]
 	var m Matcher
 	switch cmd {
 	case 'd':
@@ -97,15 +109,38 @@ func subPattern(mg groupMatcher, pattern string, extern map[string][]string) err
 		m = fullMatcher(left)
 	case 'e':
 		// External
+		lenE := nextPatternPosition
 		for _, newPattern := range extern[left] {
 			subPattern(mg, newPattern, extern)
 		}
+		nextPatternPosition = lenE
 	case '!':
 		// Not
 		smg := NewOrMatcher()
-		smg.ParsePattern(left, extern)
+		subPattern(smg, pattern[1:], extern)
+		nextPatternPosition++
 		m = &notMatcher{
 			matcher: smg,
+		}
+	case '&':
+		a := NewOrMatcher()
+		b := NewOrMatcher()
+		unparsedNumber += 2
+		err := subPattern(a, pattern[1:], extern)
+		if err != nil {
+			return err
+		}
+		lenA := nextPatternPosition
+		unparsedNumber--
+		err = subPattern(b, pattern[lenA+2:], extern)
+		if err != nil {
+			return err
+		}
+		unparsedNumber--
+		nextPatternPosition += lenA + 2
+		m = &andMatcher{
+			matcherA: a,
+			matcherB: b,
 		}
 	default:
 		panic("Unknown type")
@@ -119,6 +154,8 @@ func subPattern(mg groupMatcher, pattern string, extern map[string][]string) err
 // ParsePattern parses a pattern to a part of MatcherGroup and return its index. The index will never be 0.
 func (mg *MatcherGroup) ParsePattern(pattern string, extern map[string][]string) (uint32, error) {
 	mg.count++
+	unparsedNumber = 0
+	nextPatternPosition = 0
 	return mg.count, subPattern(mg, pattern, extern)
 }
 
@@ -184,5 +221,7 @@ func (g *OrMatcher) Add(m Matcher) {
 
 // ParsePattern parses a pattern to a part of OrMatcher
 func (g *OrMatcher) ParsePattern(pattern string, extern map[string][]string) error {
+	unparsedNumber = 0
+	nextPatternPosition = 0
 	return subPattern(g, pattern, extern)
 }

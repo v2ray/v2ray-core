@@ -42,3 +42,12 @@ type notMatcher struct {
 func (m *notMatcher) Match(s string) bool {
 	return !(m.matcher.Match(s))
 }
+
+type andMatcher struct {
+	matcherA Matcher
+	matcherB Matcher
+}
+
+func (m *andMatcher) Match(s string) bool {
+	return m.matcherA.Match(s) && m.matcherB.Match(s)
+}
