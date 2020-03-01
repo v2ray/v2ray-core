@@ -2,6 +2,7 @@ package strmatcher
 
 import (
 	"regexp"
+	"strings"
 )
 
 // Matcher is the interface to determine a string matches a pattern.
@@ -70,22 +71,25 @@ type groupMatcher interface {
 	Add(m Matcher)
 }
 
-var unparsedNumber int
-var nextPatternPosition int
+type patternParser struct {
+	unparsedNumber int
+	nextPattern    int
+	external       map[string][]string
+}
 
 // Parse a pattern to a part of MatcherGroup
-func subPattern(mg groupMatcher, pattern string, extern map[string][]string) error {
+func (p *patternParser) subPattern(mg groupMatcher, pattern string) error {
 	cmd := pattern[0]
-	nextPatternPosition = len(pattern)
-	if unparsedNumber != 0 && cmd != '&' && cmd != '!' {
-		for pos, char := range pattern {
-			if char == ' ' {
-				nextPatternPosition = pos
-				break
-			}
+	length := len(pattern)
+	p.nextPattern = length
+	// For the matchers which have not child matcher
+	if p.unparsedNumber != 0 && cmd != '&' && cmd != '!' {
+		pos := strings.IndexByte(pattern, ' ')
+		if pos != -1 {
+			p.nextPattern = pos
 		}
 	}
-	left := pattern[1:nextPatternPosition]
+	left := pattern[1:p.nextPattern]
 	var m Matcher
 	switch cmd {
 	case 'd':
@@ -109,35 +113,38 @@ func subPattern(mg groupMatcher, pattern string, extern map[string][]string) err
 		m = fullMatcher(left)
 	case 'e':
 		// External
-		lenE := nextPatternPosition
-		for _, newPattern := range extern[left] {
-			subPattern(mg, newPattern, extern)
+		sp := &patternParser{
+			unparsedNumber: 0,
+			nextPattern:    0,
+			external:       p.external,
 		}
-		nextPatternPosition = lenE
+		// Use extra parser to avoid unnecessary calculation
+		for _, newPattern := range p.external[left] {
+			sp.subPattern(mg, newPattern)
+		}
 	case '!':
 		// Not
 		smg := NewOrMatcher()
-		subPattern(smg, pattern[1:], extern)
-		nextPatternPosition++
+		p.subPattern(smg, pattern[1:])
+		p.nextPattern++
 		m = &notMatcher{
 			matcher: smg,
 		}
 	case '&':
 		a := NewOrMatcher()
 		b := NewOrMatcher()
-		unparsedNumber += 2
-		err := subPattern(a, pattern[1:], extern)
+		p.unparsedNumber++
+		err := p.subPattern(a, pattern[1:])
 		if err != nil {
 			return err
 		}
-		lenA := nextPatternPosition
-		unparsedNumber--
-		err = subPattern(b, pattern[lenA+2:], extern)
+		lenA := p.nextPattern
+		err = p.subPattern(b, pattern[lenA+2:])
 		if err != nil {
 			return err
 		}
-		unparsedNumber--
-		nextPatternPosition += lenA + 2
+		p.unparsedNumber--
+		p.nextPattern += lenA + 2
 		m = &andMatcher{
 			matcherA: a,
 			matcherB: b,
@@ -154,9 +161,12 @@ func subPattern(mg groupMatcher, pattern string, extern map[string][]string) err
 // ParsePattern parses a pattern to a part of MatcherGroup and return its index. The index will never be 0.
 func (mg *MatcherGroup) ParsePattern(pattern string, extern map[string][]string) (uint32, error) {
 	mg.count++
-	unparsedNumber = 0
-	nextPatternPosition = 0
-	return mg.count, subPattern(mg, pattern, extern)
+	p := &patternParser{
+		unparsedNumber: 0,
+		nextPattern:    0,
+		external:       extern,
+	}
+	return mg.count, p.subPattern(mg, pattern)
 }
 
 // Match implements IndexMatcher.Match.
@@ -221,7 +231,10 @@ func (g *OrMatcher) Add(m Matcher) {
 
 // ParsePattern parses a pattern to a part of OrMatcher
 func (g *OrMatcher) ParsePattern(pattern string, extern map[string][]string) error {
-	unparsedNumber = 0
-	nextPatternPosition = 0
-	return subPattern(g, pattern, extern)
+	p := &patternParser{
+		unparsedNumber: 0,
+		nextPattern:    0,
+		external:       extern,
+	}
+	return p.subPattern(g, pattern)
 }

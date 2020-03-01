@@ -51,59 +51,73 @@ func loadExternalRules(pattern string, external map[string][]string) error {
 	return nil
 }
 
-var unparsedNumber int
-var nextPatternPosition int
+// In the nextPattern, parsePattern records the end position of the
+// first pattern in the pattern it parsed.
+type patternParser struct {
+	unparsedNumber int
+	nextPattern    int
+	defaultType    string
+	external       map[string][]string
+}
 
-func parsePattern(pattern string, external map[string][]string, def string) (string, error) {
+func (p *patternParser) parsePattern(pattern string) (string, error) {
 	for prefix, cmd := range prefixMapper {
-		if strings.HasPrefix(pattern, prefix) {
-			newPattern := cmd + pattern[len(prefix):]
-			// These command will handle the next position themselves
-			if unparsedNumber != 0 && cmd != "&" && cmd != "!" {
-				for pos, char := range newPattern {
-					if char == ' ' {
-						nextPatternPosition = pos
-						break
-					}
-				}
-			}
-			switch newPattern[0] {
-			case 'e':
-				if err := loadExternalRules(newPattern[1:nextPatternPosition], external); err != nil {
-					return "", err
-				}
-			case '!':
-				subPattern, err := parsePattern(newPattern[1:], external, def)
-				if err != nil {
-					return "", err
-				}
-        nextPatternPosition++
-				newPattern = "!" + subPattern
-			case '&':
-				unparsedNumber += 2
-				partA, err := parsePattern(newPattern[1:], external, def)
-				if err != nil {
-					return "", err
-				}
-				newPattern = "&" + partA[:nextPatternPosition]
-				unparsedNumber--
-				partB, err := parsePattern(partA[nextPatternPosition+1:], external, def)
-				if err != nil {
-					return "", err
-				}
-				unparsedNumber--
-				nextPatternPosition = len(newPattern) + 1 + nextPatternPosition
-				newPattern += " " + partB
-			}
-			return newPattern, nil
+		if !strings.HasPrefix(pattern, prefix) {
+			continue
 		}
+		newPattern := cmd + pattern[len(prefix):]
+		length := len(newPattern)
+		// For the matchers which have not child matcher
+		p.nextPattern = length
+		if p.unparsedNumber != 0 && cmd != "&" && cmd != "!" {
+			pos := strings.IndexByte(newPattern, ' ')
+			if pos != -1 {
+				p.nextPattern = pos
+			}
+		}
+		arg := newPattern[1:p.nextPattern]
+		switch newPattern[0] {
+		case 'e':
+			if err := loadExternalRules(arg, p.external); err != nil {
+				return "", err
+			}
+		case '!':
+			subPattern, err := p.parsePattern(arg)
+			if err != nil {
+				return "", err
+			}
+			// The sub pattern is one character shorter than the current string
+			p.nextPattern++
+			newPattern = "!" + subPattern
+		case '&':
+			p.unparsedNumber++
+			partA, err := p.parsePattern(arg)
+			if err != nil {
+				return "", err
+			}
+			lenA := p.nextPattern
+			// The part after p.nextPattern haven't been parsed yet
+			newPattern = "&" + partA[:lenA]
+			partB, err := p.parsePattern(partA[lenA+1:])
+			if err != nil {
+				return "", err
+			}
+			p.nextPattern = lenA + 2 + p.nextPattern
+			p.unparsedNumber--
+			newPattern += " " + partB
+		}
+		return newPattern, nil
 	}
 	// If no prefix, use specified
-	return def + pattern, nil
+	return p.defaultType + pattern, nil
 }
 
 func compressPattern(pattern string, external map[string][]string, def string) (string, error) {
-	unparsedNumber = 0
-	nextPatternPosition = 0
-	return parsePattern(pattern, external, def)
+	p := &patternParser{
+		unparsedNumber: 0,
+		nextPattern:    0,
+		defaultType:    def,
+		external:       external,
+	}
+	return p.parsePattern(pattern)
 }
