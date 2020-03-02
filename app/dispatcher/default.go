@@ -258,7 +258,13 @@ func sniffer(ctx context.Context, cReader *cachedReader) (SniffResult, error) {
 
 func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.Link, destination net.Destination) {
 	var handler outbound.Handler
-	if d.router != nil {
+
+	skipRoutePick := false
+	if content := session.ContentFromContext(ctx); content != nil {
+		skipRoutePick = content.SkipRoutePick
+	}
+
+	if d.router != nil && !skipRoutePick {
 		if tag, err := d.router.PickRoute(ctx); err == nil {
 			if h := d.ohm.GetHandler(tag); h != nil {
 				newError("taking detour [", tag, "] for [", destination, "]").WriteToLog(session.ExportIDToError(ctx))
