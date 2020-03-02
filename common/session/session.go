@@ -68,6 +68,8 @@ type Content struct {
 	SniffingRequest SniffingRequest
 
 	Attributes map[string]interface{}
+
+	SkipRoutePick bool
 }
 
 func (c *Content) SetAttribute(name string, value interface{}) {
