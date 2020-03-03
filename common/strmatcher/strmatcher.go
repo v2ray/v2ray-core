@@ -149,6 +149,19 @@ func (p *patternParser) subPattern(mg groupMatcher, pattern string) error {
 			matcherA: a,
 			matcherB: b,
 		}
+	case '|':
+		p.unparsedNumber++
+		err := p.subPattern(mg, pattern[1:])
+		if err != nil {
+			return err
+		}
+		lenA := p.nextPattern
+		err = p.subPattern(mg, pattern[lenA+2:])
+		if err != nil {
+			return err
+		}
+		p.unparsedNumber--
+		p.nextPattern += lenA + 2
 	default:
 		panic("Unknown type")
 	}

@@ -15,6 +15,7 @@ var prefixMapper = map[string]string{
 	"ext:":     "e",
 	"not:":     "!",
 	"and:":     "&",
+	"or:":      "|",
 }
 
 var typeMapper = map[router.Domain_Type]string{
@@ -69,7 +70,7 @@ func (p *patternParser) parsePattern(pattern string) (string, error) {
 		length := len(newPattern)
 		// For the matchers which have not child matcher
 		p.nextPattern = length
-		if p.unparsedNumber != 0 && cmd != "&" && cmd != "!" {
+		if p.unparsedNumber != 0 && cmd != "&" && cmd != "|" && cmd != "!" {
 			pos := strings.IndexByte(newPattern, ' ')
 			if pos != -1 {
 				p.nextPattern = pos
@@ -89,7 +90,7 @@ func (p *patternParser) parsePattern(pattern string) (string, error) {
 			// The sub pattern is one character shorter than the current string
 			p.nextPattern++
 			newPattern = "!" + subPattern
-		case '&':
+		case '&', '|':
 			p.unparsedNumber++
 			partA, err := p.parsePattern(arg)
 			if err != nil {
@@ -97,7 +98,7 @@ func (p *patternParser) parsePattern(pattern string) (string, error) {
 			}
 			lenA := p.nextPattern
 			// The part after p.nextPattern haven't been parsed yet
-			newPattern = "&" + partA[:lenA]
+			newPattern = cmd + partA[:lenA]
 			partB, err := p.parsePattern(partA[lenA+1:])
 			if err != nil {
 				return "", err
