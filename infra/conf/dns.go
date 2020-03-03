@@ -44,6 +44,7 @@ type FakeIPConfig struct {
 	FakeRules    []string
 	FakeNet      string
 	Regeneration string
+	Path         string
 }
 
 // UnmarshalJSON is an implemention for unmarshal json data
@@ -52,12 +53,14 @@ func (c *FakeIPConfig) UnmarshalJSON(data []byte) error {
 		FakeRules    []string `json:"fakeRules"`
 		FakeNet      string   `json:"fakeNet"`
 		Regeneration string   `json:"regeneration"`
+		Path         string   `json:"path"`
 	}
 
 	if err := json.Unmarshal(data, &advanced); err == nil {
 		c.FakeRules = advanced.FakeRules
 		c.FakeNet = advanced.FakeNet
 		c.Regeneration = advanced.Regeneration
+		c.Path = advanced.Path
 		return nil
 	}
 
@@ -181,6 +184,7 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 			config.Fake.FakeRules = fakeRules[:i]
 		}
 		config.Fake.Regeneration = regenerationTypeMapper[strings.ToLower(c.Fake.Regeneration)]
+		config.Fake.Path = c.Fake.Path
 	}
 
 	if len(externalDNSRules) != 0 {

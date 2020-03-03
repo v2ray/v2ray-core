@@ -73,6 +73,7 @@ message Config {
       None = 2;
     }
     RegenerationType regeneration = 3;
+    string path = 4;
   }
   Fake fake = 7;
 

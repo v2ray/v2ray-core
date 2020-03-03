@@ -1,13 +1,22 @@
 package dns
 
 import (
+	"bufio"
 	"container/list"
+	"os"
 	"strconv"
 	"strings"
 
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/strmatcher"
 )
+
+func max(a uint32, b uint32) uint32 {
+	if a > b {
+		return a
+	}
+	return b
+}
 
 func getIPSum(i net.IP) uint32 {
 	return (uint32(i[0]) << 24) | (uint32(i[1]) << 16) | (uint32(i[2]) << 8) | uint32(i[3])
@@ -28,32 +37,41 @@ var matcher *strmatcher.OrMatcher
 var prefix uint32
 var upperLimit int
 
+func isFakeIP(i uint32) bool {
+	return (i & prefix) == prefix
+}
+
 type fakeIPMapper interface {
 	clear()
 	getAddress(string) []net.Address
 	getDomain(uint32) string
+	load(map[uint32]string)
 }
 
 type noneMapper struct {
 	domainMapper  map[string][]net.Address
 	addressMapper map[uint32]string
+	next          uint32
 }
 
 func (n *noneMapper) clear() {
 	n.domainMapper = make(map[string][]net.Address)
 	n.addressMapper = make(map[uint32]string)
+	n.next = 0
 }
 
 func (n *noneMapper) getAddress(domain string) []net.Address {
 	if res := n.domainMapper[domain]; res != nil {
 		return res
 	}
-	if len(n.addressMapper) >= upperLimit {
+	ipIndex := prefix | n.next
+	if n.next >= uint32(upperLimit-1) {
 		return nil
 	}
-	next := prefix | uint32(len(n.addressMapper))
-	ret := []net.Address{getAddress(next)}
-	n.addressMapper[next] = domain
+	go saveFakeIP(n.next, domain)
+	n.next++
+	ret := []net.Address{getAddress(ipIndex)}
+	n.addressMapper[ipIndex] = domain
 	n.domainMapper[domain] = ret
 	return ret
 }
@@ -66,30 +84,29 @@ func (n *noneMapper) getDomain(ipIndex uint32) string {
 	return n.addressMapper[ipIndex]
 }
 
-type oldestMapper struct {
-	noneMapper
-	next uint32
+func (n *noneMapper) load(rules map[uint32]string) {
+	for ip, domain := range rules {
+		if !isFakeIP(ip) {
+			continue
+		}
+		address := []net.Address{getAddress(ip)}
+		n.addressMapper[ip] = domain
+		n.domainMapper[domain] = address
+		n.next = max(n.next, ip)
+	}
 }
 
-func (n *oldestMapper) clear() {
-	n.noneMapper.clear()
-	n.next = 0
+type oldestMapper struct {
+	noneMapper
 }
 
 func (n *oldestMapper) getAddress(domain string) []net.Address {
-	if res := n.domainMapper[domain]; res != nil {
-		return res
-	}
-	ipIndex := prefix | n.next
-	ret := []net.Address{getAddress(ipIndex)}
 	if n.next >= uint32(upperLimit-1) {
 		n.next = 0
 	} else {
 		n.next++
 	}
-	n.addressMapper[ipIndex] = domain
-	n.domainMapper[domain] = ret
-	return ret
+	return n.noneMapper.getAddress(domain)
 }
 
 type lruNode struct {
@@ -111,6 +128,16 @@ type lruMapper struct {
 	next          uint32
 }
 
+func (n *lruMapper) goNextEmpty() {
+	for {
+		_, isOk := n.addressMapper[n.next]
+		if !isOk {
+			return
+		}
+		n.next++
+	}
+}
+
 func (n *lruMapper) clear() {
 	n.domainMapper = make(map[string]*addressNode)
 	n.addressMapper = make(map[uint32]*domainNode)
@@ -127,6 +154,7 @@ func (n *lruMapper) getAddress(domain string) []net.Address {
 	var lru *list.Element
 	if len(n.addressMapper) >= upperLimit {
 		lru = n.lru.Back()
+		go saveFakeAddress(lru.Value.(*lruNode).address.address, domain)
 		n.lru.MoveBefore(lru, n.lru.Front())
 		delete(n.domainMapper, lru.Value.(*lruNode).domain.domain)
 	} else {
@@ -136,10 +164,11 @@ func (n *lruMapper) getAddress(domain string) []net.Address {
 			domain:  dom,
 			address: res,
 		})
-		ipIndex := prefix | uint32(len(n.addressMapper))
-		res.address = []net.Address{getAddress(ipIndex)}
+		n.goNextEmpty()
+		go saveFakeIP(n.next, domain)
+		res.address = []net.Address{getAddress(n.next)}
 		res.lru = lru
-		n.addressMapper[ipIndex] = dom
+		n.addressMapper[n.next] = dom
 		dom.lru = lru
 	}
 	lru.Value.(*lruNode).domain.domain = domain
@@ -159,7 +188,78 @@ func (n *lruMapper) getDomain(ipIndex uint32) string {
 	return res.domain
 }
 
+func (n *lruMapper) load(rules map[uint32]string) {
+	for ip, domain := range rules {
+		if !isFakeIP(ip) {
+			continue
+		}
+		res := new(addressNode)
+		dom := new(domainNode)
+		lru := n.lru.PushFront(&lruNode{
+			domain:  dom,
+			address: res,
+		})
+		res.address = []net.Address{getAddress(ip)}
+		res.lru = lru
+		n.addressMapper[ip] = dom
+		dom.lru = lru
+		lru.Value.(*lruNode).domain.domain = domain
+		n.domainMapper[domain] = lru.Value.(*lruNode).address
+	}
+}
+
 var fakeIP fakeIPMapper
+var saver *os.File
+
+func saveFakeAddress(address []net.Address, domain string) {
+	if saver == nil {
+		return
+	}
+	saveFakeIP(getIPSum(address[0].IP()), domain)
+}
+
+func saveFakeIP(ip uint32, domain string) {
+	if saver == nil {
+		return
+	}
+	saver.WriteString(strconv.Itoa(int(ip)) + " " + domain + "\n")
+}
+
+func loadFakeIP() (map[uint32]string, error) {
+	ipToDomain := make(map[uint32]string)
+	scanner := bufio.NewScanner(saver)
+	for scanner.Scan() {
+		rule := strings.Split(scanner.Text(), " ")
+		ip, err := strconv.Atoi(rule[0])
+		if err != nil {
+			return nil, err
+		}
+		ipToDomain[uint32(ip)] = rule[1]
+	}
+	return ipToDomain, nil
+}
+
+func prepareFakeFile(path string) (map[uint32]string, error) {
+	var err error
+	saver, err = os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return nil, newError("failed to open fake ip file: ", path).Base(err).AtWarning()
+	}
+	rules, err := loadFakeIP()
+	if err != nil {
+		return nil, newError("fake ip file corrupted: ", path).Base(err).AtWarning()
+	}
+	saver.Close()
+	saver, err = os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0600)
+	if err != nil {
+		return nil, newError("failed to open fake ip file: ", path).Base(err).AtWarning()
+	}
+	// Delete duplicate rules
+	for ip, domain := range rules {
+		saveFakeIP(ip, domain)
+	}
+	return rules, nil
+}
 
 // InitFakeIPServer initializes matcher for domain name checking
 func InitFakeIPServer(fake *Config_Fake, externalRules map[string][]string) error {
@@ -188,6 +288,13 @@ func InitFakeIPServer(fake *Config_Fake, externalRules map[string][]string) erro
 				newError("failed to parse pattern: ", pattern).Base(err).AtWarning().WriteToLog()
 			}
 		}
+		if fake.Path != "" {
+			rules, err := prepareFakeFile(fake.Path)
+			if err != nil {
+				return err
+			}
+			fakeIP.load(rules)
+		}
 	}
 	return nil
 }
@@ -207,10 +314,10 @@ func GetDomainForFakeIP(ip net.Address) string {
 		return ""
 	}
 	sum := getIPSum(ip.IP())
-	if (sum & prefix) != prefix {
-		return ""
+	if isFakeIP(sum) {
+		return fakeIP.getDomain(sum)
 	}
-	return fakeIP.getDomain(sum)
+	return ""
 }
 
 // ResetFakeIPServer is for testing only
