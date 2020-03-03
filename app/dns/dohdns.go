@@ -6,12 +6,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
+
 	dns_feature "v2ray.com/core/features/dns"
 
 	"golang.org/x/net/dns/dnsmessage"
@@ -57,7 +59,7 @@ func NewDoHNameServer(url *url.URL, dispatcher routing.Dispatcher, clientIP net.
 		IdleConnTimeout:     90 * time.Second,
 		TLSHandshakeTimeout: 30 * time.Second,
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			dest, err := net.ParseDestination(fmt.Sprintf("%s:%s", network, addr))
+			dest, err := net.ParseDestination(network + ":" + addr)
 			if err != nil {
 				return nil, err
 			}
@@ -89,7 +91,7 @@ func NewDoHLocalNameServer(url *url.URL, clientIP net.IP) *DoHNameServer {
 	tr := &http.Transport{
 		IdleConnTimeout: 90 * time.Second,
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			dest, err := net.ParseDestination(fmt.Sprintf("%s:%s", network, addr))
+			dest, err := net.ParseDestination(network + ":" + addr)
 			if err != nil {
 				return nil, err
 			}
@@ -114,7 +116,7 @@ func baseDOHNameServer(url *url.URL, prefix string, clientIP net.IP) *DoHNameSer
 		ips:      make(map[string]record),
 		clientIP: clientIP,
 		pub:      pubsub.NewService(),
-		name:     fmt.Sprintf("%s//%s", prefix, url.Host),
+		name:     prefix + "//" + url.Host,
 		dohURL:   url.String(),
 	}
 	s.cleanup = &task.Periodic{
@@ -277,10 +279,9 @@ func (s *DoHNameServer) dohHTTPSContext(ctx context.Context, b []byte) ([]byte, 
 	}
 
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("DOH HTTPS server returned with non-OK code %d", resp.StatusCode)
-		return nil, err
+		io.Copy(ioutil.Discard, resp.Body) // flush resp.Body so that the conn is reusable
+		return nil, fmt.Errorf("DOH server returned code %d", resp.StatusCode)
 	}
 
 	return ioutil.ReadAll(resp.Body)
