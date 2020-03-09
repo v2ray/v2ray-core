@@ -1,9 +1,13 @@
 package cert
 
 import (
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/pem"
 	"math/big"
 	"time"
@@ -90,15 +94,39 @@ func MustGenerate(parent *Certificate, opts ...Option) *Certificate {
 	return cert
 }
 
+func publicKey(priv interface{}) interface{} {
+	switch k := priv.(type) {
+	case *rsa.PrivateKey:
+		return &k.PublicKey
+	case *ecdsa.PrivateKey:
+		return &k.PublicKey
+	case ed25519.PrivateKey:
+		return k.Public().(ed25519.PublicKey)
+	default:
+		return nil
+	}
+}
+
 func Generate(parent *Certificate, opts ...Option) (*Certificate, error) {
-	selfKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	var (
+		pKey      interface{}
+		parentKey interface{}
+		err       error
+	)
+	// higher signing performance than RSA2048
+	selfKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, newError("failed to generate self private key").Base(err)
 	}
-
-	parentKey := selfKey
+	parentKey = selfKey
 	if parent != nil {
-		pKey, err := x509.ParsePKCS1PrivateKey(parent.PrivateKey)
+		if _, e := asn1.Unmarshal(parent.PrivateKey, &ecPrivateKey{}); e == nil {
+			pKey, err = x509.ParseECPrivateKey(parent.PrivateKey)
+		} else if _, e := asn1.Unmarshal(parent.PrivateKey, &pkcs8{}); e == nil {
+			pKey, err = x509.ParsePKCS8PrivateKey(parent.PrivateKey)
+		} else if _, e := asn1.Unmarshal(parent.PrivateKey, &pkcs1PrivateKey{}); e == nil {
+			pKey, err = x509.ParsePKCS1PrivateKey(parent.PrivateKey)
+		}
 		if err != nil {
 			return nil, newError("failed to parse parent private key").Base(err)
 		}
@@ -133,13 +161,18 @@ func Generate(parent *Certificate, opts ...Option) (*Certificate, error) {
 		parentCert = pCert
 	}
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, template, parentCert, selfKey.Public(), parentKey)
+	derBytes, err := x509.CreateCertificate(rand.Reader, template, parentCert, publicKey(selfKey), parentKey)
 	if err != nil {
 		return nil, newError("failed to create certificate").Base(err)
 	}
 
+	privateKey, err := x509.MarshalPKCS8PrivateKey(selfKey)
+	if err != nil {
+		return nil, newError("Unable to marshal private key").Base(err)
+	}
+
 	return &Certificate{
 		Certificate: derBytes,
-		PrivateKey:  x509.MarshalPKCS1PrivateKey(selfKey),
+		PrivateKey:  privateKey,
 	}, nil
 }
