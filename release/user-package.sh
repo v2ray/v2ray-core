@@ -11,7 +11,7 @@ trap 'echo -e "Aborted, error $? in command: $BASH_COMMAND"; trap ERR; exit 1' E
 # Set magic variables for current file & dir
 __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 __file="${__dir}/$(basename "${BASH_SOURCE[0]}")"
-__base="$(basename ${__file} .sh)"
+__base="$(basename "${__file}" .sh)"
 __root="$(cd "$(dirname "${__dir}")" && pwd)" # <-- change this as it depends on your app
 
 
@@ -24,7 +24,7 @@ BUILDNAME=$NOW
 VERSIONTAG=$(git describe --tags)
 GOPATH=$(go env GOPATH)
 
-cleanup () { rm -rf $TMP; }
+cleanup () { rm -rf "$TMP"; }
 trap cleanup INT TERM ERR
 
 get_source() {
@@ -34,17 +34,17 @@ get_source() {
 }
 
 build_v2() {
-	pushd $SRCDIR
+	pushd "$SRCDIR"
 	LDFLAGS="-s -w -X v2ray.com/core.codename=${CODENAME} -X v2ray.com/core.build=${BUILDNAME}  -X v2ray.com/core.version=${VERSIONTAG}"
 
 	echo ">>> Compile v2ray ..."
-	env CGO_ENABLED=0 go build -o $TMP/v2ray${EXESUFFIX} -ldflags "$LDFLAGS" ./main
+	env CGO_ENABLED=0 go build -o "$TMP"/v2ray"${EXESUFFIX}" -ldflags "$LDFLAGS" ./main
 	if [[ $GOOS == "windows" ]];then
-	  env CGO_ENABLED=0 go build -o $TMP/wv2ray${EXESUFFIX} -ldflags "-H windowsgui $LDFLAGS" ./main
+	  env CGO_ENABLED=0 go build -o "$TMP"/wv2ray"${EXESUFFIX}" -ldflags "-H windowsgui $LDFLAGS" ./main
 	fi
 
 	echo ">>> Compile v2ctl ..."
-	env CGO_ENABLED=0 go build -o $TMP/v2ctl${EXESUFFIX} -tags confonly -ldflags "$LDFLAGS" ./infra/control/main
+	env CGO_ENABLED=0 go build -o "$TMP"/v2ctl"${EXESUFFIX}" -tags confonly -ldflags "$LDFLAGS" ./infra/control/main
 	popd
 }
 
@@ -52,41 +52,41 @@ build_dat() {
 	echo ">>> Downloading newest geoip ..."
 	wget -qO - https://api.github.com/repos/v2ray/geoip/releases/latest \
 	| grep browser_download_url | cut -d '"' -f 4 \
-	| wget -i - -O $TMP/geoip.dat
+	| wget -i - -O "$TMP"/geoip.dat
 
 	echo ">>> Downloading newest geosite ..."
 	wget -qO - https://api.github.com/repos/v2ray/domain-list-community/releases/latest \
 	| grep browser_download_url | cut -d '"' -f 4 \
-	| wget -i - -O $TMP/geosite.dat
+	| wget -i - -O "$TMP"/geosite.dat
 }
 
 copyconf() {
 	echo ">>> Copying config..."
-	pushd $SRCDIR/release/config
-	tar c --exclude "*.dat" . | tar x -C $TMP
+	pushd "$SRCDIR"/release/config
+	tar c --exclude "*.dat" . | tar x -C "$TMP"
 }
 
 packzip() {
 	echo ">>> Generating zip package"
-	pushd $TMP
+	pushd "$TMP"
 	local PKG=${__dir}/v2ray-custom-${GOARCH}-${GOOS}-${PKGSUFFIX}${NOW}.zip
-	zip -r $PKG .
-	echo ">>> Generated: $(basename $PKG)"
+	zip -r "$PKG" .
+	echo ">>> Generated: $(basename "$PKG")"
 }
 
 packtgz() {
 	echo ">>> Generating tgz package"
-	pushd $TMP
+	pushd "$TMP"
 	local PKG=${__dir}/v2ray-custom-${GOARCH}-${GOOS}-${PKGSUFFIX}${NOW}.tar.gz
-	tar cvfz $PKG .
-	echo ">>> Generated: $(basename $PKG)"
+	tar cvfz "$PKG" .
+	echo ">>> Generated: $(basename "$PKG")"
 }
 
 packtgzAbPath() {
 	local ABPATH="$1"
 	echo ">>> Generating tgz package at $ABPATH"
-	pushd $TMP
-	tar cvfz $ABPATH .
+	pushd "$TMP"
+	tar cvfz "$ABPATH" .
 	echo ">>> Generated: $ABPATH"
 }
 
@@ -165,7 +165,7 @@ if [[ $pkg == "zip" ]]; then
 elif [[ $pkg == "tgz" ]]; then
   packtgz
 else
-	packtgzAbPath $pkg
+	packtgzAbPath "$pkg"
 fi
 
 
