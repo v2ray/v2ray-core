@@ -50,14 +50,10 @@ build_v2() {
 
 build_dat() {
 	echo ">>> Downloading newest geoip ..."
-	wget -qO - https://api.github.com/repos/v2ray/geoip/releases/latest \
-	| grep browser_download_url | cut -d '"' -f 4 \
-	| wget -i - -O "$TMP"/geoip.dat
+	curl -s -L -o "$TMP"/geoip.dat "https://github.com/v2ray/geoip/raw/release/geoip.dat"
 
 	echo ">>> Downloading newest geosite ..."
-	wget -qO - https://api.github.com/repos/v2ray/domain-list-community/releases/latest \
-	| grep browser_download_url | cut -d '"' -f 4 \
-	| wget -i - -O "$TMP"/geosite.dat
+	curl -s -L -o "$TMP"/geosite.dat "https://github.com/v2ray/domain-list-community/raw/release/dlc.dat"
 }
 
 copyconf() {
