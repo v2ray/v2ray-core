@@ -1,5 +1,6 @@
 // +build !windows
 // +build !wasm
+// +build !illumos
 
 package buf
 
