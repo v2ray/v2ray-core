@@ -1,4 +1,4 @@
-// +build js dragonfly netbsd openbsd
+// +build js dragonfly netbsd openbsd solaris
 
 package internet
 
