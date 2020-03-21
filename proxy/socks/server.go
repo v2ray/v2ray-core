@@ -108,6 +108,9 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 		}
 		return newError("failed to read request").Base(err)
 	}
+	if request.User != nil {
+		inbound.User.Email = request.User.Email
+	}
 
 	if err := conn.SetReadDeadline(time.Time{}); err != nil {
 		newError("failed to clear deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
