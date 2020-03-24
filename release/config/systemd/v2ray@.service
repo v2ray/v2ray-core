@@ -1,5 +1,5 @@
 [Unit]
-Description=V2Ray - A unified platform for anti-censorship
+Description=V2Ray - A unified platform for anti-censorship - Profile -> %i
 Documentation=https://v2ray.com https://guide.v2fly.org
 After=network.target nss-lookup.target
 Wants=network-online.target
@@ -16,10 +16,11 @@ User=root
 #User=v2ray
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_NET_RAW
 NoNewPrivileges=yes
-ExecStart=/usr/bin/v2ray/v2ray -config /etc/v2ray/config.json
+ExecStart=/usr/bin/v2ray/v2ray -config /etc/v2ray/%i.json
 Restart=on-failure
 # Don't restart in the case of configuration error
 RestartPreventExitStatus=23
 
 [Install]
+DefaultInstance=default
 WantedBy=multi-user.target
