@@ -360,6 +360,21 @@ func (c *Config) Override(o *Config, fn string) {
 		c.Reverse = o.Reverse
 	}
 
+	// deprecated attrs... keep them for now
+	if o.InboundConfig != nil {
+		c.InboundConfig = o.InboundConfig
+	}
+	if o.OutboundConfig != nil {
+		c.OutboundConfig = o.OutboundConfig
+	}
+	if o.InboundDetours != nil {
+		c.InboundDetours = o.InboundDetours
+	}
+	if o.OutboundDetours != nil {
+		c.OutboundDetours = o.OutboundDetours
+	}
+	// deprecated attrs
+
 	// update the Inbound in slice if the only one in overide config has same tag
 	if len(o.InboundConfigs) > 0 {
 		if len(c.InboundConfigs) > 0 && len(o.InboundConfigs) == 1 {
