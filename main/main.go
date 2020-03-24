@@ -74,9 +74,6 @@ func getConfigFilePath() (cmdarg.Arg, error) {
 		if envConfDir := platform.GetConfDirPath(); dirExists(envConfDir) {
 			log.Println("Using confdir from env:", envConfDir)
 			readConfDir(envConfDir)
-			if len(configFiles) > 0 {
-				return configFiles, nil
-			}
 		}
 	}
 
