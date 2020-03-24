@@ -44,7 +44,7 @@ func generate(domainNames []string, isCA bool, jsonOutput bool, fileOutput strin
 	}
 
 	if jsonOutput {
-		printJson(cert)
+		printJSON(cert)
 	}
 
 	if len(fileOutput) > 0 {
@@ -61,7 +61,7 @@ type jsonCert struct {
 	Key         []string `json:"key"`
 }
 
-func printJson(certificate *Certificate) {
+func printJSON(certificate *Certificate) {
 	certPEM, keyPEM := certificate.ToPEM()
 	jCert := &jsonCert{
 		Certificate: strings.Split(strings.TrimSpace(string(certPEM)), "\n"),
