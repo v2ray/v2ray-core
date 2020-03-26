@@ -20,7 +20,7 @@ jobs:
 - template: azure-pipelines.template.yml
   parameters:
     name: macos
-    vmImage: 'macOS-10.13'
+    vmImage: 'macOS-10.14'
 
 - job: linux_coverage
   dependsOn: linux

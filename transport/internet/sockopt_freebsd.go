@@ -35,6 +35,7 @@ type pfiocNatlook struct {
 
 const (
 	sizeofPfiocNatlook = 0x4c
+	soReUsePort        = 0x00000200
 	soReUsePortLB      = 0x00010000
 )
 
@@ -192,7 +193,9 @@ func bindAddr(fd uintptr, ip []byte, port uint32) error {
 	}
 
 	if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, soReUsePortLB, 1); err != nil {
-		return newError("failed to set resuse_port").Base(err).AtWarning()
+		if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, soReUsePort, 1); err != nil {
+			return newError("failed to set resuse_port").Base(err).AtWarning()
+		}
 	}
 
 	var sockaddr syscall.Sockaddr

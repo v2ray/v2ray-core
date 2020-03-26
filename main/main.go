@@ -27,6 +27,18 @@ var (
 	version     = flag.Bool("version", false, "Show current version of V2Ray.")
 	test        = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
 	format      = flag.String("format", "json", "Format of input file.")
+
+	/*  We have to do this here because Golang's Test will also need to parse flag, before
+		main func in this file is run.
+	*/
+	_ = func() error {
+
+		flag.Var(&configFiles, "config", "Config file for V2Ray. Multiple assign is accepted (only json). Latter ones overrides the former ones.")
+		flag.Var(&configFiles, "c", "Short alias of -config")
+		flag.StringVar(&configDir, "confdir", "", "A dir with multiple json config")
+
+		return nil
+	}()
 )
 
 func fileExists(file string) bool {
@@ -35,6 +47,9 @@ func fileExists(file string) bool {
 }
 
 func dirExists(file string) bool {
+	if file == "" {
+		return false
+	}
 	info, err := os.Stat(file)
 	return err == nil && info.IsDir()
 }
@@ -53,8 +68,15 @@ func readConfDir(dirPath string) {
 
 func getConfigFilePath() (cmdarg.Arg, error) {
 	if dirExists(configDir) {
+		log.Println("Using confdir from arg:", configDir)
 		readConfDir(configDir)
+	} else {
+		if envConfDir := platform.GetConfDirPath(); dirExists(envConfDir) {
+			log.Println("Using confdir from env:", envConfDir)
+			readConfDir(envConfDir)
+		}
 	}
+
 	if len(configFiles) > 0 {
 		return configFiles, nil
 	}
@@ -70,14 +92,6 @@ func getConfigFilePath() (cmdarg.Arg, error) {
 	if configFile := platform.GetConfigurationPath(); fileExists(configFile) {
 		log.Println("Using config from env: ", configFile)
 		return cmdarg.Arg{configFile}, nil
-	}
-
-	if envConfDir := platform.GetConfDirPath(); dirExists(envConfDir) {
-		log.Println("Using confdir from env: ", envConfDir)
-		readConfDir(envConfDir)
-		if len(configFiles) > 0 {
-			return configFiles, nil
-		}
 	}
 
 	log.Println("Using config from STDIN")
@@ -120,9 +134,7 @@ func printVersion() {
 }
 
 func main() {
-	flag.Var(&configFiles, "config", "Config file for V2Ray. Multiple assign is accepted (only json). Latter ones overrides the former ones.")
-	flag.Var(&configFiles, "c", "Short alias of -config")
-	flag.StringVar(&configDir, "confdir", "", "A dir with multiple json config")
+
 	flag.Parse()
 
 	printVersion()
