@@ -14,17 +14,17 @@ jobs:
 - template: azure-pipelines.template.yml
   parameters:
     name: linux
-    vmImage: 'ubuntu-16.04'
+    vmImage: 'ubuntu-latest'
 
 - template: azure-pipelines.template.yml
   parameters:
     name: windows
-    vmImage: 'vs2017-win2016'
+    vmImage: 'windows-latest'
 
 - template: azure-pipelines.template.yml
   parameters:
     name: macos
-    vmImage: 'macOS-10.14'
+    vmImage: 'macOS-latest'
 
 - job: linux_coverage
   dependsOn: linux
@@ -32,7 +32,7 @@ jobs:
   timeoutInMinutes: 30
 
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'ubuntu-latest'
 
 #variables:
 #    CODECOV_TOKEN: '$(coverage.token)'
@@ -42,7 +42,7 @@ jobs:
   - checkout: self
   - task: GoTool@0
     inputs:
-      version: '1.13'
+      version: '1.14.x'
   - script: |
       bash ./testing/coverage/coverall
     workingDirectory: '$(Build.SourcesDirectory)'
@@ -54,8 +54,13 @@ jobs:
   timeoutInMinutes: 60
 
   pool:
+<<<<<<< HEAD
     vmImage: 'Ubuntu 16.04'
 
+=======
+    vmImage: 'ubuntu-latest'
+  
+>>>>>>> f099c1e5... Update azure-pipelines.yml
   variables:
     - group: GithubToken
     - name: GOPATH
@@ -67,7 +72,7 @@ jobs:
   - checkout: self
   - task: GoTool@0
     inputs:
-      version: '1.13'
+      version: '1.14.x'
   - script: |
       mkdir triggersrc
       ls -I "triggersrc" | xargs cp -rf -t triggersrc
