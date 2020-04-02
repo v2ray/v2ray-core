@@ -1,7 +1,7 @@
 [Unit]
 Description=V2Ray Service
 Documentation=https://www.v2ray.com/ https://www.v2fly.org/
-After=network.target network-online.target nss-lookup.target
+After=network.target nss-lookup.target
 
 [Service]
 # If the version of systemd is 240 or above, then uncommenting Type=exec and commenting out Type=simple
