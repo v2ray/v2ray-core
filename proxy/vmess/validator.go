@@ -146,10 +146,9 @@ func (v *TimedUserValidator) Remove(email string) bool {
 	v.Lock()
 	defer v.Unlock()
 
-	email = strings.ToLower(email)
 	idx := -1
-	for i, u := range v.users {
-		if strings.EqualFold(u.user.Email, email) {
+	for i := range v.users {
+		if strings.EqualFold(v.users[i].user.Email, email) {
 			idx = i
 			break
 		}
