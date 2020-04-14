@@ -34,6 +34,11 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
+	if len(request.URL.Query().Get("health")) > 0 {
+		newError("received health check request at path: ", request.URL.Path).WriteToLog()
+		writer.WriteHeader(http.StatusOK)
+		return
+	}
 	conn, err := upgrader.Upgrade(writer, request, nil)
 	if err != nil {
 		newError("failed to convert to WebSocket connection").Base(err).WriteToLog()

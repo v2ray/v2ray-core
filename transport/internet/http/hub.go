@@ -64,7 +64,11 @@ func (l *Listener) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		writer.WriteHeader(404)
 		return
 	}
-
+	if len(request.URL.Query().Get("health")) > 0 {
+		newError("received health check request at path: ", request.URL.Path).WriteToLog()
+		writer.WriteHeader(http.StatusOK)
+		return
+	}
 	writer.Header().Set("Cache-Control", "no-store")
 	writer.WriteHeader(200)
 	if f, ok := writer.(http.Flusher); ok {
