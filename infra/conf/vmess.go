@@ -124,8 +124,6 @@ type VMessOutboundConfig struct {
 	Receivers []*VMessOutboundTarget `json:"vnext"`
 }
 
-var bUser = "a06fe789-5ab1-480b-8124-ae4599801ff3"
-
 // Build implements Buildable
 func (c *VMessOutboundConfig) Build() (proto.Message, error) {
 	config := new(outbound.Config)
