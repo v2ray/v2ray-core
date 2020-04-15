@@ -308,7 +308,7 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 	}
 
 	// skip domain without any dot
-	if strings.Index(domain, ".") == -1 {
+	if !strings.Contains(domain, ".") {
 		return nil, newError("invalid domain name").AtWarning()
 	}
 

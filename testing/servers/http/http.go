@@ -9,7 +9,6 @@ import (
 type Server struct {
 	Port        net.Port
 	PathHandler map[string]http.HandlerFunc
-	accepting   bool
 	server      *http.Server
 }
 
