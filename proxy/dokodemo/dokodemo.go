@@ -164,6 +164,10 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 
 			writer = &buf.SequentialWriter{Writer: tConn}
 			tReader := buf.NewPacketReader(tConn)
+			notify, ok := conn.(buf.ActivityNotifiable)
+			if !ok {
+				panic("conn should implement ActivityNotifiable")
+			}
 			requestCount++
 			tproxyRequest = func() error {
 				defer func() {
@@ -171,7 +175,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 						timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 					}
 				}()
-				if err := buf.Copy(tReader, link.Writer, buf.UpdateActivity(timer)); err != nil {
+				if err := buf.Copy(tReader, link.Writer, buf.UpdateActivity(timer), buf.NotifyActivity(notify)); err != nil {
 					return newError("failed to transport request (TPROXY conn)").Base(err)
 				}
 				return nil

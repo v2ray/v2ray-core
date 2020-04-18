@@ -8,6 +8,11 @@ import (
 	"v2ray.com/core/common/signal"
 )
 
+// ActivityNotifiable is a object that accepts activity notification outside the object
+type ActivityNotifiable interface {
+	NotifyActivity() error
+}
+
 type dataHandler func(MultiBuffer)
 
 type copyHandler struct {
@@ -27,6 +32,15 @@ func UpdateActivity(timer signal.ActivityUpdater) CopyOption {
 	return func(handler *copyHandler) {
 		handler.onData = append(handler.onData, func(MultiBuffer) {
 			timer.Update()
+		})
+	}
+}
+
+// NotifyActivity is a CopyOption to notify activity on each data copy operation.
+func NotifyActivity(notifier ActivityNotifiable) CopyOption {
+	return func(handler *copyHandler) {
+		handler.onData = append(handler.onData, func(MultiBuffer) {
+			notifier.NotifyActivity()
 		})
 	}
 }
