@@ -252,17 +252,21 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 
 	newError("dispatching request to ", dest).WriteToLog(session.ExportIDToError(ctx))
 	if err := writeFirstPayload(s.input, writer); err != nil {
-		newError("failed to write first payload").Base(err).WriteToLog(session.ExportIDToError(ctx))
-		writer.hasError = true
-		common.Interrupt(s.input)
-		return
+		if err := writeFirstPayload(s.input, writer); err != nil {
+			newError("failed to write first payload").Base(err).WriteToLog(session.ExportIDToError(ctx))
+			writer.hasError = true
+			common.Interrupt(s.input)
+			return
+		}
 	}
 
 	if err := buf.Copy(s.input, writer); err != nil {
-		newError("failed to fetch all input").Base(err).WriteToLog(session.ExportIDToError(ctx))
-		writer.hasError = true
-		common.Interrupt(s.input)
-		return
+		if err := buf.Copy(s.input, writer); err != nil {
+			newError("failed to fetch all input").Base(err).WriteToLog(session.ExportIDToError(ctx))
+			writer.hasError = true
+			common.Interrupt(s.input)
+			return
+		}
 	}
 }
 
