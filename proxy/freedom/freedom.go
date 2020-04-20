@@ -113,7 +113,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	output := link.Writer
 
 	var conn internet.Connection
-	err := retry.ExponentialBackoff(10, 10).On(func() error {
+	err := retry.Timed(10, 10).On(func() error {
 		dialDest := destination
 		if h.config.useIP() && dialDest.Address.Family().IsDomain() {
 			ip := h.resolveIP(ctx, dialDest.Address.Domain(), dialer.Address())
