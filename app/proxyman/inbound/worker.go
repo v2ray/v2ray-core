@@ -95,10 +95,7 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 		}
 	}
 	if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
-		//try again
-		if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
-			newError("connection ends").Base(err).WriteToLog(session.ExportIDToError(ctx))
-		}
+		newError("connection ends").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 	cancel()
 	if err := conn.Close(); err != nil {
