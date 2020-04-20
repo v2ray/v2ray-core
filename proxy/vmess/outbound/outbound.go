@@ -58,7 +58,7 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
-	err := retry.Timed(10, 10).On(func() error {
+	err := retry.Timed(3, 10).On(func() error {
 		rec = v.serverPicker.PickServer()
 		rawConn, err := dialer.Dial(ctx, rec.Destination())
 		if err != nil {
