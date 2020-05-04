@@ -249,7 +249,7 @@ func (s *DoHNameServer) sendQuery(ctx context.Context, domain string, option IPO
 			b, _ := dns.PackMessage(r.msg)
 			resp, err := s.dohHTTPSContext(dnsCtx, b.Bytes())
 			if err != nil {
-				newError("failed to retrive response").Base(err).AtError().WriteToLog()
+				newError("failed to retrieve response").Base(err).AtError().WriteToLog()
 				return
 			}
 			rec, err := parseResponse(resp)
