@@ -307,11 +307,6 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 		domain = domain[:len(domain)-1]
 	}
 
-	// skip domain without any dot
-	if strings.Index(domain, ".") == -1 {
-		return nil, newError("invalid domain name").AtWarning()
-	}
-
 	ips := s.lookupStatic(domain, option, 0)
 	if ips != nil && ips[0].Family().IsIP() {
 		newError("returning ", len(ips), " IPs for domain ", domain).WriteToLog()
