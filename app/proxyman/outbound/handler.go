@@ -144,7 +144,7 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 				conn := net.NewConnection(net.ConnectionInputMulti(uplinkWriter), net.ConnectionOutputMulti(downlinkReader))
 
 				if config := tls.ConfigFromStreamSettings(h.streamSettings); config != nil {
-					tlsConfig := config.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("h2"))
+					tlsConfig := config.GetTLSConfig(tls.WithDestination(dest))
 					conn = tls.Client(conn, tlsConfig)
 				}
 
