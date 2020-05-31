@@ -54,13 +54,7 @@ jobs:
   timeoutInMinutes: 60
 
   pool:
-<<<<<<< HEAD
-    vmImage: 'Ubuntu 16.04'
-
-=======
     vmImage: 'ubuntu-latest'
-  
->>>>>>> f099c1e5... Update azure-pipelines.yml
   variables:
     - group: GithubToken
     - name: GOPATH
