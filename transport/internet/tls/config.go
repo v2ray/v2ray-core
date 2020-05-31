@@ -176,6 +176,8 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 	config := &tls.Config{
 		ClientSessionCache:     globalSessionCache,
 		RootCAs:                root,
+		InsecureSkipVerify:     c.AllowInsecure,
+		NextProtos:             c.NextProtocol,
 		SessionTicketsDisabled: c.DisableSessionResumption,
 	}
 	if c == nil {
@@ -186,12 +188,6 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 		opt(config)
 	}
 
-	if !c.AllowInsecureCiphers && len(config.CipherSuites) == 0 {
-		// crypto/tls will use the proper ciphers
-		config.CipherSuites = nil
-	}
-
-	config.InsecureSkipVerify = c.AllowInsecure
 	config.Certificates = c.BuildCertificates()
 	config.BuildNameToCertificate()
 
@@ -204,11 +200,8 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 		config.ServerName = sn
 	}
 
-	if len(c.NextProtocol) > 0 {
-		config.NextProtos = c.NextProtocol
-	}
 	if len(config.NextProtos) == 0 {
-		config.NextProtos = []string{"http/1.1"}
+		config.NextProtos = []string{"h2", "http/1.1"}
 	}
 
 	return config
