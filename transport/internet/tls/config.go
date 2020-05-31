@@ -187,11 +187,8 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 	}
 
 	if !c.AllowInsecureCiphers && len(config.CipherSuites) == 0 {
-		// use tls cipher suites from cryto/tls
-		config.CipherSuites = []uint16{}
-		for _, s := range tls.CipherSuites() {
-			config.CipherSuites = append(config.CipherSuites, s.ID)
-		}
+		// crypto/tls will use the proper ciphers
+		config.CipherSuites = nil
 	}
 
 	config.InsecureSkipVerify = c.AllowInsecure
