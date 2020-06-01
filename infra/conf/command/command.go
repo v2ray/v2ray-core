@@ -3,7 +3,6 @@ package command
 //go:generate errorgen
 
 import (
-	"bufio"
 	"os"
 
 	"github.com/golang/protobuf/proto"
@@ -28,7 +27,7 @@ func (c *ConfigCommand) Description() control.Description {
 }
 
 func (c *ConfigCommand) Execute(args []string) error {
-	pbConfig, err := serial.LoadJSONConfig(bufio.NewReader(os.Stdin))
+	pbConfig, err := serial.LoadJSONConfig(os.Stdin)
 	if err != nil {
 		return newError("failed to parse json config").Base(err)
 	}

@@ -86,14 +86,6 @@ packtgzAbPath() {
 	echo ">>> Generated: $ABPATH"
 }
 
-packtgzAbPath() {
-	local ABPATH="$1"
-	echo ">>> Generating tgz package at $ABPATH"
-	pushd $TMP
-	tar cvfz $ABPATH .
-	echo ">>> Generated: $ABPATH"
-}
-
 
 pkg=zip
 nosource=0
@@ -169,7 +161,7 @@ if [[ $pkg == "zip" ]]; then
 elif [[ $pkg == "tgz" ]]; then
   packtgz
 else
-	packtgzAbPath $pkg
+	packtgzAbPath "$pkg"
 fi
 
 
