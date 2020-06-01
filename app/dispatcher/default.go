@@ -288,9 +288,10 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 		return
 	}
 
-	accessMessage := log.AccessMessageFromContext(ctx)
-	if accessMessage != nil {
-		accessMessage.Detour = "[" + handler.Tag() + "]"
+	if accessMessage := log.AccessMessageFromContext(ctx); accessMessage != nil {
+		if tag := handler.Tag(); tag != "" {
+			accessMessage.Detour = tag
+		}
 		log.Record(accessMessage)
 	}
 
