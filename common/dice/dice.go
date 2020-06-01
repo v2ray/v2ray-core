@@ -15,6 +15,14 @@ func Roll(n int) int {
 	return rand.Intn(n)
 }
 
+// Roll returns a non-negative number between 0 (inclusive) and n (exclusive).
+func RollDeterministic(n int, seed int64) int {
+	if n == 1 {
+		return 0
+	}
+	return rand.New(rand.NewSource(seed)).Intn(n)
+}
+
 // RollUint16 returns a random uint16 value.
 func RollUint16() uint16 {
 	return uint16(rand.Intn(65536))

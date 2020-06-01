@@ -5,8 +5,10 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 	"io"
+	"io/ioutil"
 	"sync"
 	"time"
+	"v2ray.com/core/common/dice"
 
 	"golang.org/x/crypto/chacha20poly1305"
 
@@ -194,7 +196,13 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	expectedHash := binary.BigEndian.Uint32(buffer.BytesFrom(-4))
 
 	if actualHash != expectedHash {
-		return nil, newError("invalid auth")
+		//It is possible that we are under attack described in https://github.com/v2ray/v2ray-core/issues/2523
+		//We read a deterministic generated length of data before closing the connection to offset padding read pattern
+		drainSum := dice.RollDeterministic(48, int64(actualHash))
+		if err := s.DrainConnN(reader, drainSum); err != nil {
+			return nil, newError("invalid auth, failed to drain connection").Base(err)
+		}
+		return nil, newError("invalid auth, connection drained")
 	}
 
 	if request.Address == nil {
@@ -346,4 +354,9 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 	default:
 		panic("Unknown security type.")
 	}
+}
+
+func (s *ServerSession) DrainConnN(reader io.Reader, n int) error {
+	_, err := io.CopyN(ioutil.Discard, reader, int64(n))
+	return err
 }
