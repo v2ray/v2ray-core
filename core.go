@@ -18,8 +18,8 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-const (
-	version  = "4.22.0"
+var (
+	version  = "4.23.3"
 	build    = "Custom"
 	codename = "V2Fly, a community-driven edition of V2Ray."
 	intro    = "A unified platform for anti-censorship."
