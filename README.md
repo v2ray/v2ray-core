@@ -15,6 +15,8 @@
 
 Project V is a set of network tools that help you to build your own computer network. It secures your network connections and thus protects your privacy. See [our website](https://www.v2ray.com/) for more information.
 
+**Attention: If you want to use this software for anti network cencorship, use ws+tls mode only! And remember to use lastest version.**
+
 ## License
 
 [The MIT License (MIT)](https://raw.githubusercontent.com/v2ray/v2ray-core/master/LICENSE)
