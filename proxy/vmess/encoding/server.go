@@ -182,7 +182,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	sid.key = s.requestBodyKey
 	sid.nonce = s.requestBodyIV
 	if !s.sessionHistory.addIfNotExits(sid) {
-		return nil, newError("duplicated session id, possibly under replay attack")
+		return nil, drainConnection(newError("duplicated session id, possibly under replay attack"))
 	}
 
 	s.responseHeader = buffer.Byte(33)             // 1 byte
