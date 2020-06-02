@@ -126,7 +126,10 @@ func parseSecurityType(b byte) protocol.SecurityType {
 func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
 	buffer := buf.New()
 	behaviorRand := dice.NewDeterministicDice(int64(s.userValidator.GetBehaviorSeed()))
-	DrainSize := behaviorRand.Roll(3266) + 16 + 38 + dice.Roll(behaviorRand.Roll(64)+1)
+	BaseDrainSize := behaviorRand.Roll(3266)
+	RandDrainMax := behaviorRand.Roll(64) + 1
+	RandDrainRolled := dice.Roll(RandDrainMax)
+	DrainSize := BaseDrainSize + 16 + 38 + RandDrainRolled
 	readSizeRemain := DrainSize
 
 	drainConnection := func(e error) error {
@@ -135,9 +138,9 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		if readSizeRemain > 0 {
 			err := s.DrainConnN(reader, readSizeRemain)
 			if err != nil {
-				return newError("failed to drain connection").Base(err).Base(e)
+				return newError("failed to drain connection DrainSize = ", BaseDrainSize, " ", RandDrainMax, " ", RandDrainRolled).Base(err).Base(e)
 			}
-			return newError("connection drained DrainSize = ", DrainSize).Base(e)
+			return newError("connection drained DrainSize = ", BaseDrainSize, " ", RandDrainMax, " ", RandDrainRolled).Base(e)
 		}
 		return e
 	}
