@@ -130,7 +130,7 @@ func (v *TimedUserValidator) Add(u *protocol.MemoryUser) error {
 
 	if v.behaviorFused == false {
 		account := uu.user.Account.(*MemoryAccount)
-		crc64.Update(v.behaviorSeed, crc64.MakeTable(crc64.ECMA), account.ID.Bytes())
+		v.behaviorSeed = crc64.Update(v.behaviorSeed, crc64.MakeTable(crc64.ECMA), account.ID.Bytes())
 	}
 
 	return nil
