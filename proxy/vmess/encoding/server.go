@@ -152,8 +152,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	user, timestamp, valid := s.userValidator.Get(buffer.Bytes())
 	if !valid {
-		//It is possible that we are under attack described in https://github.com/v2ray/v2ray-core/issues/2523
-		return nil, drainConnection(newError("invalid user"))
+		return nil, newError("invalid user")
 	}
 
 	iv := hashTimestamp(md5.New(), timestamp)
