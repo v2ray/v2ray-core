@@ -126,7 +126,7 @@ func parseSecurityType(b byte) protocol.SecurityType {
 func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
 	buffer := buf.New()
 	behaviorRand := dice.NewDeterministicDice(int64(s.userValidator.GetBehaviorSeed()))
-	DrainSize := behaviorRand.Roll(3266) + 16 + 38 + dice.Roll(behaviorRand.Roll(64))
+	DrainSize := behaviorRand.Roll(3266) + 16 + 38 + dice.Roll(behaviorRand.Roll(64)+1)
 	readSizeRemain := DrainSize
 
 	drainConnection := func(e error) error {

@@ -38,6 +38,8 @@ const (
 	RequestOptionChunkMasking bitmask.Byte = 0x04
 
 	RequestOptionGlobalPadding bitmask.Byte = 0x08
+
+	RequestOptionEarlyChecksum bitmask.Byte = 0x16
 )
 
 type RequestHeader struct {
