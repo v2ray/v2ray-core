@@ -89,6 +89,10 @@ func (h *HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 			leftover := buffer.BytesFrom(-lenEnding)
 			buffer.Clear()
 			copy(buffer.Extend(lenEnding), leftover)
+
+			if _, err := readRequest(bufio.NewReader(bytes.NewReader(headerBuf.Bytes())), false); err != io.ErrUnexpectedEOF {
+				return nil, err
+			}
 		}
 	}
 
