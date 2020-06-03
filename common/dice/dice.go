@@ -28,6 +28,25 @@ func RollUint16() uint16 {
 	return uint16(rand.Intn(65536))
 }
 
+func RollUint64() uint64 {
+	return rand.Uint64()
+}
+
+func NewDeterministicDice(seed int64) *deterministicDice {
+	return &deterministicDice{rand.New(rand.NewSource(seed))}
+}
+
+type deterministicDice struct {
+	*rand.Rand
+}
+
+func (dd *deterministicDice) Roll(n int) int {
+	if n == 1 {
+		return 0
+	}
+	return dd.Intn(n)
+}
+
 func init() {
 	rand.Seed(time.Now().Unix())
 }

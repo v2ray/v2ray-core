@@ -125,7 +125,29 @@ func parseSecurityType(b byte) protocol.SecurityType {
 // DecodeRequestHeader decodes and returns (if successful) a RequestHeader from an input stream.
 func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
 	buffer := buf.New()
-	defer buffer.Release()
+	behaviorRand := dice.NewDeterministicDice(int64(s.userValidator.GetBehaviorSeed()))
+	BaseDrainSize := behaviorRand.Roll(3266)
+	RandDrainMax := behaviorRand.Roll(64) + 1
+	RandDrainRolled := dice.Roll(RandDrainMax)
+	DrainSize := BaseDrainSize + 16 + 38 + RandDrainRolled
+	readSizeRemain := DrainSize
+
+	drainConnection := func(e error) error {
+		//We read a deterministic generated length of data before closing the connection to offset padding read pattern
+		readSizeRemain -= int(buffer.Len())
+		if readSizeRemain > 0 {
+			err := s.DrainConnN(reader, readSizeRemain)
+			if err != nil {
+				return newError("failed to drain connection DrainSize = ", BaseDrainSize, " ", RandDrainMax, " ", RandDrainRolled).Base(err).Base(e)
+			}
+			return newError("connection drained DrainSize = ", BaseDrainSize, " ", RandDrainMax, " ", RandDrainRolled).Base(e)
+		}
+		return e
+	}
+
+	defer func() {
+		buffer.Release()
+	}()
 
 	if _, err := buffer.ReadFullFrom(reader, protocol.IDBytesLen); err != nil {
 		return nil, newError("failed to read request header").Base(err)
@@ -133,7 +155,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	user, timestamp, valid := s.userValidator.Get(buffer.Bytes())
 	if !valid {
-		return nil, newError("invalid user")
+		return nil, drainConnection(newError("invalid user"))
 	}
 
 	iv := hashTimestamp(md5.New(), timestamp)
@@ -142,6 +164,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv[:])
 	decryptor := crypto.NewCryptionReader(aesStream, reader)
 
+	readSizeRemain -= int(buffer.Len())
 	buffer.Clear()
 	if _, err := buffer.ReadFullFrom(decryptor, 38); err != nil {
 		return nil, newError("failed to read request header").Base(err)
@@ -159,7 +182,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	sid.key = s.requestBodyKey
 	sid.nonce = s.requestBodyIV
 	if !s.sessionHistory.addIfNotExits(sid) {
-		return nil, newError("duplicated session id, possibly under replay attack")
+		return nil, drainConnection(newError("duplicated session id, possibly under replay attack"))
 	}
 
 	s.responseHeader = buffer.Byte(33)             // 1 byte
@@ -197,12 +220,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	if actualHash != expectedHash {
 		//It is possible that we are under attack described in https://github.com/v2ray/v2ray-core/issues/2523
-		//We read a deterministic generated length of data before closing the connection to offset padding read pattern
-		drainSum := dice.RollDeterministic(48, int64(actualHash))
-		if err := s.DrainConnN(reader, drainSum); err != nil {
-			return nil, newError("invalid auth, failed to drain connection").Base(err)
-		}
-		return nil, newError("invalid auth, connection drained")
+		return nil, drainConnection(newError("invalid auth"))
 	}
 
 	if request.Address == nil {
