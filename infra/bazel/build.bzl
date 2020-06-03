@@ -41,7 +41,9 @@ def _go_command(ctx):
   if ctx.attr.arm:
     envs+=["GOARM="+ctx.attr.arm]
 
-  command = " ".join(envs) + " " + command
+  switchToPwd="cd ${SPWD} && "
+
+  command = switchToPwd + " ".join(envs) + " " + command
 
   ctx.actions.run_shell(
     outputs = [output_file],
