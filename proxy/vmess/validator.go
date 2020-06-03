@@ -3,9 +3,11 @@
 package vmess
 
 import (
+	"hash/crc64"
 	"strings"
 	"sync"
 	"time"
+	"v2ray.com/core/common/dice"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/protocol"
@@ -26,11 +28,13 @@ type user struct {
 // TimedUserValidator is a user Validator based on time.
 type TimedUserValidator struct {
 	sync.RWMutex
-	users    []*user
-	userHash map[[16]byte]indexTimePair
-	hasher   protocol.IDHash
-	baseTime protocol.Timestamp
-	task     *task.Periodic
+	users         []*user
+	userHash      map[[16]byte]indexTimePair
+	hasher        protocol.IDHash
+	baseTime      protocol.Timestamp
+	task          *task.Periodic
+	behaviorSeed  uint64
+	behaviorFused bool
 }
 
 type indexTimePair struct {
@@ -124,12 +128,19 @@ func (v *TimedUserValidator) Add(u *protocol.MemoryUser) error {
 	v.users = append(v.users, uu)
 	v.generateNewHashes(protocol.Timestamp(nowSec), uu)
 
+	if v.behaviorFused == false {
+		account := uu.user.Account.(*MemoryAccount)
+		v.behaviorSeed = crc64.Update(v.behaviorSeed, crc64.MakeTable(crc64.ECMA), account.ID.Bytes())
+	}
+
 	return nil
 }
 
 func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protocol.Timestamp, bool) {
 	defer v.RUnlock()
 	v.RLock()
+
+	v.behaviorFused = true
 
 	var fixedSizeHash [16]byte
 	copy(fixedSizeHash[:], userHash)
@@ -169,4 +180,14 @@ func (v *TimedUserValidator) Remove(email string) bool {
 // Close implements common.Closable.
 func (v *TimedUserValidator) Close() error {
 	return v.task.Close()
+}
+
+func (v *TimedUserValidator) GetBehaviorSeed() uint64 {
+	v.Lock()
+	defer v.Unlock()
+	v.behaviorFused = true
+	if v.behaviorSeed == 0 {
+		v.behaviorSeed = dice.RollUint64()
+	}
+	return v.behaviorSeed
 }

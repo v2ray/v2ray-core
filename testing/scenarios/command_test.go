@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -265,7 +266,9 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 	common.Must(err)
 	defer CloseAllServers(servers)
 
-	if err := testTCPConn(clientPort, 1024, time.Second*5)(); err != io.EOF {
+	if err := testTCPConn(clientPort, 1024, time.Second*5)(); err != io.EOF &&
+		/*We might wish to drain the connection*/
+		(err != nil && !strings.HasSuffix(err.Error(), "i/o timeout")) {
 		t.Fatal("expected error: ", err)
 	}
 
