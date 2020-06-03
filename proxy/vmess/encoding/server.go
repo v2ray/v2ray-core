@@ -155,7 +155,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	user, timestamp, valid := s.userValidator.Get(buffer.Bytes())
 	if !valid {
-		return nil, newError("invalid user")
+		return nil, drainConnection(newError("invalid user"))
 	}
 
 	iv := hashTimestamp(md5.New(), timestamp)
