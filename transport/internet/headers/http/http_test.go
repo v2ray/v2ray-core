@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"io"
 	"strings"
 	"testing"
 	"time"
@@ -247,8 +246,10 @@ func TestConnectionInvPath(t *testing.T) {
 	totalBytes := 0
 	for {
 		n, err := authConn.Read(actualResponse[totalBytes:])
-		if err != io.EOF {
-			t.Error("Unexpected Error", err)
+		if err == nil {
+			t.Error("Error Expected", err)
+		} else {
+			return
 		}
 		totalBytes += n
 		if totalBytes >= len(expectedResponse) || time.Now().After(deadline) {
