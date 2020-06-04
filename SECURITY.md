@@ -11,10 +11,11 @@ master branch, though we would still try our best to follow the compatiblity cla
 
 ## 汇报安全风险 Reporting a Vulnerability
 
-可以使用邮箱 dev |at| v2fly.org，或下方列出的 gpg 公钥在 GitHub 提交 issue 并注明安全风险。
+使用邮箱 dev |at| v2fly.org 并注明安全风险。
 
-You can either use email dev |at| v2fly.org, or directly open an GitHub issue with the gpg key listed below.
+You can use email dev |at| v2fly.org.
 
+GPG public key:
 
 ```
 
