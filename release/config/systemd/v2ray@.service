@@ -22,6 +22,7 @@ ExecStart=/usr/bin/v2ray/v2ray -config /etc/v2ray/%i.json
 Restart=on-failure
 # Don't restart in the case of configuration error
 RestartPreventExitStatus=23
+StandardOutput=syslog
 
 [Install]
 DefaultInstance=default
