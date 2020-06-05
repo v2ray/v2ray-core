@@ -208,7 +208,7 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 		config.NextProtos = c.NextProtocol
 	}
 	if len(config.NextProtos) == 0 {
-		config.NextProtos = []string{"http/1.1"}
+		config.NextProtos = nil
 	}
 
 	return config
