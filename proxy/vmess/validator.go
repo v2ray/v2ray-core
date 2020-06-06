@@ -6,6 +6,7 @@ import (
 	"hash/crc64"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/proxy/vmess/aead"
@@ -45,7 +46,7 @@ type indexTimePair struct {
 	user    *user
 	timeInc uint32
 
-	taintedFuse *bool
+	taintedFuse *uint32
 }
 
 // NewTimedUserValidator creates a new TimedUserValidator.
@@ -85,7 +86,7 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, user *
 			v.userHash[hashValue] = indexTimePair{
 				user:        user,
 				timeInc:     uint32(ts - v.baseTime),
-				taintedFuse: new(bool),
+				taintedFuse: new(uint32),
 			}
 		}
 	}
@@ -160,7 +161,7 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protoco
 	if found {
 		var user protocol.MemoryUser
 		user = pair.user.user
-		if *pair.taintedFuse == false {
+		if atomic.LoadUint32(pair.taintedFuse) == 0 {
 			return &user, protocol.Timestamp(pair.timeInc) + v.baseTime, true, nil
 		}
 		return nil, 0, false, ErrTainted
@@ -224,15 +225,17 @@ func (v *TimedUserValidator) GetBehaviorSeed() uint64 {
 }
 
 func (v *TimedUserValidator) BurnTaintFuse(userHash []byte) error {
-	v.Lock()
-	defer v.Unlock()
+	v.RLock()
+	defer v.RUnlock()
 	var userHashFL [16]byte
 	copy(userHashFL[:], userHash)
 
 	pair, found := v.userHash[userHashFL]
 	if found {
-		*pair.taintedFuse = true
-		return nil
+		if atomic.CompareAndSwapUint32(pair.taintedFuse, 0, 1) {
+			return nil
+		}
+		return ErrTainted
 	}
 	return ErrNotFound
 }
