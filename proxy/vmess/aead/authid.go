@@ -89,15 +89,17 @@ func (a *AuthIDDecoderHolder) RemoveUser(key [16]byte) {
 }
 
 func (a *AuthIDDecoderHolder) Match(AuthID [16]byte) (interface{}, error) {
-	if !a.apw.Check(AuthID[:]) {
-		return nil, ErrReplay
-	}
 	for _, v := range a.aidhi {
 
 		t, z, r, d := v.dec.Decode(AuthID)
 		if z != crc32.ChecksumIEEE(d[:12]) {
 			continue
 		}
+
+		if !a.apw.Check(AuthID[:]) {
+			return nil, ErrReplay
+		}
+
 		if math.Abs(float64(t-time.Now().Unix())) > 120 {
 			continue
 		}
