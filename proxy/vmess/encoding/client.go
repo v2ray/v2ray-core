@@ -55,13 +55,19 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 
 	session := &ClientSession{}
 
-	session.isAEADRequest = false
+	session.isAEADRequest = true
 
 	if vmessexp, vmessexp_found := os.LookupEnv("VMESSAEADEXPERIMENT"); vmessexp_found {
 		if vmessexp == "y" {
 			session.isAEADRequest = true
-			fmt.Println("=======VMESSAEADEXPERIMENT ENABLED========")
 		}
+		if vmessexp == "n" {
+			session.isAEADRequest = false
+		}
+	}
+
+	if session.isAEADRequest {
+		fmt.Println("=======VMESSAEADEXPERIMENT ENABLED========")
 	}
 
 	copy(session.requestBodyKey[:], randomBytes[:16])
