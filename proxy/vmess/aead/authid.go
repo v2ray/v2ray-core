@@ -96,13 +96,14 @@ func (a *AuthIDDecoderHolder) Match(AuthID [16]byte) (interface{}, error) {
 			continue
 		}
 
+		if math.Abs(float64(t-time.Now().Unix())) > 120 {
+			continue
+		}
+
 		if !a.apw.Check(AuthID[:]) {
 			return nil, ErrReplay
 		}
 
-		if math.Abs(float64(t-time.Now().Unix())) > 120 {
-			continue
-		}
 		_ = r
 
 		return v.ticket, nil
