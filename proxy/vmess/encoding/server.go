@@ -165,7 +165,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	var decryptor io.Reader
 	var vmessAccount *vmess.MemoryAccount
 
-	user, foundAEAD := s.userValidator.GetAEAD(buffer.Bytes())
+	user, foundAEAD, errorAEAD := s.userValidator.GetAEAD(buffer.Bytes())
 
 	var fixedSizeAuthID [16]byte
 	copy(fixedSizeAuthID[:], buffer.Bytes())
@@ -185,7 +185,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		}
 		decryptor = bytes.NewReader(aeadData)
 		s.isAEADRequest = true
-	} else if !s.isAEADForced {
+	} else if !s.isAEADForced && errorAEAD == vmessaead.ErrNotFound {
 		userLegacy, timestamp, valid, userValidationError := s.userValidator.Get(buffer.Bytes())
 		if !valid || userValidationError != nil {
 			return nil, drainConnection(newError("invalid user").Base(userValidationError))
@@ -197,7 +197,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv[:])
 		decryptor = crypto.NewCryptionReader(aesStream, reader)
 	} else {
-		return nil, drainConnection(newError("invalid user"))
+		return nil, drainConnection(newError("invalid user").Base(errorAEAD))
 	}
 
 	readSizeRemain -= int(buffer.Len())

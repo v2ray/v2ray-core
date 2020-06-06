@@ -90,7 +90,7 @@ func (a *AuthIDDecoderHolder) RemoveUser(key [16]byte) {
 
 func (a *AuthIDDecoderHolder) Match(AuthID [16]byte) (interface{}, error) {
 	if !a.apw.Check(AuthID[:]) {
-		return nil, errReplay
+		return nil, ErrReplay
 	}
 	for _, v := range a.aidhi {
 
@@ -106,9 +106,9 @@ func (a *AuthIDDecoderHolder) Match(AuthID [16]byte) (interface{}, error) {
 		return v.ticket, nil
 
 	}
-	return nil, errNotFound
+	return nil, ErrNotFound
 }
 
-var errNotFound = errors.New("user do not exist")
+var ErrNotFound = errors.New("user do not exist")
 
-var errReplay = errors.New("replayed request")
+var ErrReplay = errors.New("replayed request")

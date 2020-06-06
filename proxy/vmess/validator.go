@@ -168,7 +168,7 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protoco
 	return nil, 0, false, ErrNotFound
 }
 
-func (v *TimedUserValidator) GetAEAD(userHash []byte) (*protocol.MemoryUser, bool) {
+func (v *TimedUserValidator) GetAEAD(userHash []byte) (*protocol.MemoryUser, bool, error) {
 	defer v.RUnlock()
 	v.RLock()
 	var userHashFL [16]byte
@@ -176,9 +176,9 @@ func (v *TimedUserValidator) GetAEAD(userHash []byte) (*protocol.MemoryUser, boo
 
 	userd, err := v.aeadDecoderHolder.Match(userHashFL)
 	if err != nil {
-		return nil, false
+		return nil, false, err
 	}
-	return userd.(*protocol.MemoryUser), true
+	return userd.(*protocol.MemoryUser), true, err
 }
 
 func (v *TimedUserValidator) Remove(email string) bool {
