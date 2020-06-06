@@ -1,7 +1,11 @@
 package encoding
 
 import (
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/binary"
 	"hash/fnv"
 	"io"
@@ -9,6 +13,7 @@ import (
 	"sync"
 	"time"
 	"v2ray.com/core/common/dice"
+	vmessaead "v2ray.com/core/proxy/vmess/aead"
 
 	"golang.org/x/crypto/chacha20poly1305"
 
@@ -99,6 +104,10 @@ type ServerSession struct {
 	responseBodyIV  [16]byte
 	responseWriter  io.Writer
 	responseHeader  byte
+
+	isAEADRequest bool
+
+	isAEADForced bool
 }
 
 // NewServerSession creates a new ServerSession, using the given UserValidator.
@@ -153,16 +162,43 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		return nil, newError("failed to read request header").Base(err)
 	}
 
-	user, timestamp, valid := s.userValidator.Get(buffer.Bytes())
-	if !valid {
+	var decryptor io.Reader
+	var vmessAccount *vmess.MemoryAccount
+
+	user, foundAEAD := s.userValidator.GetAEAD(buffer.Bytes())
+
+	var fixedSizeAuthID [16]byte
+	copy(fixedSizeAuthID[:], buffer.Bytes())
+
+	if foundAEAD == true {
+		vmessAccount = user.Account.(*vmess.MemoryAccount)
+		var fixedSizeCmdKey [16]byte
+		copy(fixedSizeCmdKey[:], vmessAccount.ID.CmdKey())
+		aeadData, shouldDrain, errorReason, bytesRead := vmessaead.OpenVMessAEADHeader(fixedSizeCmdKey, fixedSizeAuthID, reader)
+		if errorReason != nil {
+			if shouldDrain {
+				readSizeRemain -= bytesRead
+				return nil, drainConnection(newError("AEAD read failed").Base(errorReason))
+			} else {
+				return nil, drainConnection(newError("AEAD read failed, drain skiped").Base(errorReason))
+			}
+		}
+		decryptor = bytes.NewReader(aeadData)
+		s.isAEADRequest = true
+	} else if !s.isAEADForced {
+		userLegacy, timestamp, valid, userValidationError := s.userValidator.Get(buffer.Bytes())
+		if !valid || userValidationError != nil {
+			return nil, drainConnection(newError("invalid user").Base(userValidationError))
+		}
+		user = userLegacy
+		iv := hashTimestamp(md5.New(), timestamp)
+		vmessAccount = userLegacy.Account.(*vmess.MemoryAccount)
+
+		aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv[:])
+		decryptor = crypto.NewCryptionReader(aesStream, reader)
+	} else {
 		return nil, drainConnection(newError("invalid user"))
 	}
-
-	iv := hashTimestamp(md5.New(), timestamp)
-	vmessAccount := user.Account.(*vmess.MemoryAccount)
-
-	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv[:])
-	decryptor := crypto.NewCryptionReader(aesStream, reader)
 
 	readSizeRemain -= int(buffer.Len())
 	buffer.Clear()
@@ -182,7 +218,16 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	sid.key = s.requestBodyKey
 	sid.nonce = s.requestBodyIV
 	if !s.sessionHistory.addIfNotExits(sid) {
-		return nil, drainConnection(newError("duplicated session id, possibly under replay attack"))
+		if !s.isAEADRequest {
+			drainErr := s.userValidator.BurnTaintFuse(fixedSizeAuthID[:])
+			if drainErr != nil {
+				return nil, drainConnection(newError("duplicated session id, possibly under replay attack, and failed to taint userHash").Base(drainErr))
+			}
+			return nil, drainConnection(newError("duplicated session id, possibly under replay attack, userHash tainted"))
+		} else {
+			return nil, newError("duplicated session id, possibly under replay attack, but this is a AEAD request")
+		}
+
 	}
 
 	s.responseHeader = buffer.Byte(33)             // 1 byte
@@ -205,11 +250,25 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	if padingLen > 0 {
 		if _, err := buffer.ReadFullFrom(decryptor, int32(padingLen)); err != nil {
+			if !s.isAEADRequest {
+				burnErr := s.userValidator.BurnTaintFuse(fixedSizeAuthID[:])
+				if burnErr != nil {
+					return nil, newError("failed to read padding, failed to taint userHash").Base(burnErr).Base(err)
+				}
+				return nil, newError("failed to read padding, userHash tainted").Base(err)
+			}
 			return nil, newError("failed to read padding").Base(err)
 		}
 	}
 
 	if _, err := buffer.ReadFullFrom(decryptor, 4); err != nil {
+		if !s.isAEADRequest {
+			burnErr := s.userValidator.BurnTaintFuse(fixedSizeAuthID[:])
+			if burnErr != nil {
+				return nil, newError("failed to read checksum, failed to taint userHash").Base(burnErr).Base(err)
+			}
+			return nil, newError("failed to read checksum, userHash tainted").Base(err)
+		}
 		return nil, newError("failed to read checksum").Base(err)
 	}
 
@@ -219,8 +278,18 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	expectedHash := binary.BigEndian.Uint32(buffer.BytesFrom(-4))
 
 	if actualHash != expectedHash {
-		//It is possible that we are under attack described in https://github.com/v2ray/v2ray-core/issues/2523
-		return nil, drainConnection(newError("invalid auth"))
+		if !s.isAEADRequest {
+			Autherr := newError("invalid auth, legacy userHash tainted")
+			burnErr := s.userValidator.BurnTaintFuse(fixedSizeAuthID[:])
+			if burnErr != nil {
+				Autherr = newError("invalid auth, can't taint legacy userHash").Base(burnErr)
+			}
+			//It is possible that we are under attack described in https://github.com/v2ray/v2ray-core/issues/2523
+			return nil, drainConnection(Autherr)
+		} else {
+			return nil, newError("invalid auth, but this is a AEAD request")
+		}
+
 	}
 
 	if request.Address == nil {
@@ -299,17 +368,59 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 
 // EncodeResponseHeader writes encoded response header into the given writer.
 func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {
-	s.responseBodyKey = md5.Sum(s.requestBodyKey[:])
-	s.responseBodyIV = md5.Sum(s.requestBodyIV[:])
+	var encryptionWriter io.Writer
+	if !s.isAEADRequest {
+		s.responseBodyKey = md5.Sum(s.requestBodyKey[:])
+		s.responseBodyIV = md5.Sum(s.requestBodyIV[:])
+	} else {
+		BodyKey := sha256.Sum256(s.requestBodyKey[:])
+		copy(s.responseBodyKey[:], BodyKey[:16])
+		BodyIV := sha256.Sum256(s.requestBodyKey[:])
+		copy(s.responseBodyIV[:], BodyIV[:16])
+	}
 
 	aesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])
-	encryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
+	encryptionWriter = crypto.NewCryptionWriter(aesStream, writer)
 	s.responseWriter = encryptionWriter
+
+	aeadBuffer := bytes.NewBuffer(nil)
+
+	if s.isAEADRequest {
+		encryptionWriter = aeadBuffer
+	}
 
 	common.Must2(encryptionWriter.Write([]byte{s.responseHeader, byte(header.Option)}))
 	err := MarshalCommand(header.Command, encryptionWriter)
 	if err != nil {
 		common.Must2(encryptionWriter.Write([]byte{0x00, 0x00}))
+	}
+
+	if s.isAEADRequest {
+
+		resph := vmessaead.KDF16(s.responseBodyKey[:], "AEAD Resp Header Len Key")
+		respi := vmessaead.KDF(s.responseBodyIV[:], "AEAD Resp Header Len IV")[:12]
+
+		aesblock := common.Must2(aes.NewCipher(resph)).(cipher.Block)
+		aeadHeader := common.Must2(cipher.NewGCM(aesblock)).(cipher.AEAD)
+
+		aeadlenBuf := bytes.NewBuffer(nil)
+
+		var aeadLen uint16
+		aeadLen = uint16(aeadBuffer.Len())
+
+		common.Must(binary.Write(aeadlenBuf, binary.BigEndian, aeadLen))
+
+		sealedLen := aeadHeader.Seal(nil, respi, aeadlenBuf.Bytes(), nil)
+		common.Must2(io.Copy(writer, bytes.NewReader(sealedLen)))
+
+		resphc := vmessaead.KDF16(s.responseBodyKey[:], "AEAD Resp Header Key")
+		respic := vmessaead.KDF(s.responseBodyIV[:], "AEAD Resp Header IV")[:12]
+
+		aesblockc := common.Must2(aes.NewCipher(resphc)).(cipher.Block)
+		aeadHeaderc := common.Must2(cipher.NewGCM(aesblockc)).(cipher.AEAD)
+
+		sealed := aeadHeaderc.Seal(nil, respic, aeadBuffer.Bytes(), nil)
+		common.Must2(io.Copy(writer, bytes.NewReader(sealed)))
 	}
 }
 
