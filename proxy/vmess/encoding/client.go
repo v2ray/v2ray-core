@@ -2,6 +2,7 @@ package encoding
 
 import (
 	"bytes"
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/md5"
@@ -13,6 +14,7 @@ import (
 	"hash/fnv"
 	"io"
 	"os"
+	"strings"
 	vmessaead "v2ray.com/core/proxy/vmess/aead"
 
 	"golang.org/x/crypto/chacha20poly1305"
@@ -49,13 +51,20 @@ type ClientSession struct {
 }
 
 // NewClientSession creates a new ClientSession.
-func NewClientSession(idHash protocol.IDHash) *ClientSession {
+func NewClientSession(idHash protocol.IDHash, ctx context.Context) *ClientSession {
 	randomBytes := make([]byte, 33) // 16 + 16 + 1
 	common.Must2(rand.Read(randomBytes))
 
 	session := &ClientSession{}
 
-	session.isAEADRequest = true
+	session.isAEADRequest = false
+
+	if ctxValueTestsEnabled := ctx.Value(vmess.TestsEnabled); ctxValueTestsEnabled != nil {
+		testsEnabled := ctxValueTestsEnabled.(string)
+		if strings.Contains(testsEnabled, "VMessAEAD") {
+			session.isAEADRequest = true
+		}
+	}
 
 	if vmessexp, vmessexp_found := os.LookupEnv("VMESSAEADEXPERIMENT"); vmessexp_found {
 		if vmessexp == "y" {

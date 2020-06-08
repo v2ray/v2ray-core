@@ -14,9 +14,10 @@ import (
 )
 
 type VMessAccount struct {
-	ID       string `json:"id"`
-	AlterIds uint16 `json:"alterId"`
-	Security string `json:"security"`
+	ID           string `json:"id"`
+	AlterIds     uint16 `json:"alterId"`
+	Security     string `json:"security"`
+	TestsEnabled string `json:"testsEnabled"`
 }
 
 // Build implements Buildable
@@ -40,6 +41,7 @@ func (a *VMessAccount) Build() *vmess.Account {
 		SecuritySettings: &protocol.SecurityConfig{
 			Type: st,
 		},
+		TestsEnabled: a.TestsEnabled,
 	}
 }
 
