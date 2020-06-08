@@ -129,13 +129,13 @@ func OpenVMessAEADHeader(key [16]byte, authid [16]byte, data io.Reader) ([]byte,
 		panic(err.Error())
 	}
 
-	out, erropenAEAD := payloadHeaderAEAD.Open(nil, payloadHeaderAEADNonce, payloadHeaderAEADEncrypted, authid[:])
+	decryptedAEADHeaderPayload, erropenAEAD := payloadHeaderAEAD.Open(nil, payloadHeaderAEADNonce, payloadHeaderAEADEncrypted, authid[:])
 
 	if erropenAEAD != nil {
 		return nil, true, erropenAEAD, authidCheckValueReadBytesCounts + headerPayloadDataLenReadBytesCounts + payloadHeaderAEADEncryptedReadedBytesCounts + nonceReadBytesCounts
 	}
 
-	return out, false, nil, authidCheckValueReadBytesCounts + headerPayloadDataLenReadBytesCounts + payloadHeaderAEADEncryptedReadedBytesCounts + nonceReadBytesCounts
+	return decryptedAEADHeaderPayload, false, nil, authidCheckValueReadBytesCounts + headerPayloadDataLenReadBytesCounts + payloadHeaderAEADEncryptedReadedBytesCounts + nonceReadBytesCounts
 }
 
 var errCheckMismatch = errors.New("check verify failed")
