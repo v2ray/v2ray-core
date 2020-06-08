@@ -15,4 +15,6 @@ message Account {
   uint32 alter_id = 2;
   // Security settings. Only applies to client side.
   v2ray.core.common.protocol.SecurityConfig security_settings = 3;
+  // Define tests enabled for this account
+  string tests_enabled = 4;
 }
