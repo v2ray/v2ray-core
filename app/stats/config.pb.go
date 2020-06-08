@@ -1,69 +1,135 @@
 package stats
 
 import (
-	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
+const (
+	// Verify that this generated code is sufficiently up-to-date.
+	_ = protoimpl.EnforceVersion(20 - protoimpl.MinVersion)
+	// Verify that runtime/protoimpl is sufficiently up-to-date.
+	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
+)
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+// This is a compile-time assertion that a sufficiently up-to-date version
+// of the legacy proto package is being used.
+const _ = proto.ProtoPackageIsVersion4
 
 type Config struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
 }
 
-func (m *Config) Reset()         { *m = Config{} }
-func (m *Config) String() string { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()    {}
+func (x *Config) Reset() {
+	*x = Config{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_stats_config_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Config) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Config) ProtoMessage() {}
+
+func (x *Config) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_stats_config_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Config.ProtoReflect.Descriptor instead.
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d494ded44ceaa50d, []int{0}
+	return file_v2ray_com_core_app_stats_config_proto_rawDescGZIP(), []int{0}
 }
 
-func (m *Config) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Config.Unmarshal(m, b)
-}
-func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
-}
-func (m *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(m, src)
-}
-func (m *Config) XXX_Size() int {
-	return xxx_messageInfo_Config.Size(m)
-}
-func (m *Config) XXX_DiscardUnknown() {
-	xxx_messageInfo_Config.DiscardUnknown(m)
+var File_v2ray_com_core_app_stats_config_proto protoreflect.FileDescriptor
+
+var file_v2ray_com_core_app_stats_config_proto_rawDesc = []byte{
+	0x0a, 0x25, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x72, 0x65,
+	0x2f, 0x61, 0x70, 0x70, 0x2f, 0x73, 0x74, 0x61, 0x74, 0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x14, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63,
+	0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x73, 0x74, 0x61, 0x74, 0x73, 0x22, 0x08, 0x0a,
+	0x06, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x42, 0x3a, 0x0a, 0x18, 0x63, 0x6f, 0x6d, 0x2e, 0x76,
+	0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x73, 0x74,
+	0x61, 0x74, 0x73, 0x50, 0x01, 0x5a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x73, 0xaa, 0x02, 0x14, 0x56,
+	0x32, 0x52, 0x61, 0x79, 0x2e, 0x43, 0x6f, 0x72, 0x65, 0x2e, 0x41, 0x70, 0x70, 0x2e, 0x53, 0x74,
+	0x61, 0x74, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
-var xxx_messageInfo_Config proto.InternalMessageInfo
+var (
+	file_v2ray_com_core_app_stats_config_proto_rawDescOnce sync.Once
+	file_v2ray_com_core_app_stats_config_proto_rawDescData = file_v2ray_com_core_app_stats_config_proto_rawDesc
+)
 
-func init() {
-	proto.RegisterType((*Config)(nil), "v2ray.core.app.stats.Config")
+func file_v2ray_com_core_app_stats_config_proto_rawDescGZIP() []byte {
+	file_v2ray_com_core_app_stats_config_proto_rawDescOnce.Do(func() {
+		file_v2ray_com_core_app_stats_config_proto_rawDescData = protoimpl.X.CompressGZIP(file_v2ray_com_core_app_stats_config_proto_rawDescData)
+	})
+	return file_v2ray_com_core_app_stats_config_proto_rawDescData
 }
 
-func init() {
-	proto.RegisterFile("v2ray.com/core/app/stats/config.proto", fileDescriptor_d494ded44ceaa50d)
+var file_v2ray_com_core_app_stats_config_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_v2ray_com_core_app_stats_config_proto_goTypes = []interface{}{
+	(*Config)(nil), // 0: v2ray.core.app.stats.Config
+}
+var file_v2ray_com_core_app_stats_config_proto_depIdxs = []int32{
+	0, // [0:0] is the sub-list for method output_type
+	0, // [0:0] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
-var fileDescriptor_d494ded44ceaa50d = []byte{
-	// 123 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x2d, 0x33, 0x2a, 0x4a,
-	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0x2c, 0x28, 0xd0, 0x2f,
-	0x2e, 0x49, 0x2c, 0x29, 0xd6, 0x4f, 0xce, 0xcf, 0x4b, 0xcb, 0x4c, 0xd7, 0x2b, 0x28, 0xca, 0x2f,
-	0xc9, 0x17, 0x12, 0x81, 0x29, 0x2b, 0x4a, 0xd5, 0x4b, 0x2c, 0x28, 0xd0, 0x03, 0x2b, 0x51, 0xe2,
-	0xe0, 0x62, 0x73, 0x06, 0xab, 0x72, 0xb2, 0xe2, 0x92, 0x48, 0xce, 0xcf, 0xd5, 0xc3, 0xa6, 0x2a,
-	0x80, 0x31, 0x8a, 0x15, 0xcc, 0x58, 0xc5, 0x24, 0x12, 0x66, 0x14, 0x94, 0x58, 0xa9, 0xe7, 0x0c,
-	0x92, 0x77, 0x2c, 0x28, 0xd0, 0x0b, 0x06, 0x09, 0x27, 0xb1, 0x81, 0xad, 0x30, 0x06, 0x04, 0x00,
-	0x00, 0xff, 0xff, 0x88, 0x24, 0xc6, 0x41, 0x8b, 0x00, 0x00, 0x00,
+func init() { file_v2ray_com_core_app_stats_config_proto_init() }
+func file_v2ray_com_core_app_stats_config_proto_init() {
+	if File_v2ray_com_core_app_stats_config_proto != nil {
+		return
+	}
+	if !protoimpl.UnsafeEnabled {
+		file_v2ray_com_core_app_stats_config_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Config); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
+	type x struct{}
+	out := protoimpl.TypeBuilder{
+		File: protoimpl.DescBuilder{
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: file_v2ray_com_core_app_stats_config_proto_rawDesc,
+			NumEnums:      0,
+			NumMessages:   1,
+			NumExtensions: 0,
+			NumServices:   0,
+		},
+		GoTypes:           file_v2ray_com_core_app_stats_config_proto_goTypes,
+		DependencyIndexes: file_v2ray_com_core_app_stats_config_proto_depIdxs,
+		MessageInfos:      file_v2ray_com_core_app_stats_config_proto_msgTypes,
+	}.Build()
+	File_v2ray_com_core_app_stats_config_proto = out.File
+	file_v2ray_com_core_app_stats_config_proto_rawDesc = nil
+	file_v2ray_com_core_app_stats_config_proto_goTypes = nil
+	file_v2ray_com_core_app_stats_config_proto_depIdxs = nil
 }

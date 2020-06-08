@@ -1,95 +1,168 @@
 package commander
 
 import (
-	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 	serial "v2ray.com/core/common/serial"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
+const (
+	// Verify that this generated code is sufficiently up-to-date.
+	_ = protoimpl.EnforceVersion(20 - protoimpl.MinVersion)
+	// Verify that runtime/protoimpl is sufficiently up-to-date.
+	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
+)
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+// This is a compile-time assertion that a sufficiently up-to-date version
+// of the legacy proto package is being used.
+const _ = proto.ProtoPackageIsVersion4
 
 // Config is the settings for Commander.
 type Config struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
 	// Tag of the outbound handler that handles grpc connections.
 	Tag string `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
 	// Services that supported by this server. All services must implement Service interface.
-	Service              []*serial.TypedMessage `protobuf:"bytes,2,rep,name=service,proto3" json:"service,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
-	XXX_unrecognized     []byte                 `json:"-"`
-	XXX_sizecache        int32                  `json:"-"`
+	Service []*serial.TypedMessage `protobuf:"bytes,2,rep,name=service,proto3" json:"service,omitempty"`
 }
 
-func (m *Config) Reset()         { *m = Config{} }
-func (m *Config) String() string { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()    {}
+func (x *Config) Reset() {
+	*x = Config{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_commander_config_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Config) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Config) ProtoMessage() {}
+
+func (x *Config) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_commander_config_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Config.ProtoReflect.Descriptor instead.
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4af9cfd3f0e2019e, []int{0}
+	return file_v2ray_com_core_app_commander_config_proto_rawDescGZIP(), []int{0}
 }
 
-func (m *Config) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Config.Unmarshal(m, b)
-}
-func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
-}
-func (m *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(m, src)
-}
-func (m *Config) XXX_Size() int {
-	return xxx_messageInfo_Config.Size(m)
-}
-func (m *Config) XXX_DiscardUnknown() {
-	xxx_messageInfo_Config.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Config proto.InternalMessageInfo
-
-func (m *Config) GetTag() string {
-	if m != nil {
-		return m.Tag
+func (x *Config) GetTag() string {
+	if x != nil {
+		return x.Tag
 	}
 	return ""
 }
 
-func (m *Config) GetService() []*serial.TypedMessage {
-	if m != nil {
-		return m.Service
+func (x *Config) GetService() []*serial.TypedMessage {
+	if x != nil {
+		return x.Service
 	}
 	return nil
 }
 
-func init() {
-	proto.RegisterType((*Config)(nil), "v2ray.core.app.commander.Config")
+var File_v2ray_com_core_app_commander_config_proto protoreflect.FileDescriptor
+
+var file_v2ray_com_core_app_commander_config_proto_rawDesc = []byte{
+	0x0a, 0x29, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x72, 0x65,
+	0x2f, 0x61, 0x70, 0x70, 0x2f, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x65, 0x72, 0x2f, 0x63,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x18, 0x76, 0x32, 0x72,
+	0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x63, 0x6f, 0x6d, 0x6d,
+	0x61, 0x6e, 0x64, 0x65, 0x72, 0x1a, 0x30, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x6d,
+	0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2f, 0x73, 0x65, 0x72,
+	0x69, 0x61, 0x6c, 0x2f, 0x74, 0x79, 0x70, 0x65, 0x64, 0x5f, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67,
+	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x5c, 0x0a, 0x06, 0x43, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x12, 0x10, 0x0a, 0x03, 0x74, 0x61, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03,
+	0x74, 0x61, 0x67, 0x12, 0x40, 0x0a, 0x07, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x18, 0x02,
+	0x20, 0x03, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72,
+	0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x73, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x2e,
+	0x54, 0x79, 0x70, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x52, 0x07, 0x73, 0x65,
+	0x72, 0x76, 0x69, 0x63, 0x65, 0x42, 0x46, 0x0a, 0x1c, 0x63, 0x6f, 0x6d, 0x2e, 0x76, 0x32, 0x72,
+	0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x63, 0x6f, 0x6d, 0x6d,
+	0x61, 0x6e, 0x64, 0x65, 0x72, 0x50, 0x01, 0x5a, 0x09, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64,
+	0x65, 0x72, 0xaa, 0x02, 0x18, 0x56, 0x32, 0x52, 0x61, 0x79, 0x2e, 0x43, 0x6f, 0x72, 0x65, 0x2e,
+	0x41, 0x70, 0x70, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x65, 0x72, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
-func init() {
-	proto.RegisterFile("v2ray.com/core/app/commander/config.proto", fileDescriptor_4af9cfd3f0e2019e)
+var (
+	file_v2ray_com_core_app_commander_config_proto_rawDescOnce sync.Once
+	file_v2ray_com_core_app_commander_config_proto_rawDescData = file_v2ray_com_core_app_commander_config_proto_rawDesc
+)
+
+func file_v2ray_com_core_app_commander_config_proto_rawDescGZIP() []byte {
+	file_v2ray_com_core_app_commander_config_proto_rawDescOnce.Do(func() {
+		file_v2ray_com_core_app_commander_config_proto_rawDescData = protoimpl.X.CompressGZIP(file_v2ray_com_core_app_commander_config_proto_rawDescData)
+	})
+	return file_v2ray_com_core_app_commander_config_proto_rawDescData
 }
 
-var fileDescriptor_4af9cfd3f0e2019e = []byte{
-	// 212 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x2c, 0x33, 0x2a, 0x4a,
-	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0x2c, 0x28, 0xd0, 0x4f,
-	0xce, 0xcf, 0xcd, 0x4d, 0xcc, 0x4b, 0x49, 0x2d, 0xd2, 0x4f, 0xce, 0xcf, 0x4b, 0xcb, 0x4c, 0xd7,
-	0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x92, 0x80, 0x29, 0x2d, 0x4a, 0xd5, 0x4b, 0x2c, 0x28, 0xd0,
-	0x83, 0x2b, 0x93, 0x32, 0x40, 0x33, 0x04, 0x24, 0x93, 0x9f, 0xa7, 0x5f, 0x9c, 0x5a, 0x94, 0x99,
-	0x98, 0xa3, 0x5f, 0x52, 0x59, 0x90, 0x9a, 0x12, 0x9f, 0x9b, 0x5a, 0x5c, 0x9c, 0x98, 0x9e, 0x0a,
-	0x31, 0x4b, 0x29, 0x86, 0x8b, 0xcd, 0x19, 0x6c, 0xb6, 0x90, 0x00, 0x17, 0x73, 0x49, 0x62, 0xba,
-	0x04, 0xa3, 0x02, 0xa3, 0x06, 0x67, 0x10, 0x88, 0x29, 0xe4, 0xc0, 0xc5, 0x5e, 0x9c, 0x5a, 0x54,
-	0x96, 0x99, 0x9c, 0x2a, 0xc1, 0xa4, 0xc0, 0xac, 0xc1, 0x6d, 0xa4, 0xa6, 0x87, 0x64, 0x33, 0xc4,
-	0x6c, 0x3d, 0x88, 0xd9, 0x7a, 0x21, 0x20, 0xb3, 0x7d, 0x21, 0x46, 0x07, 0xc1, 0xb4, 0x39, 0xb9,
-	0x71, 0xc9, 0x24, 0xe7, 0xe7, 0xea, 0xe1, 0x72, 0x6f, 0x00, 0x63, 0x14, 0x27, 0x9c, 0xb3, 0x8a,
-	0x49, 0x22, 0xcc, 0x28, 0x28, 0xb1, 0x52, 0xcf, 0x19, 0xa4, 0xce, 0xb1, 0xa0, 0x40, 0xcf, 0x19,
-	0x26, 0x95, 0xc4, 0x06, 0x76, 0xac, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0x29, 0x02, 0xa6, 0x19,
-	0x25, 0x01, 0x00, 0x00,
+var file_v2ray_com_core_app_commander_config_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_v2ray_com_core_app_commander_config_proto_goTypes = []interface{}{
+	(*Config)(nil),              // 0: v2ray.core.app.commander.Config
+	(*serial.TypedMessage)(nil), // 1: v2ray.core.common.serial.TypedMessage
+}
+var file_v2ray_com_core_app_commander_config_proto_depIdxs = []int32{
+	1, // 0: v2ray.core.app.commander.Config.service:type_name -> v2ray.core.common.serial.TypedMessage
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
+}
+
+func init() { file_v2ray_com_core_app_commander_config_proto_init() }
+func file_v2ray_com_core_app_commander_config_proto_init() {
+	if File_v2ray_com_core_app_commander_config_proto != nil {
+		return
+	}
+	if !protoimpl.UnsafeEnabled {
+		file_v2ray_com_core_app_commander_config_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Config); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
+	type x struct{}
+	out := protoimpl.TypeBuilder{
+		File: protoimpl.DescBuilder{
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: file_v2ray_com_core_app_commander_config_proto_rawDesc,
+			NumEnums:      0,
+			NumMessages:   1,
+			NumExtensions: 0,
+			NumServices:   0,
+		},
+		GoTypes:           file_v2ray_com_core_app_commander_config_proto_goTypes,
+		DependencyIndexes: file_v2ray_com_core_app_commander_config_proto_depIdxs,
+		MessageInfos:      file_v2ray_com_core_app_commander_config_proto_msgTypes,
+	}.Build()
+	File_v2ray_com_core_app_commander_config_proto = out.File
+	file_v2ray_com_core_app_commander_config_proto_rawDesc = nil
+	file_v2ray_com_core_app_commander_config_proto_goTypes = nil
+	file_v2ray_com_core_app_commander_config_proto_depIdxs = nil
 }
