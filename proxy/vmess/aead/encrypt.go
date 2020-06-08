@@ -14,128 +14,128 @@ import (
 )
 
 func SealVMessAEADHeader(key [16]byte, data []byte) []byte {
-	authid := CreateAuthID(key[:], time.Now().Unix())
+	generatedAuthID := CreateAuthID(key[:], time.Now().Unix())
 
-	nonce := make([]byte, 8)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+	connectionNonce := make([]byte, 8)
+	if _, err := io.ReadFull(rand.Reader, connectionNonce); err != nil {
 		panic(err.Error())
 	}
 
-	lengthbuf := bytes.NewBuffer(nil)
+	aeadPayloadLengthSerializeBuffer := bytes.NewBuffer(nil)
 
-	var HeaderDataLen uint16
-	HeaderDataLen = uint16(len(data))
+	var headerPayloadDataLen uint16
+	headerPayloadDataLen = uint16(len(data))
 
-	common.Must(binary.Write(lengthbuf, binary.BigEndian, HeaderDataLen))
+	common.Must(binary.Write(aeadPayloadLengthSerializeBuffer, binary.BigEndian, headerPayloadDataLen))
 
-	authidCheck := KDF16(key[:], "VMess AuthID Check Value", string(authid[:]), string(lengthbuf.Bytes()), string(nonce))
+	authidCheckValue := KDF16(key[:], KDFSaltConst_VmessAuthIDCheckValue, string(generatedAuthID[:]), string(aeadPayloadLengthSerializeBuffer.Bytes()), string(connectionNonce))
 
-	lengthbufb := lengthbuf.Bytes()
+	aeadPayloadLengthSerializedByte := aeadPayloadLengthSerializeBuffer.Bytes()
 
-	LengthMask := KDF16(key[:], "VMess AuthID Mask Value", string(authid[:]), string(nonce[:]))[:2]
+	aeadPayloadLengthMask := KDF16(key[:], KDFSaltConst_VMessLengthMask, string(generatedAuthID[:]), string(connectionNonce[:]))[:2]
 
-	lengthbufb[0] = lengthbufb[0] ^ LengthMask[0]
-	lengthbufb[1] = lengthbufb[1] ^ LengthMask[1]
+	aeadPayloadLengthSerializedByte[0] = aeadPayloadLengthSerializedByte[0] ^ aeadPayloadLengthMask[0]
+	aeadPayloadLengthSerializedByte[1] = aeadPayloadLengthSerializedByte[1] ^ aeadPayloadLengthMask[1]
 
-	HeaderAEADKey := KDF16(key[:], "VMess Header AEAD Key", string(authid[:]), string(nonce))
+	payloadHeaderAEADKey := KDF16(key[:], KDFSaltConst_VMessHeaderPayloadAEADKey, string(generatedAuthID[:]), string(connectionNonce))
 
-	HeaderAEADNonce := KDF(key[:], "VMess Header AEAD Nonce", string(authid[:]), string(nonce))[:12]
+	payloadHeaderAEADNonce := KDF(key[:], KDFSaltConst_VMessHeaderPayloadAEADIV, string(generatedAuthID[:]), string(connectionNonce))[:12]
 
-	block, err := aes.NewCipher(HeaderAEADKey)
+	payloadHeaderAEADAESBlock, err := aes.NewCipher(payloadHeaderAEADKey)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	headerAEAD, err := cipher.NewGCM(block)
+	payloadHeaderAEAD, err := cipher.NewGCM(payloadHeaderAEADAESBlock)
 
 	if err != nil {
 		panic(err.Error())
 	}
 
-	headerSealed := headerAEAD.Seal(nil, HeaderAEADNonce, data, authid[:])
+	payloadHeaderAEADEncrypted := payloadHeaderAEAD.Seal(nil, payloadHeaderAEADNonce, data, generatedAuthID[:])
 
-	var outPutBuf = bytes.NewBuffer(nil)
+	var outputBuffer = bytes.NewBuffer(nil)
 
-	common.Must2(outPutBuf.Write(authid[:])) //16
+	common.Must2(outputBuffer.Write(generatedAuthID[:])) //16
 
-	common.Must2(outPutBuf.Write(authidCheck)) //16
+	common.Must2(outputBuffer.Write(authidCheckValue)) //16
 
-	common.Must2(outPutBuf.Write(lengthbufb)) //2
+	common.Must2(outputBuffer.Write(aeadPayloadLengthSerializedByte)) //2
 
-	common.Must2(outPutBuf.Write(nonce)) //8
+	common.Must2(outputBuffer.Write(connectionNonce)) //8
 
-	common.Must2(outPutBuf.Write(headerSealed))
+	common.Must2(outputBuffer.Write(payloadHeaderAEADEncrypted))
 
-	return outPutBuf.Bytes()
+	return outputBuffer.Bytes()
 }
 
 func OpenVMessAEADHeader(key [16]byte, authid [16]byte, data io.Reader) ([]byte, bool, error, int) {
-	var authidCheck [16]byte
-	var lengthbufb [2]byte
+	var authidCheckValue [16]byte
+	var headerPayloadDataLen [2]byte
 	var nonce [8]byte
 
-	n, err := io.ReadFull(data, authidCheck[:])
+	authidCheckValueReadBytesCounts, err := io.ReadFull(data, authidCheckValue[:])
 	if err != nil {
-		return nil, false, err, n
+		return nil, false, err, authidCheckValueReadBytesCounts
 	}
 
-	n2, err := io.ReadFull(data, lengthbufb[:])
+	headerPayloadDataLenReadBytesCounts, err := io.ReadFull(data, headerPayloadDataLen[:])
 	if err != nil {
-		return nil, false, err, n + n2
+		return nil, false, err, authidCheckValueReadBytesCounts + headerPayloadDataLenReadBytesCounts
 	}
 
-	n4, err := io.ReadFull(data, nonce[:])
+	nonceReadBytesCounts, err := io.ReadFull(data, nonce[:])
 	if err != nil {
-		return nil, false, err, n + n2 + n4
+		return nil, false, err, authidCheckValueReadBytesCounts + headerPayloadDataLenReadBytesCounts + nonceReadBytesCounts
 	}
 
 	//Unmask Length
 
-	LengthMask := KDF16(key[:], "VMess AuthID Mask Value", string(authid[:]), string(nonce[:]))[:2]
+	LengthMask := KDF16(key[:], KDFSaltConst_VMessLengthMask, string(authid[:]), string(nonce[:]))[:2]
 
-	lengthbufb[0] = lengthbufb[0] ^ LengthMask[0]
-	lengthbufb[1] = lengthbufb[1] ^ LengthMask[1]
+	headerPayloadDataLen[0] = headerPayloadDataLen[0] ^ LengthMask[0]
+	headerPayloadDataLen[1] = headerPayloadDataLen[1] ^ LengthMask[1]
 
-	authidCheckV := KDF16(key[:], "VMess AuthID Check Value", string(authid[:]), string(lengthbufb[:]), string(nonce[:]))
+	authidCheckValueReceivedFromNetwork := KDF16(key[:], KDFSaltConst_VmessAuthIDCheckValue, string(authid[:]), string(headerPayloadDataLen[:]), string(nonce[:]))
 
-	if !hmac.Equal(authidCheckV, authidCheck[:]) {
-		return nil, true, errCheckMismatch, n + n2 + n4
+	if !hmac.Equal(authidCheckValueReceivedFromNetwork, authidCheckValue[:]) {
+		return nil, true, errCheckMismatch, authidCheckValueReadBytesCounts + headerPayloadDataLenReadBytesCounts + nonceReadBytesCounts
 	}
 
 	var length uint16
 
-	common.Must(binary.Read(bytes.NewReader(lengthbufb[:]), binary.BigEndian, &length))
+	common.Must(binary.Read(bytes.NewReader(headerPayloadDataLen[:]), binary.BigEndian, &length))
 
-	HeaderAEADKey := KDF16(key[:], "VMess Header AEAD Key", string(authid[:]), string(nonce[:]))
+	payloadHeaderAEADKey := KDF16(key[:], KDFSaltConst_VMessHeaderPayloadAEADKey, string(authid[:]), string(nonce[:]))
 
-	HeaderAEADNonce := KDF(key[:], "VMess Header AEAD Nonce", string(authid[:]), string(nonce[:]))[:12]
+	payloadHeaderAEADNonce := KDF(key[:], KDFSaltConst_VMessHeaderPayloadAEADIV, string(authid[:]), string(nonce[:]))[:12]
 
 	//16 == AEAD Tag size
-	header := make([]byte, length+16)
+	payloadHeaderAEADEncrypted := make([]byte, length+16)
 
-	n3, err := io.ReadFull(data, header)
+	payloadHeaderAEADEncryptedReadedBytesCounts, err := io.ReadFull(data, payloadHeaderAEADEncrypted)
 	if err != nil {
-		return nil, false, err, n + n2 + n3 + n4
+		return nil, false, err, authidCheckValueReadBytesCounts + headerPayloadDataLenReadBytesCounts + payloadHeaderAEADEncryptedReadedBytesCounts + nonceReadBytesCounts
 	}
 
-	block, err := aes.NewCipher(HeaderAEADKey)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	headerAEAD, err := cipher.NewGCM(block)
-
+	payloadHeaderAEADAESBlock, err := aes.NewCipher(payloadHeaderAEADKey)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	out, erropenAEAD := headerAEAD.Open(nil, HeaderAEADNonce, header, authid[:])
+	payloadHeaderAEAD, err := cipher.NewGCM(payloadHeaderAEADAESBlock)
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	out, erropenAEAD := payloadHeaderAEAD.Open(nil, payloadHeaderAEADNonce, payloadHeaderAEADEncrypted, authid[:])
 
 	if erropenAEAD != nil {
-		return nil, true, erropenAEAD, n + n2 + n3 + n4
+		return nil, true, erropenAEAD, authidCheckValueReadBytesCounts + headerPayloadDataLenReadBytesCounts + payloadHeaderAEADEncryptedReadedBytesCounts + nonceReadBytesCounts
 	}
 
-	return out, false, nil, n + n2 + n3 + n4
+	return out, false, nil, authidCheckValueReadBytesCounts + headerPayloadDataLenReadBytesCounts + payloadHeaderAEADEncryptedReadedBytesCounts + nonceReadBytesCounts
 }
 
 var errCheckMismatch = errors.New("check verify failed")

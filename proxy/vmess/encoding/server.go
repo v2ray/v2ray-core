@@ -383,10 +383,10 @@ func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, wr
 	encryptionWriter = crypto.NewCryptionWriter(aesStream, writer)
 	s.responseWriter = encryptionWriter
 
-	aeadBuffer := bytes.NewBuffer(nil)
+	aeadEncryptedHeaderBuffer := bytes.NewBuffer(nil)
 
 	if s.isAEADRequest {
-		encryptionWriter = aeadBuffer
+		encryptionWriter = aeadEncryptedHeaderBuffer
 	}
 
 	common.Must2(encryptionWriter.Write([]byte{s.responseHeader, byte(header.Option)}))
@@ -397,30 +397,30 @@ func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, wr
 
 	if s.isAEADRequest {
 
-		resph := vmessaead.KDF16(s.responseBodyKey[:], "AEAD Resp Header Len Key")
-		respi := vmessaead.KDF(s.responseBodyIV[:], "AEAD Resp Header Len IV")[:12]
+		aeadResponseHeaderLengthEncryptionKey := vmessaead.KDF16(s.responseBodyKey[:], vmessaead.KDFSaltConst_AEADRespHeaderLenKey)
+		aeadResponseHeaderLengthEncryptionIV := vmessaead.KDF(s.responseBodyIV[:], vmessaead.KDFSaltConst_AEADRespHeaderLenIV)[:12]
 
-		aesblock := common.Must2(aes.NewCipher(resph)).(cipher.Block)
-		aeadHeader := common.Must2(cipher.NewGCM(aesblock)).(cipher.AEAD)
+		aeadResponseHeaderLengthEncryptionKeyAESBlock := common.Must2(aes.NewCipher(aeadResponseHeaderLengthEncryptionKey)).(cipher.Block)
+		aeadResponseHeaderLengthEncryptionAEAD := common.Must2(cipher.NewGCM(aeadResponseHeaderLengthEncryptionKeyAESBlock)).(cipher.AEAD)
 
-		aeadlenBuf := bytes.NewBuffer(nil)
+		aeadResponseHeaderLengthEncryptionBuffer := bytes.NewBuffer(nil)
 
-		var aeadLen uint16
-		aeadLen = uint16(aeadBuffer.Len())
+		var decryptedResponseHeaderLengthBinaryDeserializeBuffer uint16
+		decryptedResponseHeaderLengthBinaryDeserializeBuffer = uint16(aeadEncryptedHeaderBuffer.Len())
 
-		common.Must(binary.Write(aeadlenBuf, binary.BigEndian, aeadLen))
+		common.Must(binary.Write(aeadResponseHeaderLengthEncryptionBuffer, binary.BigEndian, decryptedResponseHeaderLengthBinaryDeserializeBuffer))
 
-		sealedLen := aeadHeader.Seal(nil, respi, aeadlenBuf.Bytes(), nil)
-		common.Must2(io.Copy(writer, bytes.NewReader(sealedLen)))
+		AEADEncryptedLength := aeadResponseHeaderLengthEncryptionAEAD.Seal(nil, aeadResponseHeaderLengthEncryptionIV, aeadResponseHeaderLengthEncryptionBuffer.Bytes(), nil)
+		common.Must2(io.Copy(writer, bytes.NewReader(AEADEncryptedLength)))
 
-		resphc := vmessaead.KDF16(s.responseBodyKey[:], "AEAD Resp Header Key")
-		respic := vmessaead.KDF(s.responseBodyIV[:], "AEAD Resp Header IV")[:12]
+		aeadResponseHeaderPayloadEncryptionKey := vmessaead.KDF16(s.responseBodyKey[:], vmessaead.KDFSaltConst_AEADRespHeaderPayloadKey)
+		aeadResponseHeaderPayloadEncryptionIV := vmessaead.KDF(s.responseBodyIV[:], vmessaead.KDFSaltConst_AEADRespHeaderPayloadIV)[:12]
 
-		aesblockc := common.Must2(aes.NewCipher(resphc)).(cipher.Block)
-		aeadHeaderc := common.Must2(cipher.NewGCM(aesblockc)).(cipher.AEAD)
+		aeadResponseHeaderPayloadEncryptionKeyAESBlock := common.Must2(aes.NewCipher(aeadResponseHeaderPayloadEncryptionKey)).(cipher.Block)
+		aeadResponseHeaderPayloadEncryptionAEAD := common.Must2(cipher.NewGCM(aeadResponseHeaderPayloadEncryptionKeyAESBlock)).(cipher.AEAD)
 
-		sealed := aeadHeaderc.Seal(nil, respic, aeadBuffer.Bytes(), nil)
-		common.Must2(io.Copy(writer, bytes.NewReader(sealed)))
+		aeadEncryptedHeaderPayload := aeadResponseHeaderPayloadEncryptionAEAD.Seal(nil, aeadResponseHeaderPayloadEncryptionIV, aeadEncryptedHeaderBuffer.Bytes(), nil)
+		common.Must2(io.Copy(writer, bytes.NewReader(aeadEncryptedHeaderPayload)))
 	}
 }
 

@@ -208,43 +208,42 @@ func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 		aesStream := crypto.NewAesDecryptionStream(c.responseBodyKey[:], c.responseBodyIV[:])
 		c.responseReader = crypto.NewCryptionReader(aesStream, reader)
 	} else {
-		resph := vmessaead.KDF16(c.responseBodyKey[:], "AEAD Resp Header Len Key")
-		respi := vmessaead.KDF(c.responseBodyIV[:], "AEAD Resp Header Len IV")[:12]
+		aeadResponseHeaderLengthEncryptionKey := vmessaead.KDF16(c.responseBodyKey[:], vmessaead.KDFSaltConst_AEADRespHeaderLenKey)
+		aeadResponseHeaderLengthEncryptionIV := vmessaead.KDF(c.responseBodyIV[:], vmessaead.KDFSaltConst_AEADRespHeaderLenIV)[:12]
 
-		aesblock := common.Must2(aes.NewCipher(resph)).(cipher.Block)
-		aeadHeader := common.Must2(cipher.NewGCM(aesblock)).(cipher.AEAD)
+		aeadResponseHeaderLengthEncryptionKeyAESBlock := common.Must2(aes.NewCipher(aeadResponseHeaderLengthEncryptionKey)).(cipher.Block)
+		aeadResponseHeaderLengthEncryptionAEAD := common.Must2(cipher.NewGCM(aeadResponseHeaderLengthEncryptionKeyAESBlock)).(cipher.AEAD)
 
-		var AEADLen [18]byte
-		var lenresp int
+		var aeadEncryptedResponseHeaderLength [18]byte
+		var decryptedResponseHeaderLength int
+		var decryptedResponseHeaderLengthBinaryDeserializeBuffer uint16
 
-		var lenrespr uint16
-
-		if _, err := io.ReadFull(reader, AEADLen[:]); err != nil {
+		if _, err := io.ReadFull(reader, aeadEncryptedResponseHeaderLength[:]); err != nil {
 			return nil, newError("Unable to Read Header Len").Base(err)
 		}
-		if AEADLend, err := aeadHeader.Open(nil, respi, AEADLen[:], nil); err != nil {
+		if decryptedResponseHeaderLengthBinaryBuffer, err := aeadResponseHeaderLengthEncryptionAEAD.Open(nil, aeadResponseHeaderLengthEncryptionIV, aeadEncryptedResponseHeaderLength[:], nil); err != nil {
 			return nil, newError("Failed To Decrypt Length").Base(err)
 		} else {
-			common.Must(binary.Read(bytes.NewReader(AEADLend), binary.BigEndian, &lenrespr))
-			lenresp = int(lenrespr)
+			common.Must(binary.Read(bytes.NewReader(decryptedResponseHeaderLengthBinaryBuffer), binary.BigEndian, &decryptedResponseHeaderLengthBinaryDeserializeBuffer))
+			decryptedResponseHeaderLength = int(decryptedResponseHeaderLengthBinaryDeserializeBuffer)
 		}
 
-		resphc := vmessaead.KDF16(c.responseBodyKey[:], "AEAD Resp Header Key")
-		respic := vmessaead.KDF(c.responseBodyIV[:], "AEAD Resp Header IV")[:12]
+		aeadResponseHeaderPayloadEncryptionKey := vmessaead.KDF16(c.responseBodyKey[:], vmessaead.KDFSaltConst_AEADRespHeaderPayloadKey)
+		aeadResponseHeaderPayloadEncryptionIV := vmessaead.KDF(c.responseBodyIV[:], vmessaead.KDFSaltConst_AEADRespHeaderPayloadIV)[:12]
 
-		aesblockc := common.Must2(aes.NewCipher(resphc)).(cipher.Block)
-		aeadHeaderc := common.Must2(cipher.NewGCM(aesblockc)).(cipher.AEAD)
+		aeadResponseHeaderPayloadEncryptionKeyAESBlock := common.Must2(aes.NewCipher(aeadResponseHeaderPayloadEncryptionKey)).(cipher.Block)
+		aeadResponseHeaderPayloadEncryptionAEAD := common.Must2(cipher.NewGCM(aeadResponseHeaderPayloadEncryptionKeyAESBlock)).(cipher.AEAD)
 
-		respPayload := make([]byte, lenresp+16)
+		encryptedResponseHeaderBuffer := make([]byte, decryptedResponseHeaderLength+16)
 
-		if _, err := io.ReadFull(reader, respPayload); err != nil {
+		if _, err := io.ReadFull(reader, encryptedResponseHeaderBuffer); err != nil {
 			return nil, newError("Unable to Read Header Data").Base(err)
 		}
 
-		if AEADData, err := aeadHeaderc.Open(nil, respic, respPayload, nil); err != nil {
+		if decryptedResponseHeaderBuffer, err := aeadResponseHeaderPayloadEncryptionAEAD.Open(nil, aeadResponseHeaderPayloadEncryptionIV, encryptedResponseHeaderBuffer, nil); err != nil {
 			return nil, newError("Failed To Decrypt Payload").Base(err)
 		} else {
-			c.responseReader = bytes.NewReader(AEADData)
+			c.responseReader = bytes.NewReader(decryptedResponseHeaderBuffer)
 		}
 	}
 

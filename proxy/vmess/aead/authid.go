@@ -32,7 +32,7 @@ func CreateAuthID(cmdKey []byte, time int64) [16]byte {
 }
 
 func NewCipherFromKey(cmdKey []byte) cipher.Block {
-	aesBlock, err := aes.NewCipher(KDF16(cmdKey, "AES Auth ID Encryption"))
+	aesBlock, err := aes.NewCipher(KDF16(cmdKey, KDFSaltConst_AuthIDEncryptionKey))
 	if err != nil {
 		panic(err)
 	}
