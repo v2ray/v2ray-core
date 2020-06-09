@@ -43,6 +43,7 @@ type KCPConfig struct {
 	ReadBufferSize  *uint32         `json:"readBufferSize"`
 	WriteBufferSize *uint32         `json:"writeBufferSize"`
 	HeaderConfig    json.RawMessage `json:"header"`
+	Seed            *string         `json:"seed"`
 }
 
 // Build implements Buildable.
@@ -98,6 +99,10 @@ func (c *KCPConfig) Build() (proto.Message, error) {
 			return nil, newError("invalid mKCP header config").Base(err).AtError()
 		}
 		config.HeaderConfig = serial.ToTypedMessage(ts)
+	}
+
+	if c.Seed != nil {
+		config.Seed = &kcp.EncryptionSeed{Seed: *c.Seed}
 	}
 
 	return config, nil
