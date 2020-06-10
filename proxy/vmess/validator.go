@@ -6,8 +6,10 @@ import (
 	"hash/crc64"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"v2ray.com/core/common/dice"
+	"v2ray.com/core/proxy/vmess/aead"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/protocol"
@@ -28,27 +30,33 @@ type user struct {
 // TimedUserValidator is a user Validator based on time.
 type TimedUserValidator struct {
 	sync.RWMutex
-	users         []*user
-	userHash      map[[16]byte]indexTimePair
-	hasher        protocol.IDHash
-	baseTime      protocol.Timestamp
-	task          *task.Periodic
+	users    []*user
+	userHash map[[16]byte]indexTimePair
+	hasher   protocol.IDHash
+	baseTime protocol.Timestamp
+	task     *task.Periodic
+
 	behaviorSeed  uint64
 	behaviorFused bool
+
+	aeadDecoderHolder *aead.AuthIDDecoderHolder
 }
 
 type indexTimePair struct {
 	user    *user
 	timeInc uint32
+
+	taintedFuse *uint32
 }
 
 // NewTimedUserValidator creates a new TimedUserValidator.
 func NewTimedUserValidator(hasher protocol.IDHash) *TimedUserValidator {
 	tuv := &TimedUserValidator{
-		users:    make([]*user, 0, 16),
-		userHash: make(map[[16]byte]indexTimePair, 1024),
-		hasher:   hasher,
-		baseTime: protocol.Timestamp(time.Now().Unix() - cacheDurationSec*2),
+		users:             make([]*user, 0, 16),
+		userHash:          make(map[[16]byte]indexTimePair, 1024),
+		hasher:            hasher,
+		baseTime:          protocol.Timestamp(time.Now().Unix() - cacheDurationSec*2),
+		aeadDecoderHolder: aead.NewAuthIDDecoderHolder(),
 	}
 	tuv.task = &task.Periodic{
 		Interval: updateInterval,
@@ -76,8 +84,9 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, user *
 			idHash.Reset()
 
 			v.userHash[hashValue] = indexTimePair{
-				user:    user,
-				timeInc: uint32(ts - v.baseTime),
+				user:        user,
+				timeInc:     uint32(ts - v.baseTime),
+				taintedFuse: new(uint32),
 			}
 		}
 	}
@@ -128,15 +137,19 @@ func (v *TimedUserValidator) Add(u *protocol.MemoryUser) error {
 	v.users = append(v.users, uu)
 	v.generateNewHashes(protocol.Timestamp(nowSec), uu)
 
+	account := uu.user.Account.(*MemoryAccount)
 	if v.behaviorFused == false {
-		account := uu.user.Account.(*MemoryAccount)
 		v.behaviorSeed = crc64.Update(v.behaviorSeed, crc64.MakeTable(crc64.ECMA), account.ID.Bytes())
 	}
+
+	var cmdkeyfl [16]byte
+	copy(cmdkeyfl[:], account.ID.CmdKey())
+	v.aeadDecoderHolder.AddUser(cmdkeyfl, u)
 
 	return nil
 }
 
-func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protocol.Timestamp, bool) {
+func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protocol.Timestamp, bool, error) {
 	defer v.RUnlock()
 	v.RLock()
 
@@ -148,9 +161,25 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protoco
 	if found {
 		var user protocol.MemoryUser
 		user = pair.user.user
-		return &user, protocol.Timestamp(pair.timeInc) + v.baseTime, true
+		if atomic.LoadUint32(pair.taintedFuse) == 0 {
+			return &user, protocol.Timestamp(pair.timeInc) + v.baseTime, true, nil
+		}
+		return nil, 0, false, ErrTainted
 	}
-	return nil, 0, false
+	return nil, 0, false, ErrNotFound
+}
+
+func (v *TimedUserValidator) GetAEAD(userHash []byte) (*protocol.MemoryUser, bool, error) {
+	defer v.RUnlock()
+	v.RLock()
+	var userHashFL [16]byte
+	copy(userHashFL[:], userHash)
+
+	userd, err := v.aeadDecoderHolder.Match(userHashFL)
+	if err != nil {
+		return nil, false, err
+	}
+	return userd.(*protocol.MemoryUser), true, err
 }
 
 func (v *TimedUserValidator) Remove(email string) bool {
@@ -162,6 +191,9 @@ func (v *TimedUserValidator) Remove(email string) bool {
 	for i, u := range v.users {
 		if strings.EqualFold(u.user.Email, email) {
 			idx = i
+			var cmdkeyfl [16]byte
+			copy(cmdkeyfl[:], u.user.Account.(*MemoryAccount).ID.CmdKey())
+			v.aeadDecoderHolder.RemoveUser(cmdkeyfl)
 			break
 		}
 	}
@@ -191,3 +223,23 @@ func (v *TimedUserValidator) GetBehaviorSeed() uint64 {
 	}
 	return v.behaviorSeed
 }
+
+func (v *TimedUserValidator) BurnTaintFuse(userHash []byte) error {
+	v.RLock()
+	defer v.RUnlock()
+	var userHashFL [16]byte
+	copy(userHashFL[:], userHash)
+
+	pair, found := v.userHash[userHashFL]
+	if found {
+		if atomic.CompareAndSwapUint32(pair.taintedFuse, 0, 1) {
+			return nil
+		}
+		return ErrTainted
+	}
+	return ErrNotFound
+}
+
+var ErrNotFound = newError("Not Found")
+
+var ErrTainted = newError("ErrTainted")

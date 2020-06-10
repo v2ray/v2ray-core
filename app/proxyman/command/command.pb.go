@@ -2,639 +2,1081 @@ package command
 
 import (
 	context "context"
-	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
-	math "math"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 	core "v2ray.com/core"
 	protocol "v2ray.com/core/common/protocol"
 	serial "v2ray.com/core/common/serial"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
+const (
+	// Verify that this generated code is sufficiently up-to-date.
+	_ = protoimpl.EnforceVersion(20 - protoimpl.MinVersion)
+	// Verify that runtime/protoimpl is sufficiently up-to-date.
+	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
+)
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+// This is a compile-time assertion that a sufficiently up-to-date version
+// of the legacy proto package is being used.
+const _ = proto.ProtoPackageIsVersion4
 
 type AddUserOperation struct {
-	User                 *protocol.User `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	User *protocol.User `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 }
 
-func (m *AddUserOperation) Reset()         { *m = AddUserOperation{} }
-func (m *AddUserOperation) String() string { return proto.CompactTextString(m) }
-func (*AddUserOperation) ProtoMessage()    {}
+func (x *AddUserOperation) Reset() {
+	*x = AddUserOperation{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AddUserOperation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddUserOperation) ProtoMessage() {}
+
+func (x *AddUserOperation) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddUserOperation.ProtoReflect.Descriptor instead.
 func (*AddUserOperation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{0}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{0}
 }
 
-func (m *AddUserOperation) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AddUserOperation.Unmarshal(m, b)
-}
-func (m *AddUserOperation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AddUserOperation.Marshal(b, m, deterministic)
-}
-func (m *AddUserOperation) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AddUserOperation.Merge(m, src)
-}
-func (m *AddUserOperation) XXX_Size() int {
-	return xxx_messageInfo_AddUserOperation.Size(m)
-}
-func (m *AddUserOperation) XXX_DiscardUnknown() {
-	xxx_messageInfo_AddUserOperation.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AddUserOperation proto.InternalMessageInfo
-
-func (m *AddUserOperation) GetUser() *protocol.User {
-	if m != nil {
-		return m.User
+func (x *AddUserOperation) GetUser() *protocol.User {
+	if x != nil {
+		return x.User
 	}
 	return nil
 }
 
 type RemoveUserOperation struct {
-	Email                string   `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 }
 
-func (m *RemoveUserOperation) Reset()         { *m = RemoveUserOperation{} }
-func (m *RemoveUserOperation) String() string { return proto.CompactTextString(m) }
-func (*RemoveUserOperation) ProtoMessage()    {}
+func (x *RemoveUserOperation) Reset() {
+	*x = RemoveUserOperation{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RemoveUserOperation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveUserOperation) ProtoMessage() {}
+
+func (x *RemoveUserOperation) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveUserOperation.ProtoReflect.Descriptor instead.
 func (*RemoveUserOperation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{1}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{1}
 }
 
-func (m *RemoveUserOperation) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RemoveUserOperation.Unmarshal(m, b)
-}
-func (m *RemoveUserOperation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RemoveUserOperation.Marshal(b, m, deterministic)
-}
-func (m *RemoveUserOperation) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RemoveUserOperation.Merge(m, src)
-}
-func (m *RemoveUserOperation) XXX_Size() int {
-	return xxx_messageInfo_RemoveUserOperation.Size(m)
-}
-func (m *RemoveUserOperation) XXX_DiscardUnknown() {
-	xxx_messageInfo_RemoveUserOperation.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RemoveUserOperation proto.InternalMessageInfo
-
-func (m *RemoveUserOperation) GetEmail() string {
-	if m != nil {
-		return m.Email
+func (x *RemoveUserOperation) GetEmail() string {
+	if x != nil {
+		return x.Email
 	}
 	return ""
 }
 
 type AddInboundRequest struct {
-	Inbound              *core.InboundHandlerConfig `protobuf:"bytes,1,opt,name=inbound,proto3" json:"inbound,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
-	XXX_unrecognized     []byte                     `json:"-"`
-	XXX_sizecache        int32                      `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Inbound *core.InboundHandlerConfig `protobuf:"bytes,1,opt,name=inbound,proto3" json:"inbound,omitempty"`
 }
 
-func (m *AddInboundRequest) Reset()         { *m = AddInboundRequest{} }
-func (m *AddInboundRequest) String() string { return proto.CompactTextString(m) }
-func (*AddInboundRequest) ProtoMessage()    {}
+func (x *AddInboundRequest) Reset() {
+	*x = AddInboundRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AddInboundRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddInboundRequest) ProtoMessage() {}
+
+func (x *AddInboundRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddInboundRequest.ProtoReflect.Descriptor instead.
 func (*AddInboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{2}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{2}
 }
 
-func (m *AddInboundRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AddInboundRequest.Unmarshal(m, b)
-}
-func (m *AddInboundRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AddInboundRequest.Marshal(b, m, deterministic)
-}
-func (m *AddInboundRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AddInboundRequest.Merge(m, src)
-}
-func (m *AddInboundRequest) XXX_Size() int {
-	return xxx_messageInfo_AddInboundRequest.Size(m)
-}
-func (m *AddInboundRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_AddInboundRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AddInboundRequest proto.InternalMessageInfo
-
-func (m *AddInboundRequest) GetInbound() *core.InboundHandlerConfig {
-	if m != nil {
-		return m.Inbound
+func (x *AddInboundRequest) GetInbound() *core.InboundHandlerConfig {
+	if x != nil {
+		return x.Inbound
 	}
 	return nil
 }
 
 type AddInboundResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
 }
 
-func (m *AddInboundResponse) Reset()         { *m = AddInboundResponse{} }
-func (m *AddInboundResponse) String() string { return proto.CompactTextString(m) }
-func (*AddInboundResponse) ProtoMessage()    {}
+func (x *AddInboundResponse) Reset() {
+	*x = AddInboundResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AddInboundResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddInboundResponse) ProtoMessage() {}
+
+func (x *AddInboundResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddInboundResponse.ProtoReflect.Descriptor instead.
 func (*AddInboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{3}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{3}
 }
-
-func (m *AddInboundResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AddInboundResponse.Unmarshal(m, b)
-}
-func (m *AddInboundResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AddInboundResponse.Marshal(b, m, deterministic)
-}
-func (m *AddInboundResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AddInboundResponse.Merge(m, src)
-}
-func (m *AddInboundResponse) XXX_Size() int {
-	return xxx_messageInfo_AddInboundResponse.Size(m)
-}
-func (m *AddInboundResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_AddInboundResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AddInboundResponse proto.InternalMessageInfo
 
 type RemoveInboundRequest struct {
-	Tag                  string   `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Tag string `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
 }
 
-func (m *RemoveInboundRequest) Reset()         { *m = RemoveInboundRequest{} }
-func (m *RemoveInboundRequest) String() string { return proto.CompactTextString(m) }
-func (*RemoveInboundRequest) ProtoMessage()    {}
+func (x *RemoveInboundRequest) Reset() {
+	*x = RemoveInboundRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RemoveInboundRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveInboundRequest) ProtoMessage() {}
+
+func (x *RemoveInboundRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveInboundRequest.ProtoReflect.Descriptor instead.
 func (*RemoveInboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{4}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{4}
 }
 
-func (m *RemoveInboundRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RemoveInboundRequest.Unmarshal(m, b)
-}
-func (m *RemoveInboundRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RemoveInboundRequest.Marshal(b, m, deterministic)
-}
-func (m *RemoveInboundRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RemoveInboundRequest.Merge(m, src)
-}
-func (m *RemoveInboundRequest) XXX_Size() int {
-	return xxx_messageInfo_RemoveInboundRequest.Size(m)
-}
-func (m *RemoveInboundRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RemoveInboundRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RemoveInboundRequest proto.InternalMessageInfo
-
-func (m *RemoveInboundRequest) GetTag() string {
-	if m != nil {
-		return m.Tag
+func (x *RemoveInboundRequest) GetTag() string {
+	if x != nil {
+		return x.Tag
 	}
 	return ""
 }
 
 type RemoveInboundResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
 }
 
-func (m *RemoveInboundResponse) Reset()         { *m = RemoveInboundResponse{} }
-func (m *RemoveInboundResponse) String() string { return proto.CompactTextString(m) }
-func (*RemoveInboundResponse) ProtoMessage()    {}
+func (x *RemoveInboundResponse) Reset() {
+	*x = RemoveInboundResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RemoveInboundResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveInboundResponse) ProtoMessage() {}
+
+func (x *RemoveInboundResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveInboundResponse.ProtoReflect.Descriptor instead.
 func (*RemoveInboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{5}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{5}
 }
-
-func (m *RemoveInboundResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RemoveInboundResponse.Unmarshal(m, b)
-}
-func (m *RemoveInboundResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RemoveInboundResponse.Marshal(b, m, deterministic)
-}
-func (m *RemoveInboundResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RemoveInboundResponse.Merge(m, src)
-}
-func (m *RemoveInboundResponse) XXX_Size() int {
-	return xxx_messageInfo_RemoveInboundResponse.Size(m)
-}
-func (m *RemoveInboundResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_RemoveInboundResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RemoveInboundResponse proto.InternalMessageInfo
 
 type AlterInboundRequest struct {
-	Tag                  string               `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
-	Operation            *serial.TypedMessage `protobuf:"bytes,2,opt,name=operation,proto3" json:"operation,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Tag       string               `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	Operation *serial.TypedMessage `protobuf:"bytes,2,opt,name=operation,proto3" json:"operation,omitempty"`
 }
 
-func (m *AlterInboundRequest) Reset()         { *m = AlterInboundRequest{} }
-func (m *AlterInboundRequest) String() string { return proto.CompactTextString(m) }
-func (*AlterInboundRequest) ProtoMessage()    {}
+func (x *AlterInboundRequest) Reset() {
+	*x = AlterInboundRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AlterInboundRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AlterInboundRequest) ProtoMessage() {}
+
+func (x *AlterInboundRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AlterInboundRequest.ProtoReflect.Descriptor instead.
 func (*AlterInboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{6}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{6}
 }
 
-func (m *AlterInboundRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AlterInboundRequest.Unmarshal(m, b)
-}
-func (m *AlterInboundRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AlterInboundRequest.Marshal(b, m, deterministic)
-}
-func (m *AlterInboundRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AlterInboundRequest.Merge(m, src)
-}
-func (m *AlterInboundRequest) XXX_Size() int {
-	return xxx_messageInfo_AlterInboundRequest.Size(m)
-}
-func (m *AlterInboundRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_AlterInboundRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AlterInboundRequest proto.InternalMessageInfo
-
-func (m *AlterInboundRequest) GetTag() string {
-	if m != nil {
-		return m.Tag
+func (x *AlterInboundRequest) GetTag() string {
+	if x != nil {
+		return x.Tag
 	}
 	return ""
 }
 
-func (m *AlterInboundRequest) GetOperation() *serial.TypedMessage {
-	if m != nil {
-		return m.Operation
+func (x *AlterInboundRequest) GetOperation() *serial.TypedMessage {
+	if x != nil {
+		return x.Operation
 	}
 	return nil
 }
 
 type AlterInboundResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
 }
 
-func (m *AlterInboundResponse) Reset()         { *m = AlterInboundResponse{} }
-func (m *AlterInboundResponse) String() string { return proto.CompactTextString(m) }
-func (*AlterInboundResponse) ProtoMessage()    {}
+func (x *AlterInboundResponse) Reset() {
+	*x = AlterInboundResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AlterInboundResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AlterInboundResponse) ProtoMessage() {}
+
+func (x *AlterInboundResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AlterInboundResponse.ProtoReflect.Descriptor instead.
 func (*AlterInboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{7}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{7}
 }
-
-func (m *AlterInboundResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AlterInboundResponse.Unmarshal(m, b)
-}
-func (m *AlterInboundResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AlterInboundResponse.Marshal(b, m, deterministic)
-}
-func (m *AlterInboundResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AlterInboundResponse.Merge(m, src)
-}
-func (m *AlterInboundResponse) XXX_Size() int {
-	return xxx_messageInfo_AlterInboundResponse.Size(m)
-}
-func (m *AlterInboundResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_AlterInboundResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AlterInboundResponse proto.InternalMessageInfo
 
 type AddOutboundRequest struct {
-	Outbound             *core.OutboundHandlerConfig `protobuf:"bytes,1,opt,name=outbound,proto3" json:"outbound,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
-	XXX_unrecognized     []byte                      `json:"-"`
-	XXX_sizecache        int32                       `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Outbound *core.OutboundHandlerConfig `protobuf:"bytes,1,opt,name=outbound,proto3" json:"outbound,omitempty"`
 }
 
-func (m *AddOutboundRequest) Reset()         { *m = AddOutboundRequest{} }
-func (m *AddOutboundRequest) String() string { return proto.CompactTextString(m) }
-func (*AddOutboundRequest) ProtoMessage()    {}
+func (x *AddOutboundRequest) Reset() {
+	*x = AddOutboundRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AddOutboundRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddOutboundRequest) ProtoMessage() {}
+
+func (x *AddOutboundRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddOutboundRequest.ProtoReflect.Descriptor instead.
 func (*AddOutboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{8}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{8}
 }
 
-func (m *AddOutboundRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AddOutboundRequest.Unmarshal(m, b)
-}
-func (m *AddOutboundRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AddOutboundRequest.Marshal(b, m, deterministic)
-}
-func (m *AddOutboundRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AddOutboundRequest.Merge(m, src)
-}
-func (m *AddOutboundRequest) XXX_Size() int {
-	return xxx_messageInfo_AddOutboundRequest.Size(m)
-}
-func (m *AddOutboundRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_AddOutboundRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AddOutboundRequest proto.InternalMessageInfo
-
-func (m *AddOutboundRequest) GetOutbound() *core.OutboundHandlerConfig {
-	if m != nil {
-		return m.Outbound
+func (x *AddOutboundRequest) GetOutbound() *core.OutboundHandlerConfig {
+	if x != nil {
+		return x.Outbound
 	}
 	return nil
 }
 
 type AddOutboundResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
 }
 
-func (m *AddOutboundResponse) Reset()         { *m = AddOutboundResponse{} }
-func (m *AddOutboundResponse) String() string { return proto.CompactTextString(m) }
-func (*AddOutboundResponse) ProtoMessage()    {}
+func (x *AddOutboundResponse) Reset() {
+	*x = AddOutboundResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AddOutboundResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddOutboundResponse) ProtoMessage() {}
+
+func (x *AddOutboundResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddOutboundResponse.ProtoReflect.Descriptor instead.
 func (*AddOutboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{9}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{9}
 }
-
-func (m *AddOutboundResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AddOutboundResponse.Unmarshal(m, b)
-}
-func (m *AddOutboundResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AddOutboundResponse.Marshal(b, m, deterministic)
-}
-func (m *AddOutboundResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AddOutboundResponse.Merge(m, src)
-}
-func (m *AddOutboundResponse) XXX_Size() int {
-	return xxx_messageInfo_AddOutboundResponse.Size(m)
-}
-func (m *AddOutboundResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_AddOutboundResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AddOutboundResponse proto.InternalMessageInfo
 
 type RemoveOutboundRequest struct {
-	Tag                  string   `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Tag string `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
 }
 
-func (m *RemoveOutboundRequest) Reset()         { *m = RemoveOutboundRequest{} }
-func (m *RemoveOutboundRequest) String() string { return proto.CompactTextString(m) }
-func (*RemoveOutboundRequest) ProtoMessage()    {}
+func (x *RemoveOutboundRequest) Reset() {
+	*x = RemoveOutboundRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RemoveOutboundRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveOutboundRequest) ProtoMessage() {}
+
+func (x *RemoveOutboundRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveOutboundRequest.ProtoReflect.Descriptor instead.
 func (*RemoveOutboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{10}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{10}
 }
 
-func (m *RemoveOutboundRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RemoveOutboundRequest.Unmarshal(m, b)
-}
-func (m *RemoveOutboundRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RemoveOutboundRequest.Marshal(b, m, deterministic)
-}
-func (m *RemoveOutboundRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RemoveOutboundRequest.Merge(m, src)
-}
-func (m *RemoveOutboundRequest) XXX_Size() int {
-	return xxx_messageInfo_RemoveOutboundRequest.Size(m)
-}
-func (m *RemoveOutboundRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RemoveOutboundRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RemoveOutboundRequest proto.InternalMessageInfo
-
-func (m *RemoveOutboundRequest) GetTag() string {
-	if m != nil {
-		return m.Tag
+func (x *RemoveOutboundRequest) GetTag() string {
+	if x != nil {
+		return x.Tag
 	}
 	return ""
 }
 
 type RemoveOutboundResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
 }
 
-func (m *RemoveOutboundResponse) Reset()         { *m = RemoveOutboundResponse{} }
-func (m *RemoveOutboundResponse) String() string { return proto.CompactTextString(m) }
-func (*RemoveOutboundResponse) ProtoMessage()    {}
+func (x *RemoveOutboundResponse) Reset() {
+	*x = RemoveOutboundResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RemoveOutboundResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveOutboundResponse) ProtoMessage() {}
+
+func (x *RemoveOutboundResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveOutboundResponse.ProtoReflect.Descriptor instead.
 func (*RemoveOutboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{11}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{11}
 }
-
-func (m *RemoveOutboundResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RemoveOutboundResponse.Unmarshal(m, b)
-}
-func (m *RemoveOutboundResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RemoveOutboundResponse.Marshal(b, m, deterministic)
-}
-func (m *RemoveOutboundResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RemoveOutboundResponse.Merge(m, src)
-}
-func (m *RemoveOutboundResponse) XXX_Size() int {
-	return xxx_messageInfo_RemoveOutboundResponse.Size(m)
-}
-func (m *RemoveOutboundResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_RemoveOutboundResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RemoveOutboundResponse proto.InternalMessageInfo
 
 type AlterOutboundRequest struct {
-	Tag                  string               `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
-	Operation            *serial.TypedMessage `protobuf:"bytes,2,opt,name=operation,proto3" json:"operation,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Tag       string               `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	Operation *serial.TypedMessage `protobuf:"bytes,2,opt,name=operation,proto3" json:"operation,omitempty"`
 }
 
-func (m *AlterOutboundRequest) Reset()         { *m = AlterOutboundRequest{} }
-func (m *AlterOutboundRequest) String() string { return proto.CompactTextString(m) }
-func (*AlterOutboundRequest) ProtoMessage()    {}
+func (x *AlterOutboundRequest) Reset() {
+	*x = AlterOutboundRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AlterOutboundRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AlterOutboundRequest) ProtoMessage() {}
+
+func (x *AlterOutboundRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AlterOutboundRequest.ProtoReflect.Descriptor instead.
 func (*AlterOutboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{12}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{12}
 }
 
-func (m *AlterOutboundRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AlterOutboundRequest.Unmarshal(m, b)
-}
-func (m *AlterOutboundRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AlterOutboundRequest.Marshal(b, m, deterministic)
-}
-func (m *AlterOutboundRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AlterOutboundRequest.Merge(m, src)
-}
-func (m *AlterOutboundRequest) XXX_Size() int {
-	return xxx_messageInfo_AlterOutboundRequest.Size(m)
-}
-func (m *AlterOutboundRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_AlterOutboundRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AlterOutboundRequest proto.InternalMessageInfo
-
-func (m *AlterOutboundRequest) GetTag() string {
-	if m != nil {
-		return m.Tag
+func (x *AlterOutboundRequest) GetTag() string {
+	if x != nil {
+		return x.Tag
 	}
 	return ""
 }
 
-func (m *AlterOutboundRequest) GetOperation() *serial.TypedMessage {
-	if m != nil {
-		return m.Operation
+func (x *AlterOutboundRequest) GetOperation() *serial.TypedMessage {
+	if x != nil {
+		return x.Operation
 	}
 	return nil
 }
 
 type AlterOutboundResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
 }
 
-func (m *AlterOutboundResponse) Reset()         { *m = AlterOutboundResponse{} }
-func (m *AlterOutboundResponse) String() string { return proto.CompactTextString(m) }
-func (*AlterOutboundResponse) ProtoMessage()    {}
+func (x *AlterOutboundResponse) Reset() {
+	*x = AlterOutboundResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AlterOutboundResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AlterOutboundResponse) ProtoMessage() {}
+
+func (x *AlterOutboundResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AlterOutboundResponse.ProtoReflect.Descriptor instead.
 func (*AlterOutboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{13}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{13}
 }
-
-func (m *AlterOutboundResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AlterOutboundResponse.Unmarshal(m, b)
-}
-func (m *AlterOutboundResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AlterOutboundResponse.Marshal(b, m, deterministic)
-}
-func (m *AlterOutboundResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AlterOutboundResponse.Merge(m, src)
-}
-func (m *AlterOutboundResponse) XXX_Size() int {
-	return xxx_messageInfo_AlterOutboundResponse.Size(m)
-}
-func (m *AlterOutboundResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_AlterOutboundResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AlterOutboundResponse proto.InternalMessageInfo
 
 type Config struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
 }
 
-func (m *Config) Reset()         { *m = Config{} }
-func (m *Config) String() string { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()    {}
+func (x *Config) Reset() {
+	*x = Config{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[14]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Config) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Config) ProtoMessage() {}
+
+func (x *Config) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[14]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Config.ProtoReflect.Descriptor instead.
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e2c30a70a48636a0, []int{14}
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP(), []int{14}
 }
 
-func (m *Config) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Config.Unmarshal(m, b)
-}
-func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
-}
-func (m *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(m, src)
-}
-func (m *Config) XXX_Size() int {
-	return xxx_messageInfo_Config.Size(m)
-}
-func (m *Config) XXX_DiscardUnknown() {
-	xxx_messageInfo_Config.DiscardUnknown(m)
+var File_v2ray_com_core_app_proxyman_command_command_proto protoreflect.FileDescriptor
+
+var file_v2ray_com_core_app_proxyman_command_command_proto_rawDesc = []byte{
+	0x0a, 0x31, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x72, 0x65,
+	0x2f, 0x61, 0x70, 0x70, 0x2f, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2f, 0x63, 0x6f,
+	0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2f, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x12, 0x1f, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
+	0x61, 0x70, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2e, 0x63, 0x6f, 0x6d,
+	0x6d, 0x61, 0x6e, 0x64, 0x1a, 0x29, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
+	0x63, 0x6f, 0x72, 0x65, 0x2f, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2f, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x63, 0x6f, 0x6c, 0x2f, 0x75, 0x73, 0x65, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a,
+	0x30, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f,
+	0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2f, 0x73, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x2f, 0x74, 0x79,
+	0x70, 0x65, 0x64, 0x5f, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x1a, 0x1b, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x72,
+	0x65, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x48,
+	0x0a, 0x10, 0x41, 0x64, 0x64, 0x55, 0x73, 0x65, 0x72, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x12, 0x34, 0x0a, 0x04, 0x75, 0x73, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x20, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f,
+	0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x55, 0x73,
+	0x65, 0x72, 0x52, 0x04, 0x75, 0x73, 0x65, 0x72, 0x22, 0x2b, 0x0a, 0x13, 0x52, 0x65, 0x6d, 0x6f,
+	0x76, 0x65, 0x55, 0x73, 0x65, 0x72, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12,
+	0x14, 0x0a, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
+	0x65, 0x6d, 0x61, 0x69, 0x6c, 0x22, 0x4f, 0x0a, 0x11, 0x41, 0x64, 0x64, 0x49, 0x6e, 0x62, 0x6f,
+	0x75, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x3a, 0x0a, 0x07, 0x69, 0x6e,
+	0x62, 0x6f, 0x75, 0x6e, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x76, 0x32,
+	0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64,
+	0x48, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x07, 0x69,
+	0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x22, 0x14, 0x0a, 0x12, 0x41, 0x64, 0x64, 0x49, 0x6e, 0x62,
+	0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x28, 0x0a, 0x14,
+	0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x12, 0x10, 0x0a, 0x03, 0x74, 0x61, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x03, 0x74, 0x61, 0x67, 0x22, 0x17, 0x0a, 0x15, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65,
+	0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x6d, 0x0a, 0x13, 0x41, 0x6c, 0x74, 0x65, 0x72, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x10, 0x0a, 0x03, 0x74, 0x61, 0x67, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x03, 0x74, 0x61, 0x67, 0x12, 0x44, 0x0a, 0x09, 0x6f, 0x70, 0x65, 0x72,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x76, 0x32,
+	0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e,
+	0x73, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73,
+	0x61, 0x67, 0x65, 0x52, 0x09, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x16,
+	0x0a, 0x14, 0x41, 0x6c, 0x74, 0x65, 0x72, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x53, 0x0a, 0x12, 0x41, 0x64, 0x64, 0x4f, 0x75, 0x74,
+	0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x3d, 0x0a, 0x08,
+	0x6f, 0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x21,
+	0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x4f, 0x75, 0x74, 0x62,
+	0x6f, 0x75, 0x6e, 0x64, 0x48, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x52, 0x08, 0x6f, 0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x22, 0x15, 0x0a, 0x13, 0x41,
+	0x64, 0x64, 0x4f, 0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x29, 0x0a, 0x15, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x4f, 0x75, 0x74, 0x62,
+	0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x10, 0x0a, 0x03, 0x74,
+	0x61, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x74, 0x61, 0x67, 0x22, 0x18, 0x0a,
+	0x16, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x4f, 0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x6e, 0x0a, 0x14, 0x41, 0x6c, 0x74, 0x65, 0x72,
+	0x4f, 0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
+	0x10, 0x0a, 0x03, 0x74, 0x61, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x74, 0x61,
+	0x67, 0x12, 0x44, 0x0a, 0x09, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72,
+	0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x73, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x2e,
+	0x54, 0x79, 0x70, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x52, 0x09, 0x6f, 0x70,
+	0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x17, 0x0a, 0x15, 0x41, 0x6c, 0x74, 0x65, 0x72,
+	0x4f, 0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x08, 0x0a, 0x06, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x32, 0x90, 0x06, 0x0a, 0x0e, 0x48,
+	0x61, 0x6e, 0x64, 0x6c, 0x65, 0x72, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x77, 0x0a,
+	0x0a, 0x41, 0x64, 0x64, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x12, 0x32, 0x2e, 0x76, 0x32,
+	0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x70, 0x72, 0x6f,
+	0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x41, 0x64,
+	0x64, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x33, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70,
+	0x2e, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e,
+	0x64, 0x2e, 0x41, 0x64, 0x64, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x80, 0x01, 0x0a, 0x0d, 0x52, 0x65, 0x6d, 0x6f, 0x76,
+	0x65, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x12, 0x35, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79,
+	0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x6d,
+	0x61, 0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x52, 0x65, 0x6d, 0x6f, 0x76,
+	0x65, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x36, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70,
+	0x2e, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e,
+	0x64, 0x2e, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x7d, 0x0a, 0x0c, 0x41, 0x6c, 0x74,
+	0x65, 0x72, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x12, 0x34, 0x2e, 0x76, 0x32, 0x72, 0x61,
+	0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x78, 0x79,
+	0x6d, 0x61, 0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x41, 0x6c, 0x74, 0x65,
+	0x72, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x35, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70,
+	0x2e, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e,
+	0x64, 0x2e, 0x41, 0x6c, 0x74, 0x65, 0x72, 0x49, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x7a, 0x0a, 0x0b, 0x41, 0x64, 0x64, 0x4f,
+	0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x12, 0x33, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e,
+	0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x6d, 0x61,
+	0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x41, 0x64, 0x64, 0x4f, 0x75, 0x74,
+	0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x34, 0x2e, 0x76,
+	0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x70, 0x72,
+	0x6f, 0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x41,
+	0x64, 0x64, 0x4f, 0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x00, 0x12, 0x83, 0x01, 0x0a, 0x0e, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x4f,
+	0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x12, 0x36, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e,
+	0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x6d, 0x61,
+	0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65,
+	0x4f, 0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x37, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70,
+	0x2e, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e,
+	0x64, 0x2e, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x4f, 0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x80, 0x01, 0x0a, 0x0d, 0x41,
+	0x6c, 0x74, 0x65, 0x72, 0x4f, 0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x12, 0x35, 0x2e, 0x76,
+	0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x70, 0x72,
+	0x6f, 0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x41,
+	0x6c, 0x74, 0x65, 0x72, 0x4f, 0x75, 0x74, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x36, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65,
+	0x2e, 0x61, 0x70, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2e, 0x63, 0x6f,
+	0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x41, 0x6c, 0x74, 0x65, 0x72, 0x4f, 0x75, 0x74, 0x62, 0x6f,
+	0x75, 0x6e, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x52, 0x0a,
+	0x23, 0x63, 0x6f, 0x6d, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
+	0x61, 0x70, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2e, 0x63, 0x6f, 0x6d,
+	0x6d, 0x61, 0x6e, 0x64, 0x50, 0x01, 0x5a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0xaa,
+	0x02, 0x1f, 0x56, 0x32, 0x52, 0x61, 0x79, 0x2e, 0x43, 0x6f, 0x72, 0x65, 0x2e, 0x41, 0x70, 0x70,
+	0x2e, 0x50, 0x72, 0x6f, 0x78, 0x79, 0x6d, 0x61, 0x6e, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e,
+	0x64, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
-var xxx_messageInfo_Config proto.InternalMessageInfo
+var (
+	file_v2ray_com_core_app_proxyman_command_command_proto_rawDescOnce sync.Once
+	file_v2ray_com_core_app_proxyman_command_command_proto_rawDescData = file_v2ray_com_core_app_proxyman_command_command_proto_rawDesc
+)
 
-func init() {
-	proto.RegisterType((*AddUserOperation)(nil), "v2ray.core.app.proxyman.command.AddUserOperation")
-	proto.RegisterType((*RemoveUserOperation)(nil), "v2ray.core.app.proxyman.command.RemoveUserOperation")
-	proto.RegisterType((*AddInboundRequest)(nil), "v2ray.core.app.proxyman.command.AddInboundRequest")
-	proto.RegisterType((*AddInboundResponse)(nil), "v2ray.core.app.proxyman.command.AddInboundResponse")
-	proto.RegisterType((*RemoveInboundRequest)(nil), "v2ray.core.app.proxyman.command.RemoveInboundRequest")
-	proto.RegisterType((*RemoveInboundResponse)(nil), "v2ray.core.app.proxyman.command.RemoveInboundResponse")
-	proto.RegisterType((*AlterInboundRequest)(nil), "v2ray.core.app.proxyman.command.AlterInboundRequest")
-	proto.RegisterType((*AlterInboundResponse)(nil), "v2ray.core.app.proxyman.command.AlterInboundResponse")
-	proto.RegisterType((*AddOutboundRequest)(nil), "v2ray.core.app.proxyman.command.AddOutboundRequest")
-	proto.RegisterType((*AddOutboundResponse)(nil), "v2ray.core.app.proxyman.command.AddOutboundResponse")
-	proto.RegisterType((*RemoveOutboundRequest)(nil), "v2ray.core.app.proxyman.command.RemoveOutboundRequest")
-	proto.RegisterType((*RemoveOutboundResponse)(nil), "v2ray.core.app.proxyman.command.RemoveOutboundResponse")
-	proto.RegisterType((*AlterOutboundRequest)(nil), "v2ray.core.app.proxyman.command.AlterOutboundRequest")
-	proto.RegisterType((*AlterOutboundResponse)(nil), "v2ray.core.app.proxyman.command.AlterOutboundResponse")
-	proto.RegisterType((*Config)(nil), "v2ray.core.app.proxyman.command.Config")
+func file_v2ray_com_core_app_proxyman_command_command_proto_rawDescGZIP() []byte {
+	file_v2ray_com_core_app_proxyman_command_command_proto_rawDescOnce.Do(func() {
+		file_v2ray_com_core_app_proxyman_command_command_proto_rawDescData = protoimpl.X.CompressGZIP(file_v2ray_com_core_app_proxyman_command_command_proto_rawDescData)
+	})
+	return file_v2ray_com_core_app_proxyman_command_command_proto_rawDescData
 }
 
-func init() {
-	proto.RegisterFile("v2ray.com/core/app/proxyman/command/command.proto", fileDescriptor_e2c30a70a48636a0)
+var file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_v2ray_com_core_app_proxyman_command_command_proto_goTypes = []interface{}{
+	(*AddUserOperation)(nil),           // 0: v2ray.core.app.proxyman.command.AddUserOperation
+	(*RemoveUserOperation)(nil),        // 1: v2ray.core.app.proxyman.command.RemoveUserOperation
+	(*AddInboundRequest)(nil),          // 2: v2ray.core.app.proxyman.command.AddInboundRequest
+	(*AddInboundResponse)(nil),         // 3: v2ray.core.app.proxyman.command.AddInboundResponse
+	(*RemoveInboundRequest)(nil),       // 4: v2ray.core.app.proxyman.command.RemoveInboundRequest
+	(*RemoveInboundResponse)(nil),      // 5: v2ray.core.app.proxyman.command.RemoveInboundResponse
+	(*AlterInboundRequest)(nil),        // 6: v2ray.core.app.proxyman.command.AlterInboundRequest
+	(*AlterInboundResponse)(nil),       // 7: v2ray.core.app.proxyman.command.AlterInboundResponse
+	(*AddOutboundRequest)(nil),         // 8: v2ray.core.app.proxyman.command.AddOutboundRequest
+	(*AddOutboundResponse)(nil),        // 9: v2ray.core.app.proxyman.command.AddOutboundResponse
+	(*RemoveOutboundRequest)(nil),      // 10: v2ray.core.app.proxyman.command.RemoveOutboundRequest
+	(*RemoveOutboundResponse)(nil),     // 11: v2ray.core.app.proxyman.command.RemoveOutboundResponse
+	(*AlterOutboundRequest)(nil),       // 12: v2ray.core.app.proxyman.command.AlterOutboundRequest
+	(*AlterOutboundResponse)(nil),      // 13: v2ray.core.app.proxyman.command.AlterOutboundResponse
+	(*Config)(nil),                     // 14: v2ray.core.app.proxyman.command.Config
+	(*protocol.User)(nil),              // 15: v2ray.core.common.protocol.User
+	(*core.InboundHandlerConfig)(nil),  // 16: v2ray.core.InboundHandlerConfig
+	(*serial.TypedMessage)(nil),        // 17: v2ray.core.common.serial.TypedMessage
+	(*core.OutboundHandlerConfig)(nil), // 18: v2ray.core.OutboundHandlerConfig
+}
+var file_v2ray_com_core_app_proxyman_command_command_proto_depIdxs = []int32{
+	15, // 0: v2ray.core.app.proxyman.command.AddUserOperation.user:type_name -> v2ray.core.common.protocol.User
+	16, // 1: v2ray.core.app.proxyman.command.AddInboundRequest.inbound:type_name -> v2ray.core.InboundHandlerConfig
+	17, // 2: v2ray.core.app.proxyman.command.AlterInboundRequest.operation:type_name -> v2ray.core.common.serial.TypedMessage
+	18, // 3: v2ray.core.app.proxyman.command.AddOutboundRequest.outbound:type_name -> v2ray.core.OutboundHandlerConfig
+	17, // 4: v2ray.core.app.proxyman.command.AlterOutboundRequest.operation:type_name -> v2ray.core.common.serial.TypedMessage
+	2,  // 5: v2ray.core.app.proxyman.command.HandlerService.AddInbound:input_type -> v2ray.core.app.proxyman.command.AddInboundRequest
+	4,  // 6: v2ray.core.app.proxyman.command.HandlerService.RemoveInbound:input_type -> v2ray.core.app.proxyman.command.RemoveInboundRequest
+	6,  // 7: v2ray.core.app.proxyman.command.HandlerService.AlterInbound:input_type -> v2ray.core.app.proxyman.command.AlterInboundRequest
+	8,  // 8: v2ray.core.app.proxyman.command.HandlerService.AddOutbound:input_type -> v2ray.core.app.proxyman.command.AddOutboundRequest
+	10, // 9: v2ray.core.app.proxyman.command.HandlerService.RemoveOutbound:input_type -> v2ray.core.app.proxyman.command.RemoveOutboundRequest
+	12, // 10: v2ray.core.app.proxyman.command.HandlerService.AlterOutbound:input_type -> v2ray.core.app.proxyman.command.AlterOutboundRequest
+	3,  // 11: v2ray.core.app.proxyman.command.HandlerService.AddInbound:output_type -> v2ray.core.app.proxyman.command.AddInboundResponse
+	5,  // 12: v2ray.core.app.proxyman.command.HandlerService.RemoveInbound:output_type -> v2ray.core.app.proxyman.command.RemoveInboundResponse
+	7,  // 13: v2ray.core.app.proxyman.command.HandlerService.AlterInbound:output_type -> v2ray.core.app.proxyman.command.AlterInboundResponse
+	9,  // 14: v2ray.core.app.proxyman.command.HandlerService.AddOutbound:output_type -> v2ray.core.app.proxyman.command.AddOutboundResponse
+	11, // 15: v2ray.core.app.proxyman.command.HandlerService.RemoveOutbound:output_type -> v2ray.core.app.proxyman.command.RemoveOutboundResponse
+	13, // 16: v2ray.core.app.proxyman.command.HandlerService.AlterOutbound:output_type -> v2ray.core.app.proxyman.command.AlterOutboundResponse
+	11, // [11:17] is the sub-list for method output_type
+	5,  // [5:11] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
-var fileDescriptor_e2c30a70a48636a0 = []byte{
-	// 557 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0xdf, 0x6b, 0xd3, 0x40,
-	0x1c, 0xb7, 0x53, 0xbb, 0xed, 0x3b, 0x1d, 0xf3, 0xda, 0x6e, 0x25, 0x3e, 0x6c, 0x46, 0x90, 0x0d,
-	0xe1, 0xa2, 0x59, 0x37, 0x41, 0xf0, 0xa1, 0xd6, 0x87, 0xf9, 0x20, 0x1d, 0x99, 0xfa, 0xe0, 0x8b,
-	0xdc, 0x92, 0xb3, 0x04, 0x92, 0xbb, 0xf3, 0x92, 0x56, 0x2b, 0x08, 0x82, 0xff, 0x80, 0x7f, 0x87,
-	0x7f, 0xa5, 0x24, 0x77, 0xd7, 0x25, 0x69, 0x21, 0x0d, 0xf8, 0xd4, 0xf4, 0xfa, 0xf9, 0xf5, 0xfd,
-	0xde, 0x27, 0x14, 0x9e, 0xcf, 0x5c, 0x49, 0xe6, 0xd8, 0xe7, 0xb1, 0xe3, 0x73, 0x49, 0x1d, 0x22,
-	0x84, 0x23, 0x24, 0xff, 0x3e, 0x8f, 0x09, 0x73, 0x7c, 0x1e, 0xc7, 0x84, 0x05, 0xe6, 0x13, 0x0b,
-	0xc9, 0x53, 0x8e, 0x0e, 0x0d, 0x45, 0x52, 0x4c, 0x84, 0xc0, 0x06, 0x8e, 0x35, 0xcc, 0x3a, 0xa9,
-	0x68, 0x66, 0xe7, 0x9c, 0x39, 0x39, 0xdb, 0xe7, 0x91, 0x33, 0x4d, 0xa8, 0x54, 0x5a, 0xd6, 0xb3,
-	0xd5, 0xd0, 0x84, 0xca, 0x90, 0x44, 0x4e, 0x3a, 0x17, 0x34, 0xf8, 0x1c, 0xd3, 0x24, 0x21, 0x13,
-	0xaa, 0x19, 0x0f, 0x97, 0x18, 0xec, 0x4b, 0x38, 0x51, 0x3f, 0xda, 0x17, 0xb0, 0x37, 0x0c, 0x82,
-	0x0f, 0x09, 0x95, 0x63, 0x41, 0x25, 0x49, 0x43, 0xce, 0xd0, 0x00, 0xee, 0x64, 0x86, 0xfd, 0xd6,
-	0x51, 0xeb, 0x78, 0xc7, 0x3d, 0xc2, 0x85, 0xf4, 0xca, 0x0d, 0x9b, 0x60, 0x38, 0x23, 0x7a, 0x39,
-	0xda, 0x7e, 0x0a, 0x1d, 0x8f, 0xc6, 0x7c, 0x46, 0xcb, 0x62, 0x5d, 0xb8, 0x4b, 0x63, 0x12, 0x46,
-	0xb9, 0xda, 0xb6, 0xa7, 0xbe, 0xd8, 0x63, 0x78, 0x30, 0x0c, 0x82, 0xb7, 0xec, 0x9a, 0x4f, 0x59,
-	0xe0, 0xd1, 0xaf, 0x53, 0x9a, 0xa4, 0xe8, 0x25, 0x6c, 0x86, 0xea, 0x64, 0x95, 0xb5, 0x06, 0x5f,
-	0x10, 0x16, 0x44, 0x54, 0x8e, 0xf2, 0x21, 0x3c, 0x43, 0xb0, 0xbb, 0x80, 0x8a, 0x82, 0x89, 0xe0,
-	0x2c, 0xa1, 0xf6, 0x31, 0x74, 0x55, 0xa6, 0x8a, 0xd3, 0x1e, 0xdc, 0x4e, 0xc9, 0x44, 0x47, 0xca,
-	0x1e, 0xed, 0x03, 0xe8, 0x55, 0x90, 0x5a, 0x22, 0x86, 0xce, 0x30, 0x4a, 0xa9, 0xac, 0x53, 0x40,
-	0x6f, 0x60, 0x9b, 0x9b, 0xa9, 0xfb, 0x1b, 0x79, 0xfe, 0x27, 0x2b, 0x56, 0xa7, 0x2e, 0x0a, 0xbf,
-	0xcf, 0x2e, 0xea, 0x9d, 0xba, 0x27, 0xef, 0x86, 0x68, 0xef, 0x43, 0xb7, 0x6c, 0xa7, 0x63, 0x5c,
-	0xe5, 0xf3, 0x8d, 0xa7, 0x69, 0x29, 0xc5, 0x2b, 0xd8, 0xe2, 0xfa, 0x48, 0xaf, 0xec, 0x51, 0xd1,
-	0xd2, 0xc0, 0xcb, 0x3b, 0x5b, 0x50, 0xec, 0x1e, 0x74, 0x4a, 0xa2, 0xda, 0xeb, 0xc4, 0xec, 0xa2,
-	0x6a, 0xb7, 0xbc, 0xb6, 0x3e, 0xec, 0x57, 0xa1, 0x5a, 0x84, 0xe9, 0x41, 0x6a, 0x35, 0xfe, 0xd3,
-	0xe2, 0x0e, 0xa0, 0x57, 0xf1, 0xd3, 0x41, 0xb6, 0xa0, 0xad, 0x06, 0x77, 0xff, 0xb4, 0x61, 0x57,
-	0xaf, 0xe2, 0x8a, 0xca, 0x59, 0xe8, 0x53, 0xf4, 0x0d, 0xe0, 0xa6, 0x36, 0xc8, 0xc5, 0x35, 0x2f,
-	0x2a, 0x5e, 0x2a, 0xad, 0x75, 0xda, 0x88, 0xa3, 0x33, 0xdd, 0x42, 0xbf, 0x5a, 0x70, 0xbf, 0x54,
-	0x38, 0x74, 0x56, 0x2b, 0xb4, 0xaa, 0xca, 0xd6, 0x79, 0x53, 0xda, 0x22, 0xc2, 0x4f, 0xb8, 0x57,
-	0xac, 0x1a, 0x1a, 0xd4, 0x4f, 0xb2, 0xfc, 0x22, 0x58, 0x67, 0x0d, 0x59, 0x0b, 0xfb, 0x1f, 0xb0,
-	0x53, 0x28, 0x1f, 0x5a, 0x6b, 0x8f, 0x95, 0x32, 0x59, 0x83, 0x66, 0xa4, 0x85, 0xf7, 0xef, 0x16,
-	0xec, 0x96, 0x7b, 0x8b, 0xd6, 0xdd, 0x63, 0x35, 0xc2, 0x8b, 0xc6, 0xbc, 0x52, 0x07, 0x4a, 0x9d,
-	0x45, 0x6b, 0x2e, 0xb3, 0x9a, 0xe1, 0xbc, 0x29, 0xcd, 0x44, 0x78, 0xed, 0xc1, 0x63, 0x9f, 0xc7,
-	0x75, 0xf4, 0xcb, 0xd6, 0xa7, 0x4d, 0xfd, 0xf8, 0x77, 0xe3, 0xf0, 0xa3, 0xeb, 0x91, 0x39, 0x1e,
-	0x65, 0xe0, 0xa1, 0x10, 0xf8, 0xd2, 0x80, 0x47, 0x0a, 0x71, 0xdd, 0xce, 0xff, 0x1d, 0x4e, 0xff,
-	0x05, 0x00, 0x00, 0xff, 0xff, 0x2f, 0x05, 0xaa, 0x44, 0x29, 0x07, 0x00, 0x00,
+func init() { file_v2ray_com_core_app_proxyman_command_command_proto_init() }
+func file_v2ray_com_core_app_proxyman_command_command_proto_init() {
+	if File_v2ray_com_core_app_proxyman_command_command_proto != nil {
+		return
+	}
+	if !protoimpl.UnsafeEnabled {
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AddUserOperation); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RemoveUserOperation); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AddInboundRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AddInboundResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RemoveInboundRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RemoveInboundResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AlterInboundRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AlterInboundResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AddOutboundRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AddOutboundResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RemoveOutboundRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RemoveOutboundResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AlterOutboundRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AlterOutboundResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Config); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
+	type x struct{}
+	out := protoimpl.TypeBuilder{
+		File: protoimpl.DescBuilder{
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: file_v2ray_com_core_app_proxyman_command_command_proto_rawDesc,
+			NumEnums:      0,
+			NumMessages:   15,
+			NumExtensions: 0,
+			NumServices:   1,
+		},
+		GoTypes:           file_v2ray_com_core_app_proxyman_command_command_proto_goTypes,
+		DependencyIndexes: file_v2ray_com_core_app_proxyman_command_command_proto_depIdxs,
+		MessageInfos:      file_v2ray_com_core_app_proxyman_command_command_proto_msgTypes,
+	}.Build()
+	File_v2ray_com_core_app_proxyman_command_command_proto = out.File
+	file_v2ray_com_core_app_proxyman_command_command_proto_rawDesc = nil
+	file_v2ray_com_core_app_proxyman_command_command_proto_goTypes = nil
+	file_v2ray_com_core_app_proxyman_command_command_proto_depIdxs = nil
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
-var _ grpc.ClientConn
+var _ grpc.ClientConnInterface
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion4
+const _ = grpc.SupportPackageIsVersion6
 
 // HandlerServiceClient is the client API for HandlerService service.
 //
@@ -649,10 +1091,10 @@ type HandlerServiceClient interface {
 }
 
 type handlerServiceClient struct {
-	cc *grpc.ClientConn
+	cc grpc.ClientConnInterface
 }
 
-func NewHandlerServiceClient(cc *grpc.ClientConn) HandlerServiceClient {
+func NewHandlerServiceClient(cc grpc.ClientConnInterface) HandlerServiceClient {
 	return &handlerServiceClient{cc}
 }
 
@@ -718,6 +1160,29 @@ type HandlerServiceServer interface {
 	AddOutbound(context.Context, *AddOutboundRequest) (*AddOutboundResponse, error)
 	RemoveOutbound(context.Context, *RemoveOutboundRequest) (*RemoveOutboundResponse, error)
 	AlterOutbound(context.Context, *AlterOutboundRequest) (*AlterOutboundResponse, error)
+}
+
+// UnimplementedHandlerServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedHandlerServiceServer struct {
+}
+
+func (*UnimplementedHandlerServiceServer) AddInbound(context.Context, *AddInboundRequest) (*AddInboundResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddInbound not implemented")
+}
+func (*UnimplementedHandlerServiceServer) RemoveInbound(context.Context, *RemoveInboundRequest) (*RemoveInboundResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveInbound not implemented")
+}
+func (*UnimplementedHandlerServiceServer) AlterInbound(context.Context, *AlterInboundRequest) (*AlterInboundResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AlterInbound not implemented")
+}
+func (*UnimplementedHandlerServiceServer) AddOutbound(context.Context, *AddOutboundRequest) (*AddOutboundResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddOutbound not implemented")
+}
+func (*UnimplementedHandlerServiceServer) RemoveOutbound(context.Context, *RemoveOutboundRequest) (*RemoveOutboundResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveOutbound not implemented")
+}
+func (*UnimplementedHandlerServiceServer) AlterOutbound(context.Context, *AlterOutboundRequest) (*AlterOutboundResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AlterOutbound not implemented")
 }
 
 func RegisterHandlerServiceServer(s *grpc.Server, srv HandlerServiceServer) {

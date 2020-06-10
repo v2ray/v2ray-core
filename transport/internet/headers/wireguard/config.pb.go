@@ -1,72 +1,143 @@
 package wireguard
 
 import (
-	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
+const (
+	// Verify that this generated code is sufficiently up-to-date.
+	_ = protoimpl.EnforceVersion(20 - protoimpl.MinVersion)
+	// Verify that runtime/protoimpl is sufficiently up-to-date.
+	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
+)
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+// This is a compile-time assertion that a sufficiently up-to-date version
+// of the legacy proto package is being used.
+const _ = proto.ProtoPackageIsVersion4
 
 type WireguardConfig struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
 }
 
-func (m *WireguardConfig) Reset()         { *m = WireguardConfig{} }
-func (m *WireguardConfig) String() string { return proto.CompactTextString(m) }
-func (*WireguardConfig) ProtoMessage()    {}
+func (x *WireguardConfig) Reset() {
+	*x = WireguardConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *WireguardConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WireguardConfig) ProtoMessage() {}
+
+func (x *WireguardConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WireguardConfig.ProtoReflect.Descriptor instead.
 func (*WireguardConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a4c21f616af3c531, []int{0}
+	return file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDescGZIP(), []int{0}
 }
 
-func (m *WireguardConfig) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WireguardConfig.Unmarshal(m, b)
-}
-func (m *WireguardConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WireguardConfig.Marshal(b, m, deterministic)
-}
-func (m *WireguardConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WireguardConfig.Merge(m, src)
-}
-func (m *WireguardConfig) XXX_Size() int {
-	return xxx_messageInfo_WireguardConfig.Size(m)
-}
-func (m *WireguardConfig) XXX_DiscardUnknown() {
-	xxx_messageInfo_WireguardConfig.DiscardUnknown(m)
+var File_v2ray_com_core_transport_internet_headers_wireguard_config_proto protoreflect.FileDescriptor
+
+var file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDesc = []byte{
+	0x0a, 0x40, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x72, 0x65,
+	0x2f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72,
+	0x6e, 0x65, 0x74, 0x2f, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x2f, 0x77, 0x69, 0x72, 0x65,
+	0x67, 0x75, 0x61, 0x72, 0x64, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x12, 0x2f, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x74,
+	0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x65,
+	0x74, 0x2e, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x2e, 0x77, 0x69, 0x72, 0x65, 0x67, 0x75,
+	0x61, 0x72, 0x64, 0x22, 0x11, 0x0a, 0x0f, 0x57, 0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72, 0x64,
+	0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x42, 0x74, 0x0a, 0x33, 0x63, 0x6f, 0x6d, 0x2e, 0x76, 0x32,
+	0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f,
+	0x72, 0x74, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x65, 0x74, 0x2e, 0x68, 0x65, 0x61, 0x64,
+	0x65, 0x72, 0x73, 0x2e, 0x77, 0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72, 0x64, 0x50, 0x01, 0x5a,
+	0x09, 0x77, 0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72, 0x64, 0xaa, 0x02, 0x2f, 0x56, 0x32, 0x52,
+	0x61, 0x79, 0x2e, 0x43, 0x6f, 0x72, 0x65, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72,
+	0x74, 0x2e, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x65, 0x74, 0x2e, 0x48, 0x65, 0x61, 0x64, 0x65,
+	0x72, 0x73, 0x2e, 0x57, 0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72, 0x64, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
-var xxx_messageInfo_WireguardConfig proto.InternalMessageInfo
+var (
+	file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDescOnce sync.Once
+	file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDescData = file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDesc
+)
 
-func init() {
-	proto.RegisterType((*WireguardConfig)(nil), "v2ray.core.transport.internet.headers.wireguard.WireguardConfig")
+func file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDescGZIP() []byte {
+	file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDescOnce.Do(func() {
+		file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDescData = protoimpl.X.CompressGZIP(file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDescData)
+	})
+	return file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDescData
 }
 
-func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/headers/wireguard/config.proto", fileDescriptor_a4c21f616af3c531)
+var file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_goTypes = []interface{}{
+	(*WireguardConfig)(nil), // 0: v2ray.core.transport.internet.headers.wireguard.WireguardConfig
+}
+var file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_depIdxs = []int32{
+	0, // [0:0] is the sub-list for method output_type
+	0, // [0:0] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
-var fileDescriptor_a4c21f616af3c531 = []byte{
-	// 163 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x72, 0x28, 0x33, 0x2a, 0x4a,
-	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x2f, 0x29, 0x4a, 0xcc, 0x2b,
-	0x2e, 0xc8, 0x2f, 0x2a, 0xd1, 0xcf, 0xcc, 0x2b, 0x49, 0x2d, 0xca, 0x4b, 0x2d, 0xd1, 0xcf, 0x48,
-	0x4d, 0x4c, 0x49, 0x2d, 0x2a, 0xd6, 0x2f, 0xcf, 0x2c, 0x4a, 0x4d, 0x2f, 0x4d, 0x2c, 0x4a, 0xd1,
-	0x4f, 0xce, 0xcf, 0x4b, 0xcb, 0x4c, 0xd7, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xd2, 0x87, 0x99,
-	0x50, 0x94, 0xaa, 0x07, 0xd7, 0xad, 0x07, 0xd3, 0xad, 0x07, 0xd5, 0xad, 0x07, 0xd7, 0xad, 0x24,
-	0xc8, 0xc5, 0x1f, 0x0e, 0xe3, 0x38, 0x83, 0x4d, 0x72, 0x2a, 0xe1, 0x32, 0x4e, 0xce, 0xcf, 0xd5,
-	0x23, 0xd1, 0xa4, 0x00, 0xc6, 0x28, 0x4e, 0x38, 0x67, 0x15, 0x93, 0x7e, 0x98, 0x51, 0x50, 0x62,
-	0xa5, 0x9e, 0x33, 0x48, 0x7b, 0x08, 0x5c, 0xbb, 0x27, 0x4c, 0xbb, 0x07, 0x54, 0x3b, 0xdc, 0xee,
-	0x24, 0x36, 0xb0, 0x07, 0x8c, 0x01, 0x01, 0x00, 0x00, 0xff, 0xff, 0x00, 0x6d, 0x59, 0xf8, 0x04,
-	0x01, 0x00, 0x00,
+func init() { file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_init() }
+func file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_init() {
+	if File_v2ray_com_core_transport_internet_headers_wireguard_config_proto != nil {
+		return
+	}
+	if !protoimpl.UnsafeEnabled {
+		file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*WireguardConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
+	type x struct{}
+	out := protoimpl.TypeBuilder{
+		File: protoimpl.DescBuilder{
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDesc,
+			NumEnums:      0,
+			NumMessages:   1,
+			NumExtensions: 0,
+			NumServices:   0,
+		},
+		GoTypes:           file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_goTypes,
+		DependencyIndexes: file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_depIdxs,
+		MessageInfos:      file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_msgTypes,
+	}.Build()
+	File_v2ray_com_core_transport_internet_headers_wireguard_config_proto = out.File
+	file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_rawDesc = nil
+	file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_goTypes = nil
+	file_v2ray_com_core_transport_internet_headers_wireguard_config_proto_depIdxs = nil
 }
