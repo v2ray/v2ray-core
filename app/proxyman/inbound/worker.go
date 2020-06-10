@@ -198,7 +198,7 @@ func (c *udpConn) RemoteAddr() net.Addr {
 }
 
 func (c *udpConn) LocalAddr() net.Addr {
-	return c.remote
+	return c.local
 }
 
 func (*udpConn) SetDeadline(time.Time) error {
