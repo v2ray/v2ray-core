@@ -188,7 +188,9 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		return nil
 	}
 
-	if err := task.Run(ctx, task.OnSuccess(requestDone, task.Close(link.Writer)), responseDone, tproxyRequest); err != nil {
+	if err := task.Run(ctx, task.OnSuccess(func() error {
+		return task.Run(ctx, requestDone, tproxyRequest)
+	}, task.Close(link.Writer)), responseDone); err != nil {
 		common.Interrupt(link.Reader)
 		common.Interrupt(link.Writer)
 		return newError("connection ends").Base(err)
