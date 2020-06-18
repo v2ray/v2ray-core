@@ -103,6 +103,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 				sniffingConfig:  receiverConfig.GetEffectiveSniffingSettings(),
 				uplinkCounter:   uplinkCounter,
 				downlinkCounter: downlinkCounter,
+				ctx:             ctx,
 			}
 			h.workers = append(h.workers, worker)
 		}
