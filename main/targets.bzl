@@ -82,3 +82,18 @@ def gen_targets(matrix):
         name = bin_name + "_sig",
         base = ":" + bin_name,
       )
+
+      bin_name = "v2ray_" + os + "_" + arch + "_armv5"
+      foreign_go_binary(
+        name = bin_name,
+        pkg = pkg,
+        output = output+"_armv5",
+        os = os,
+        arch = arch,
+        arm = "5",
+      )
+
+      gpg_sign(
+        name = bin_name + "_sig",
+        base = ":" + bin_name,
+      )
