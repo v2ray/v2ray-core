@@ -229,10 +229,10 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 				payload.Release()
 				continue
 			}
-
+			currentPacketCtx := ctx
 			newError("send packet to ", request.Destination(), " with ", payload.Len(), " bytes").AtDebug().WriteToLog(session.ExportIDToError(ctx))
 			if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
-				ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
+				currentPacketCtx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 					From:   inbound.Source,
 					To:     request.Destination(),
 					Status: log.AccessAccepted,
@@ -240,8 +240,8 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 				})
 			}
 
-			ctx = protocol.ContextWithRequestHeader(ctx, request)
-			udpServer.Dispatch(ctx, request.Destination(), payload)
+			currentPacketCtx = protocol.ContextWithRequestHeader(currentPacketCtx, request)
+			udpServer.Dispatch(currentPacketCtx, request.Destination(), payload)
 		}
 	}
 }
