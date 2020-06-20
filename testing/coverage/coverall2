@@ -19,13 +19,13 @@ if [ -f "${TEST_FILES[0]}" ]; then
   test_package ""
 fi
 
-while IFS= read -r -d '' DIR
-do
+# shellcheck disable=SC2044
+for DIR in $(find ./* -type d ! -path "*.git*" ! -path "*vendor*" ! -path "*external*"); do
   TEST_FILES=("$DIR"/*_test.go)
   if [ -f "${TEST_FILES[0]}" ]; then
     test_package "/$DIR"
   fi
-done <   <(find ./* -type d ! -path "*.git*" ! -path "*vendor*" ! -path "*external*" -print0)
+done
 
 # merge out
 while IFS= read -r -d '' OUT_FILE
