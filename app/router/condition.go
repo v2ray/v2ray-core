@@ -30,11 +30,11 @@ func (v *ConditionChan) Add(cond Condition) *ConditionChan {
 
 func (v *ConditionChan) Apply(ctx *Context) bool {
 	for _, cond := range *v {
-		if !cond.Apply(ctx) {
-			return false
+		if cond.Apply(ctx) {
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 func (v *ConditionChan) Len() int {
