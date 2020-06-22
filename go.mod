@@ -11,9 +11,9 @@ require (
 	github.com/seiflotfy/cuckoofilter v0.0.0-20200511222245-56093a4d3841
 	go.starlark.net v0.0.0-20190919145610-979af19b165c
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
-	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/sys v0.0.0-20190412213103-97732733099d
+	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
+	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
+	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
 	google.golang.org/grpc v1.27.0
 	google.golang.org/protobuf v1.24.0
 	h12.io/socks v1.0.0
