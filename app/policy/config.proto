@@ -38,6 +38,8 @@ message SystemPolicy {
   message Stats {
     bool inbound_uplink = 1;
     bool inbound_downlink = 2;
+    bool outbound_uplink = 3;
+    bool outbound_downlink = 4;
   }
 
   Stats stats = 1;
