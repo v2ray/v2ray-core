@@ -14,25 +14,25 @@ import (
 //go:generate errorgen
 
 var (
-	_ buf.Writer = (*conn)(nil)
+	_ buf.Writer = (*Conn)(nil)
 )
 
-type conn struct {
+type Conn struct {
 	*tls.Conn
 }
 
-func (c *conn) WriteMultiBuffer(mb buf.MultiBuffer) error {
+func (c *Conn) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	mb = buf.Compact(mb)
 	mb, err := buf.WriteMultiBuffer(c, mb)
 	buf.ReleaseMulti(mb)
 	return err
 }
 
-func (c *conn) HandshakeAddress() net.Address {
+func (c *Conn) HandshakeAddress() net.Address {
 	if err := c.Handshake(); err != nil {
 		return nil
 	}
-	state := c.Conn.ConnectionState()
+	state := c.ConnectionState()
 	if state.ServerName == "" {
 		return nil
 	}
@@ -42,7 +42,7 @@ func (c *conn) HandshakeAddress() net.Address {
 // Client initiates a TLS client handshake on the given connection.
 func Client(c net.Conn, config *tls.Config) net.Conn {
 	tlsConn := tls.Client(c, config)
-	return &conn{Conn: tlsConn}
+	return &Conn{Conn: tlsConn}
 }
 
 func copyConfig(c *tls.Config) *utls.Config {
@@ -63,5 +63,5 @@ func UClient(c net.Conn, config *tls.Config) net.Conn {
 // Server initiates a TLS server handshake on the given connection.
 func Server(c net.Conn, config *tls.Config) net.Conn {
 	tlsConn := tls.Server(c, config)
-	return &conn{Conn: tlsConn}
+	return &Conn{Conn: tlsConn}
 }
