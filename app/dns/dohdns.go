@@ -246,7 +246,11 @@ func (s *DoHNameServer) sendQuery(ctx context.Context, domain string, option IPO
 			dnsCtx, cancel := context.WithDeadline(dnsCtx, deadline)
 			defer cancel()
 
-			b, _ := dns.PackMessage(r.msg)
+			b, err := dns.PackMessage(r.msg)
+			if err != nil {
+				newError("failed to pack dns query").Base(err).AtError().WriteToLog()
+				return
+			}
 			resp, err := s.dohHTTPSContext(dnsCtx, b.Bytes())
 			if err != nil {
 				newError("failed to retrive response").Base(err).AtError().WriteToLog()
