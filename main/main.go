@@ -29,7 +29,7 @@ var (
 	format      = flag.String("format", "json", "Format of input file.")
 
 	/*  We have to do this here because Golang's Test will also need to parse flag, before
-		main func in this file is run.
+	main func in this file is run.
 	*/
 	_ = func() error {
 
@@ -166,7 +166,7 @@ func main() {
 
 	{
 		osSignals := make(chan os.Signal, 1)
-		signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
+		signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
 		<-osSignals
 	}
 }
