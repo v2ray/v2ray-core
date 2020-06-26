@@ -16,10 +16,6 @@ import (
 )
 
 func Test_parseResponse(t *testing.T) {
-	type args struct {
-		payload []byte
-	}
-
 	var p [][]byte
 
 	ans := new(dns.Msg)

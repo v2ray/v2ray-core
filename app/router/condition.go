@@ -294,10 +294,7 @@ func NewAttributeMatcher(code string) (*AttributeMatcher, error) {
 		return nil, newError("attr rule").Base(err)
 	}
 	p, err := starlark.FileProgram(starFile, func(name string) bool {
-		if name == "attrs" {
-			return true
-		}
-		return false
+		return name == "attrs"
 	})
 	if err != nil {
 		return nil, err
