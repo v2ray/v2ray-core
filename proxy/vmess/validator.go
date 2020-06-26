@@ -159,8 +159,7 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protoco
 	copy(fixedSizeHash[:], userHash)
 	pair, found := v.userHash[fixedSizeHash]
 	if found {
-		var user protocol.MemoryUser
-		user = pair.user.user
+		user := pair.user.user
 		if atomic.LoadUint32(pair.taintedFuse) == 0 {
 			return &user, protocol.Timestamp(pair.timeInc) + v.baseTime, true, nil
 		}
