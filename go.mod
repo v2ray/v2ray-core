@@ -16,7 +16,7 @@ require (
 	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
 	google.golang.org/grpc v1.27.0
 	google.golang.org/protobuf v1.24.0
-	h12.io/socks v1.0.0
+	h12.io/socks v1.0.1
 )
 
 go 1.13
