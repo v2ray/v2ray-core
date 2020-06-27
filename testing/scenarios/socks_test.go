@@ -348,7 +348,7 @@ func TestSocksConformance(t *testing.T) {
 	}
 
 	{
-		dialer := socks4.DialSocksProxy(socks4.SOCKS4, net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr())
+		dialer := socks4.Dial("socks4://" + net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr())
 		conn, err := dialer("tcp", dest.NetAddr())
 		common.Must(err)
 		defer conn.Close()
@@ -359,7 +359,7 @@ func TestSocksConformance(t *testing.T) {
 	}
 
 	{
-		dialer := socks4.DialSocksProxy(socks4.SOCKS4A, net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr())
+		dialer := socks4.Dial("socks4://" + net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr())
 		conn, err := dialer("tcp", net.TCPDestination(net.LocalHostDomain, tcpServer.Port).NetAddr())
 		common.Must(err)
 		defer conn.Close()
