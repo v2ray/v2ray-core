@@ -1,6 +1,7 @@
 SUPPORTED_MATRIX = [
   ("windows", "amd64"),
   ("windows", "386"),
+  ("windows", "arm"),
   ("darwin", "amd64"),
   ("linux", "amd64"),
   ("linux", "386"),

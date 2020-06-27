@@ -83,6 +83,37 @@ pkg_zip(
 )
 
 pkg_zip(
+    name = "v2ray_windows_arm_package",
+    srcs = [
+        ":config_json",
+        ":doc",
+        ":geodata",
+        "//infra/control/main:v2ctl_windows_arm",
+        "//infra/control/main:v2ctl_windows_arm_sig",
+        "//infra/control/main:v2ctl_windows_arm_armv7",
+        "//infra/control/main:v2ctl_windows_arm_armv7_sig",
+        "//main:v2ray_windows_arm",
+        "//main:v2ray_windows_arm_sig",
+        "//main:v2ray_windows_arm_nowindow",
+        "//main:v2ray_windows_arm_nowindow_sig",
+        "//main:v2ray_windows_arm_armv5",
+        "//main:v2ray_windows_arm_armv5_sig",
+        "//main:v2ray_windows_arm_armv5_nowindow",
+        "//main:v2ray_windows_arm_armv5_nowindow_sig",
+        "//main:v2ray_windows_arm_armv6",
+        "//main:v2ray_windows_arm_armv6_sig",
+        "//main:v2ray_windows_arm_armv6_nowindow",
+        "//main:v2ray_windows_arm_armv6_nowindow_sig",
+        "//main:v2ray_windows_arm_armv7",
+        "//main:v2ray_windows_arm_armv7_sig",
+        "//main:v2ray_windows_arm_armv7_nowindow",
+        "//main:v2ray_windows_arm_armv7_nowindow_sig",
+    ],
+    out = "v2ray-windows-arm.zip",
+    mappings = gen_mappings("windows", "arm"),
+)
+
+pkg_zip(
     name = "v2ray_freebsd_amd64_package",
     srcs = [
         ":config_json",
