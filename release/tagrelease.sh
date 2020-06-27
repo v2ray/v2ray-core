@@ -57,6 +57,7 @@ ART_ROOT=$GOPATH/src/v2ray.com/core/bazel-bin/release
 upload ${ART_ROOT}/v2ray-macos.zip
 upload ${ART_ROOT}/v2ray-windows-64.zip
 upload ${ART_ROOT}/v2ray-windows-32.zip
+upload ${ART_ROOT}/v2ray-windows-arm.zip
 upload ${ART_ROOT}/v2ray-linux-64.zip
 upload ${ART_ROOT}/v2ray-linux-32.zip
 upload ${ART_ROOT}/v2ray-linux-arm.zip
