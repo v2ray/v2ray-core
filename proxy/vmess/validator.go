@@ -190,7 +190,7 @@ func (v *TimedUserValidator) Remove(email string) bool {
 		if strings.EqualFold(v.users[i].user.Email, email) {
 			idx = i
 			var cmdkeyfl [16]byte
-			copy(cmdkeyfl[:], u.user.Account.(*MemoryAccount).ID.CmdKey())
+			copy(cmdkeyfl[:], v.users[i].user.Account.(*MemoryAccount).ID.CmdKey())
 			v.aeadDecoderHolder.RemoveUser(cmdkeyfl)
 			break
 		}
