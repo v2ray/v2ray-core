@@ -72,7 +72,7 @@ def gen_targets(matrix):
       foreign_go_binary(
         name = bin_name,
         pkg = pkg,
-        output = "w" + output + "_armv5",
+        output = "w" + output,
         os = os,
         arch = arch,
         arm = "5",
@@ -105,7 +105,7 @@ def gen_targets(matrix):
       foreign_go_binary(
         name = bin_name,
         pkg = pkg,
-        output = output+"_armv7",
+        output = output + "_armv7",
         os = os,
         arch = arch,
         arm = "7",
@@ -120,7 +120,7 @@ def gen_targets(matrix):
       foreign_go_binary(
         name = bin_name,
         pkg = pkg,
-        output = output+"_armv6",
+        output = output + "_armv6",
         os = os,
         arch = arch,
         arm = "6",
@@ -135,7 +135,7 @@ def gen_targets(matrix):
       foreign_go_binary(
         name = bin_name,
         pkg = pkg,
-        output = output+"_armv5",
+        output = output,
         os = os,
         arch = arch,
         arm = "5",
