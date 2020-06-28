@@ -41,6 +41,10 @@ type SystemStats struct {
 	InboundUplink bool
 	// Whether or not to enable stat counter for downlink traffic in inbound handlers.
 	InboundDownlink bool
+	// Whether or not to enable stat counter for uplink traffic in outbound handlers.
+	OutboundUplink bool
+	// Whether or not to enable stat counter for downlink traffic in outbound handlers.
+	OutboundDownlink bool
 }
 
 // System contains policy settings at system level.

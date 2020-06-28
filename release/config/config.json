@@ -119,7 +119,9 @@
     },
     "system": {
       "statsInboundUplink": false,
-      "statsInboundDownlink": false
+      "statsInboundDownlink": false,
+      "statsOutboundUplink": false,
+      "statsOutboundDownlink": false
     }
   },
 

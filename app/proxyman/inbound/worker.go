@@ -91,9 +91,9 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	ctx = session.ContextWithContent(ctx, content)
 	if w.uplinkCounter != nil || w.downlinkCounter != nil {
 		conn = &internet.StatCouterConnection{
-			Connection: conn,
-			Uplink:     w.uplinkCounter,
-			Downlink:   w.downlinkCounter,
+			Connection:   conn,
+			ReadCounter:  w.uplinkCounter,
+			WriteCounter: w.downlinkCounter,
 		}
 	}
 	if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
