@@ -271,7 +271,7 @@ func TestSocksBridageUDPWithRouting(t *testing.T) {
 	}
 }
 
-func TestSocksConformance(t *testing.T) {
+func TestSocksConformanceMod(t *testing.T) {
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
@@ -360,7 +360,7 @@ func TestSocksConformance(t *testing.T) {
 
 	{
 		dialer := socks4.Dial("socks4://" + net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr())
-		conn, err := dialer("tcp", net.TCPDestination(net.LocalHostDomain, tcpServer.Port).NetAddr())
+		conn, err := dialer("tcp", net.TCPDestination(net.LocalHostIP, tcpServer.Port).NetAddr())
 		common.Must(err)
 		defer conn.Close()
 
