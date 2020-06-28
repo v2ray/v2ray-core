@@ -63,6 +63,18 @@ func (m *Manager) RegisterCounter(name string) (stats.Counter, error) {
 	return c, nil
 }
 
+func (m *Manager) UnregisterCounter(name string) error {
+	m.access.Lock()
+	defer m.access.Unlock()
+
+	if _, found := m.counters[name]; !found {
+		return newError("Counter ", name, " was not found.")
+	}
+	newError("remove counter ", name).AtDebug().WriteToLog()
+	delete(m.counters, name)
+	return nil
+}
+
 func (m *Manager) GetCounter(name string) stats.Counter {
 	m.access.RLock()
 	defer m.access.RUnlock()

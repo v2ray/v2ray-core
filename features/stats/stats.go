@@ -24,6 +24,7 @@ type Manager interface {
 
 	// RegisterCounter registers a new counter to the manager. The identifier string must not be emtpy, and unique among other counters.
 	RegisterCounter(string) (Counter, error)
+	UnregisterCounter(string) error
 	// GetCounter returns a counter by its identifier.
 	GetCounter(string) Counter
 }
@@ -56,6 +57,11 @@ func (NoopManager) Type() interface{} {
 // RegisterCounter implements Manager.
 func (NoopManager) RegisterCounter(string) (Counter, error) {
 	return nil, newError("not implemented")
+}
+
+// UnregisterCounter implements Manager.
+func (NoopManager) UnregisterCounter(string) error {
+	return newError("not implemented")
 }
 
 // GetCounter implements Manager.
