@@ -30,7 +30,7 @@ function upload() {
 
 ART_ROOT=$GOPATH/src/v2ray.com/core/bazel-bin/release
 
-pushd ART_ROOT
+pushd ${ART_ROOT}
 {
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen version ${RELEASE_TAG}
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen project "v2flyunstable"
