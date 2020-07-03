@@ -38,6 +38,9 @@ pushd ${ART_ROOT}
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-windows-64.zip
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-windows-32.zip
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-windows-arm.zip
+  go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-linux-64.zip
+  go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-linux-32.zip
+  go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-linux-arm.zip
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-linux-arm64.zip
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-linux-mips64.zip
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-linux-mips64le.zip
