@@ -58,6 +58,8 @@ github.com/stretchr/testify v1.6.1 h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/xiaokangwang/VSign v0.0.0-20200704121915-cb2e1f64f24c h1:ZhNj6V5QpDFbJZQR1FYywUTwRgr1HmlsvuExY/U0vJI=
 github.com/xiaokangwang/VSign v0.0.0-20200704121915-cb2e1f64f24c/go.mod h1:jTwBnzBuqZP3VX/Z65ErYb9zd4anQprSC7N38TmAp1E=
+github.com/xiaokangwang/VSign v0.0.0-20200704130305-63f4b4d7a751 h1:vpFL+XrF7TFUuoV3PX/CJebjK77XA0yc9NnCs5AaxUY=
+github.com/xiaokangwang/VSign v0.0.0-20200704130305-63f4b4d7a751/go.mod h1:jTwBnzBuqZP3VX/Z65ErYb9zd4anQprSC7N38TmAp1E=
 go.starlark.net v0.0.0-20190919145610-979af19b165c h1:WR7X1xgXJlXhQBdorVc9Db3RhwG+J/kp6bLuMyJjfVw=
 go.starlark.net v0.0.0-20190919145610-979af19b165c/go.mod h1:c1/X6cHgvdXj6pUlmWKMkuqRnW4K8x2vwt6JAaaircg=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2 h1:VklqNMn3ovrHsnt90PveolxSbWFaJdECFbxSq0Mqo2M=
