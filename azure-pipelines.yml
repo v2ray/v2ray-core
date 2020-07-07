@@ -119,6 +119,10 @@ jobs:
       GITHUB_TOKEN: $(GITHUB_TOKEN)
       PRERELEASE: true
       RELEASE_TAG: unstable-$(Build.SourceVersion)
+      RELEASE_SHA: $(Build.SourceVersion)
+      TRIGGER_REASON: $(Build.SourceBranch)
+      GITHUB_REPO_OWNER: v2fly
+      GITHUB_REPO_NAME: v2ray-core
   - script: |
       cd ./src/v2ray.com/core
       echo $RELEASE_TAG

@@ -27,6 +27,9 @@ var upgrader = &websocket.Upgrader{
 	ReadBufferSize:   4 * 1024,
 	WriteBufferSize:  4 * 1024,
 	HandshakeTimeout: time.Second * 4,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {

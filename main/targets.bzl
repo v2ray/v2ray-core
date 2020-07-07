@@ -36,6 +36,54 @@ def gen_targets(matrix):
         base = ":" + bin_name,
       )
 
+      bin_name = "v2ray_" + os + "_" + arch + "_armv7_nowindow"
+      foreign_go_binary(
+        name = bin_name,
+        pkg = pkg,
+        output = "w" + output + "_armv7",
+        os = os,
+        arch = arch,
+        arm = "7",
+        ld = "-H windowsgui",
+      )
+
+      gpg_sign(
+        name = bin_name + "_sig",
+        base = ":" + bin_name,
+      )
+
+      bin_name = "v2ray_" + os + "_" + arch + "_armv6_nowindow"
+      foreign_go_binary(
+        name = bin_name,
+        pkg = pkg,
+        output = "w" + output + "_armv6",
+        os = os,
+        arch = arch,
+        arm = "6",
+        ld = "-H windowsgui",
+      )
+
+      gpg_sign(
+        name = bin_name + "_sig",
+        base = ":" + bin_name,
+      )
+
+      bin_name = "v2ray_" + os + "_" + arch + "_armv5_nowindow"
+      foreign_go_binary(
+        name = bin_name,
+        pkg = pkg,
+        output = "w" + output,
+        os = os,
+        arch = arch,
+        arm = "5",
+        ld = "-H windowsgui",
+      )
+
+      gpg_sign(
+        name = bin_name + "_sig",
+        base = ":" + bin_name,
+      )
+
     if arch in ["mips", "mipsle"]:
       bin_name = "v2ray_" + os + "_" + arch + "_softfloat"
       foreign_go_binary(
@@ -57,7 +105,7 @@ def gen_targets(matrix):
       foreign_go_binary(
         name = bin_name,
         pkg = pkg,
-        output = output+"_armv7",
+        output = output + "_armv7",
         os = os,
         arch = arch,
         arm = "7",
@@ -72,7 +120,7 @@ def gen_targets(matrix):
       foreign_go_binary(
         name = bin_name,
         pkg = pkg,
-        output = output+"_armv6",
+        output = output + "_armv6",
         os = os,
         arch = arch,
         arm = "6",
@@ -87,7 +135,7 @@ def gen_targets(matrix):
       foreign_go_binary(
         name = bin_name,
         pkg = pkg,
-        output = output+"_armv5",
+        output = output,
         os = os,
         arch = arch,
         arm = "5",
