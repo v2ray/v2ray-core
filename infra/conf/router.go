@@ -260,9 +260,19 @@ func parseDomainRule(domain string) ([]*router.Domain, error) {
 		}
 		return domains, nil
 	}
-
-	if strings.HasPrefix(domain, "ext:") {
-		kv := strings.Split(domain[4:], ":")
+	var isExtDatFile = 0
+	{
+		const prefix = "ext:"
+		if strings.HasPrefix(domain, prefix) {
+			isExtDatFile = len(prefix)
+		}
+		const prefixQualified = "ext-domain:"
+		if strings.HasPrefix(domain, prefixQualified) {
+			isExtDatFile = len(prefixQualified)
+		}
+	}
+	if isExtDatFile != 0 {
+		kv := strings.Split(domain[isExtDatFile:], ":")
 		if len(kv) != 2 {
 			return nil, newError("invalid external resource: ", domain)
 		}
@@ -314,9 +324,19 @@ func toCidrList(ips StringList) ([]*router.GeoIP, error) {
 			})
 			continue
 		}
-
-		if strings.HasPrefix(ip, "ext:") {
-			kv := strings.Split(ip[4:], ":")
+		var isExtDatFile = 0
+		{
+			const prefix = "ext:"
+			if strings.HasPrefix(ip, prefix) {
+				isExtDatFile = len(prefix)
+			}
+			const prefixQualified = "ext-ip:"
+			if strings.HasPrefix(ip, prefixQualified) {
+				isExtDatFile = len(prefixQualified)
+			}
+		}
+		if isExtDatFile != 0 {
+			kv := strings.Split(ip[isExtDatFile:], ":")
 			if len(kv) != 2 {
 				return nil, newError("invalid external resource: ", ip)
 			}
