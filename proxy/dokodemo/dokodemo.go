@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
@@ -105,6 +106,14 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			Level: d.config.UserLevel,
 		}
 	}
+
+	ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
+		From:   conn.RemoteAddr(),
+		To:     dest,
+		Status: log.AccessAccepted,
+		Reason: "",
+	})
+	newError("received request for ", conn.RemoteAddr()).WriteToLog(session.ExportIDToError(ctx))
 
 	plcy := d.policy()
 	ctx, cancel := context.WithCancel(ctx)
