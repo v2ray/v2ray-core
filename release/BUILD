@@ -343,6 +343,22 @@ pkg_zip(
 )
 
 pkg_zip(
+    name = "v2ray_linux_riscv64_package",
+    srcs = [
+        ":config_json",
+        ":doc",
+        ":geodata",
+        ":systemd",
+        "//infra/control/main:v2ctl_linux_riscv64",
+        "//infra/control/main:v2ctl_linux_riscv64_sig",
+        "//main:v2ray_linux_riscv64",
+        "//main:v2ray_linux_riscv64_sig",
+    ],
+    out = "v2ray-linux-riscv64.zip",
+    mappings = gen_mappings("linux", "riscv64", "0"),
+)
+
+pkg_zip(
     name = "v2ray_linux_s390x_package",
     srcs = [
         ":config_json",
