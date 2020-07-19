@@ -75,6 +75,7 @@ pushd ${ART_ROOT}
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-linux-mips32le.zip
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-linux-ppc64.zip
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-linux-ppc64le.zip
+  go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-linux-riscv64.zip
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-linux-s390x.zip
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-freebsd-64.zip
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-freebsd-32.zip
@@ -102,6 +103,7 @@ upload ${ART_ROOT}/v2ray-linux-mips32.zip
 upload ${ART_ROOT}/v2ray-linux-mips32le.zip
 upload ${ART_ROOT}/v2ray-linux-ppc64.zip
 upload ${ART_ROOT}/v2ray-linux-ppc64le.zip
+upload ${ART_ROOT}/v2ray-linux-riscv64.zip
 upload ${ART_ROOT}/v2ray-linux-s390x.zip
 upload ${ART_ROOT}/v2ray-freebsd-64.zip
 upload ${ART_ROOT}/v2ray-freebsd-32.zip
