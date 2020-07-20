@@ -7,7 +7,6 @@ require (
 	github.com/google/go-cmp v0.5.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/miekg/dns v1.1.30
-	github.com/refraction-networking/utls v0.0.0-20190909200633-43c36d3c1f57
 	github.com/seiflotfy/cuckoofilter v0.0.0-20200511222245-56093a4d3841
 	github.com/stretchr/testify v1.6.1
 	github.com/xiaokangwang/VSign v0.0.0-20200704130305-63f4b4d7a751
