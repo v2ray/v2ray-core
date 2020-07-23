@@ -2,27 +2,21 @@ trigger:
   batch: true
   branches:
     include:
-    - master
-    - dev*
-    - refs/tags/*
+      - master
+      - dev*
+      - refs/tags/*
 
-jobs:
+pool:
+  vmImage: 'ubuntu-latest'
 
-- job: make_release
-  dependsOn: linux
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-  timeoutInMinutes: 60
+variables:
+  - group: GithubToken
+  - name: GOPATH
+    value: '$(system.defaultWorkingDirectory)/gopath'
+  - name: BAZEL_VER
+    value: '0.23.0'
 
-  pool:
-    vmImage: 'ubuntu-latest'
-  variables:
-    - group: GithubToken
-    - name: GOPATH
-      value: '$(system.defaultWorkingDirectory)/gopath'
-    - name: BAZEL_VER
-      value: '0.23.0'
-
-  steps:
+steps:
   - checkout: self
   - task: GoTool@0
     inputs:
