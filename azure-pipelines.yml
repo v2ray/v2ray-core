@@ -6,47 +6,7 @@ trigger:
     - dev*
     - refs/tags/*
 
-pr:
-  - master
-  - dev*
-
 jobs:
-- template: azure-pipelines.template.yml
-  parameters:
-    name: linux
-    vmImage: 'ubuntu-latest'
-
-- template: azure-pipelines.template.yml
-  parameters:
-    name: windows
-    vmImage: 'windows-latest'
-
-- template: azure-pipelines.template.yml
-  parameters:
-    name: macos
-    vmImage: 'macOS-latest'
-
-- job: linux_coverage
-  dependsOn: linux
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-  timeoutInMinutes: 30
-
-  pool:
-    vmImage: 'ubuntu-latest'
-
-#variables:
-#    CODECOV_TOKEN: '$(coverage.token)'
-
-
-  steps:
-  - checkout: self
-  - task: GoTool@0
-    inputs:
-      version: '1.14.6'
-  - script: |
-      bash ./testing/coverage/coverall
-    workingDirectory: '$(Build.SourcesDirectory)'
-    displayName: 'Coverage'
 
 - job: make_release
   dependsOn: linux
