@@ -1,0 +1,48 @@
+name: Release Docker image
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: crazy-max/ghaction-docker-buildx@v3
+
+      - name: Log in to DockerHub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
+
+      - name: Get release version
+        id: get_relesase_version
+        run: echo ::set-output name=version::${GITHUB_REF#refs/*/}
+
+      - name: Build and puch Docker image (version)
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          RELEASE_VERSION: ${{ steps.get_relesase_version.outputs.version }}
+        run: |
+          docker buildx build \
+            --platform linux/386,linux/amd64,linux/arm/v7,linux/arm64 \
+            --output "type=image,push=true" \
+            --tag $(echo "${DOCKER_USERNAME}" | tr '[:upper:]' '[:lower:]')/v2fly-core:"$RELEASE_VERSION" \
+            --file ./Dockerfile .
+
+      - name: Build and push Docker image (latest)
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          docker buildx build \
+            --platform linux/386,linux/amd64,linux/arm/v7,linux/arm64 \
+            --output "type=image,push=true" \
+            --tag $(echo "${DOCKER_USERNAME}" | tr '[:upper:]' '[:lower:]')/v2fly-core:latest \
+            --file ./Dockerfile .
