@@ -28,43 +28,16 @@ jobs:
         run: |
           echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
 
-      - name: Get image version
-        id: get_image_version
-        run: echo ::set-output name=version::${GITHUB_REF#refs/*/}
-
-      - name: Get image name
-        id: get_image_name
+      - name: Build and push Docker image
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        run: echo ::set-output name=name::$(echo $DOCKER_USERNAME | tr '[:upper:]' '[:lower:]')/v2fly-core
-
-      - name: Get image platform
-        env:
-          PLATFORM: linux/386,linux/amd64,linux/arm/v7,linux/arm64
-        id: get_image_platform
-        run: echo ::set-output name=platform::"$PLATFORM"
-
-      - name: Build and push Docker image (version)
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_IMAGE_NAME: ${{ steps.get_image_name.outputs.name }}
-          DOCKER_IMAGE_VERSION: ${{ steps.get_image_version.outputs.version }}
-          DOCKER_IMAGE_PLATFORM: ${{ steps.get_image_platform.outputs.platform }}
+          DOCKER_IMAGE_PLATFORM: linux/386,linux/amd64,linux/arm/v7,linux/arm64
         run: |
+          DOCKER_IMAGE_NAME=$(echo $DOCKER_USERNAME | tr '[:upper:]' '[:lower:]')/v2fly-core
+          DOCKER_IMAGE_VERSION=${GITHUB_REF#refs/*/}
           docker buildx build \
             --platform "$DOCKER_IMAGE_PLATFORM" \
             --output "type=image,push=true" \
             --tag "$DOCKER_IMAGE_NAME":"$DOCKER_IMAGE_VERSION" \
-            --file ./Dockerfile .
-      
-      - name: Build and push Docker image (latest)
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_IMAGE_NAME: ${{ steps.get_image_name.outputs.name }}
-          DOCKER_IMAGE_PLATFORM: ${{ steps.get_image_platform.outputs.platform }}
-        run: |
-          docker buildx build \
-            --platform "$DOCKER_IMAGE_PLATFORM" \
-            --output "type=image,push=true" \
             --tag "$DOCKER_IMAGE_NAME":latest \
             --file ./Dockerfile .
