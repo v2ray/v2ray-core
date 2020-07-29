@@ -19,6 +19,7 @@ var (
 		"http":          func() interface{} { return new(HttpServerConfig) },
 		"shadowsocks":   func() interface{} { return new(ShadowsocksServerConfig) },
 		"socks":         func() interface{} { return new(SocksServerConfig) },
+		"vless":         func() interface{} { return new(VLessInboundConfig) },
 		"vmess":         func() interface{} { return new(VMessInboundConfig) },
 		"mtproto":       func() interface{} { return new(MTProtoServerConfig) },
 	}, "protocol", "settings")
@@ -28,8 +29,9 @@ var (
 		"freedom":     func() interface{} { return new(FreedomConfig) },
 		"http":        func() interface{} { return new(HttpClientConfig) },
 		"shadowsocks": func() interface{} { return new(ShadowsocksClientConfig) },
-		"vmess":       func() interface{} { return new(VMessOutboundConfig) },
 		"socks":       func() interface{} { return new(SocksClientConfig) },
+		"vless":       func() interface{} { return new(VLessOutboundConfig) },
+		"vmess":       func() interface{} { return new(VMessOutboundConfig) },
 		"mtproto":     func() interface{} { return new(MTProtoClientConfig) },
 		"dns":         func() interface{} { return new(DnsOutboundConfig) },
 	}, "protocol", "settings")
