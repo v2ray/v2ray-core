@@ -4,6 +4,7 @@ import (
 	"context"
 	"syscall"
 
+	"golang.org/x/sys/unix"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 )
@@ -27,6 +28,10 @@ func getControlFunc(ctx context.Context, sockopt *SocketConfig, controllers []co
 				}
 			}
 
+			if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, unix.SO_REUSEPORT, 1); err != nil {
+				newError("failed to set SO_REUSEPORT").Base(err).AtWarning()
+			}
+
 			for _, controller := range controllers {
 				if err := controller(network, address, fd); err != nil {
 					newError("failed to apply external controller").Base(err).WriteToLog(session.ExportIDToError(ctx))
@@ -39,9 +44,7 @@ func getControlFunc(ctx context.Context, sockopt *SocketConfig, controllers []co
 func (dl *DefaultListener) Listen(ctx context.Context, addr net.Addr, sockopt *SocketConfig) (net.Listener, error) {
 	var lc net.ListenConfig
 
-	if sockopt != nil || len(dl.controllers) > 0 {
-		lc.Control = getControlFunc(ctx, sockopt, dl.controllers)
-	}
+	lc.Control = getControlFunc(ctx, sockopt, dl.controllers)
 
 	return lc.Listen(ctx, addr.Network(), addr.String())
 }
@@ -49,9 +52,7 @@ func (dl *DefaultListener) Listen(ctx context.Context, addr net.Addr, sockopt *S
 func (dl *DefaultListener) ListenPacket(ctx context.Context, addr net.Addr, sockopt *SocketConfig) (net.PacketConn, error) {
 	var lc net.ListenConfig
 
-	if sockopt != nil || len(dl.controllers) > 0 {
-		lc.Control = getControlFunc(ctx, sockopt, dl.controllers)
-	}
+	lc.Control = getControlFunc(ctx, sockopt, dl.controllers)
 
 	return lc.ListenPacket(ctx, addr.Network(), addr.String())
 }
