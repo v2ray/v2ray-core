@@ -4,7 +4,6 @@ import (
 	"context"
 	"syscall"
 
-	"golang.org/x/sys/unix"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 )
@@ -28,9 +27,7 @@ func getControlFunc(ctx context.Context, sockopt *SocketConfig, controllers []co
 				}
 			}
 
-			if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, unix.SO_REUSEPORT, 1); err != nil {
-				newError("failed to set SO_REUSEPORT").Base(err).AtWarning()
-			}
+			setReusePort(fd)
 
 			for _, controller := range controllers {
 				if err := controller(network, address, fd); err != nil {
