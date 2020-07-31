@@ -58,6 +58,7 @@ func NewDoHNameServer(url *url.URL, dispatcher routing.Dispatcher, clientIP net.
 		MaxIdleConns:        30,
 		IdleConnTimeout:     90 * time.Second,
 		TLSHandshakeTimeout: 30 * time.Second,
+		ForceAttemptHTTP2:   true,
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			dest, err := net.ParseDestination(network + ":" + addr)
 			if err != nil {
@@ -89,7 +90,8 @@ func NewDoHLocalNameServer(url *url.URL, clientIP net.IP) *DoHNameServer {
 	url.Scheme = "https"
 	s := baseDOHNameServer(url, "DOHL", clientIP)
 	tr := &http.Transport{
-		IdleConnTimeout: 90 * time.Second,
+		IdleConnTimeout:   90 * time.Second,
+		ForceAttemptHTTP2: true,
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			dest, err := net.ParseDestination(network + ":" + addr)
 			if err != nil {
