@@ -11,9 +11,9 @@ master branch, though we would still try our best to follow the compatiblity cla
 
 ## 汇报安全风险 Reporting a Vulnerability
 
-使用邮箱 dev |at| v2fly.org 并注明安全风险。
+使用邮箱: security |at| v2fly.org。
 
-You can use email dev |at| v2fly.org.
+Report to email: security |at| v2fly.org.
 
 GPG public key:
 
