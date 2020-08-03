@@ -17,7 +17,7 @@ func EncodeHeaderAddons(buffer *buf.Buffer, addons *Addons) error {
 	default:
 
 		if err := buffer.WriteByte(0); err != nil {
-			return newError("failed to write addons protobuf length").Base(err).AtWarning()
+			return newError("failed to write addons protobuf length").Base(err)
 		}
 
 	}
@@ -32,18 +32,18 @@ func DecodeHeaderAddons(buffer *buf.Buffer, reader io.Reader) (*Addons, error) {
 
 	buffer.Clear()
 	if _, err := buffer.ReadFullFrom(reader, 1); err != nil {
-		return nil, newError("failed to read addons protobuf length").Base(err).AtWarning()
+		return nil, newError("failed to read addons protobuf length").Base(err)
 	}
 
 	if length := int32(buffer.Byte(0)); length != 0 {
 
 		buffer.Clear()
 		if _, err := buffer.ReadFullFrom(reader, length); err != nil {
-			return nil, newError("failed to read addons protobuf value").Base(err).AtWarning()
+			return nil, newError("failed to read addons protobuf value").Base(err)
 		}
 
 		if err := proto.Unmarshal(buffer.Bytes(), addons); err != nil {
-			return nil, newError("failed to unmarshal addons protobuf value").Base(err).AtWarning()
+			return nil, newError("failed to unmarshal addons protobuf value").Base(err)
 		}
 
 		// Verification.

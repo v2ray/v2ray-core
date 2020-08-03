@@ -79,7 +79,10 @@ func TestVLessInbound(t *testing.T) {
 				"decryption": "none",
 				"fallback": {
 					"port": 80,
-					"unix": "@/dev/shm/domain.socket"
+				},
+				"fallback_h2": {
+					"unix": "@/dev/shm/domain.socket",
+					"xver": 2
 				}
 			}`,
 			Parser: loadJSON(creator),
@@ -102,7 +105,15 @@ func TestVLessInbound(t *testing.T) {
 						},
 					},
 					Port: 80,
+				},
+				FallbackH2: &inbound.FallbackH2{
+					Addr: &net.IPOrDomain{
+						Address: &net.IPOrDomain_Ip{
+							Ip: []byte{127, 0, 0, 1},
+						},
+					},
 					Unix: "\x00/dev/shm/domain.socket",
+					Xver: 2,
 				},
 			},
 		},

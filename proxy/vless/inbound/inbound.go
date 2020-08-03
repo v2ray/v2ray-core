@@ -6,6 +6,7 @@ package inbound
 
 import (
 	"context"
+	"encoding/hex"
 	"io"
 	"strconv"
 	"time"
@@ -28,6 +29,7 @@ import (
 	"v2ray.com/core/proxy/vless"
 	"v2ray.com/core/proxy/vless/encoding"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/tls"
 )
 
 func init() {
@@ -51,6 +53,8 @@ type Handler struct {
 	dns                   dns.Client
 	fallback              *Fallback // or nil
 	addrport              string
+	fallback_h2           *FallbackH2 // or nil
+	addrport_h2           string
 }
 
 // New creates a new VLess inbound handler.
@@ -77,6 +81,10 @@ func New(ctx context.Context, config *Config, dc dns.Client) (*Handler, error) {
 	if config.Fallback != nil {
 		handler.fallback = config.Fallback
 		handler.addrport = handler.fallback.Addr.AsAddress().String() + ":" + strconv.Itoa(int(handler.fallback.Port))
+	}
+	if config.FallbackH2 != nil {
+		handler.fallback_h2 = config.FallbackH2
+		handler.addrport_h2 = handler.fallback_h2.Addr.AsAddress().String() + ":" + strconv.Itoa(int(handler.fallback_h2.Port))
 	}
 
 	return handler, nil
@@ -113,6 +121,33 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	first := buf.New()
 	first.ReadFrom(connection)
 
+	var fallback uint32
+	var addrport string
+	var unixpath string
+	var proxyver uint32
+
+	if h.fallback != nil {
+		fallback = 1
+		addrport = h.addrport
+		unixpath = h.fallback.Unix
+		proxyver = h.fallback.Xver
+	}
+
+	if h.fallback_h2 != nil {
+		iConn := connection
+		if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
+			iConn = statConn.Connection
+		}
+		if tlsConn, ok := iConn.(*tls.Conn); ok {
+			if tlsConn.ConnectionState().NegotiatedProtocol == "h2" {
+				fallback = 2
+				addrport = h.addrport_h2
+				unixpath = h.fallback_h2.Unix
+				proxyver = h.fallback_h2.Xver
+			}
+		}
+	}
+
 	sid := session.ExportIDToError(ctx)
 	newError("firstLen = ", first.Len()).AtInfo().WriteToLog(sid)
 
@@ -126,26 +161,33 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	var err error
 	var pre *buf.Buffer
 
-	if h.fallback != nil && first.Len() < 18 {
+	if fallback > 0 && first.Len() < 18 {
 		err = newError("fallback directly")
-		pre = buf.New()
 	} else {
 		request, requestAddons, err, pre = encoding.DecodeRequestHeader(reader, h.validator)
+		if pre == nil {
+			fallback = 0
+		}
 	}
 
 	if err != nil {
 
-		if h.fallback != nil && pre != nil {
-			newError("fallback starts").AtInfo().WriteToLog(sid)
+		if fallback > 0 {
+			switch fallback {
+			case 1:
+				newError("fallback starts").Base(err).AtInfo().WriteToLog(sid)
+			case 2:
+				newError("fallback_h2 starts").Base(err).AtInfo().WriteToLog(sid)
+			}
 
 			var conn net.Conn
 			if err := retry.ExponentialBackoff(5, 100).On(func() error {
 				var dialer net.Dialer
 				var err error
-				if h.fallback.Unix != "" {
-					conn, err = dialer.DialContext(ctx, "unix", h.fallback.Unix)
+				if unixpath != "" {
+					conn, err = dialer.DialContext(ctx, "unix", unixpath)
 				} else {
-					conn, err = dialer.DialContext(ctx, "tcp", h.addrport)
+					conn, err = dialer.DialContext(ctx, "tcp", addrport)
 				}
 				if err != nil {
 					return err
@@ -166,7 +208,59 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 
 			postRequest := func() error {
 				defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
-				if pre.Len() > 0 {
+				if proxyver > 0 {
+					remoteAddr, remotePort, err := net.SplitHostPort(connection.RemoteAddr().String())
+					if err != nil {
+						return err
+					}
+					localAddr, localPort, err := net.SplitHostPort(connection.LocalAddr().String())
+					if err != nil {
+						return err
+					}
+					ipv4 := true
+					for i := 0; i < len(remoteAddr); i++ {
+						if remoteAddr[i] == ':' {
+							ipv4 = false
+							break
+						}
+					}
+					pro := buf.New()
+					switch proxyver {
+					case 1:
+						if ipv4 {
+							pro.Write([]byte("PROXY TCP4 " + remoteAddr + " " + localAddr + " " + remotePort + " " + localPort + "\r\n"))
+						} else {
+							pro.Write([]byte("PROXY TCP6 " + remoteAddr + " " + localAddr + " " + remotePort + " " + localPort + "\r\n"))
+						}
+					case 2:
+						pro.Write([]byte("\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A\x21")) // signature + v2 + PROXY
+						if ipv4 {
+							pro.Write([]byte("\x11\x00\x0C")) // AF_INET + STREAM + 12 bytes
+							pro.Write(net.ParseIP(remoteAddr).To4())
+							pro.Write(net.ParseIP(localAddr).To4())
+						} else {
+							pro.Write([]byte("\x21\x00\x24")) // AF_INET6 + STREAM + 36 bytes
+							pro.Write(net.ParseIP(remoteAddr).To16())
+							pro.Write(net.ParseIP(localAddr).To16())
+						}
+						p1, _ := strconv.ParseInt(remotePort, 10, 64)
+						b1, _ := hex.DecodeString(strconv.FormatInt(p1, 16))
+						p2, _ := strconv.ParseInt(localPort, 10, 64)
+						b2, _ := hex.DecodeString(strconv.FormatInt(p2, 16))
+						if len(b1) == 1 {
+							pro.WriteByte(0)
+						}
+						pro.Write(b1)
+						if len(b2) == 1 {
+							pro.WriteByte(0)
+						}
+						pro.Write(b2)
+					}
+					if err := serverWriter.WriteMultiBuffer(buf.MultiBuffer{pro}); err != nil {
+						return newError("failed to set PROXY protocol v", proxyver).Base(err).AtWarning()
+					}
+				}
+				if pre != nil && pre.Len() > 0 {
 					if err := serverWriter.WriteMultiBuffer(buf.MultiBuffer{pre}); err != nil {
 						return newError("failed to fallback request pre").Base(err).AtWarning()
 					}
