@@ -123,7 +123,7 @@ func DecodeRequestHeader(reader io.Reader, validator *vless.Validator) (*protoco
 
 	default:
 
-		return nil, nil, newError("unexpected request version"), pre
+		return nil, nil, newError("invalid request version"), pre
 
 	}
 
