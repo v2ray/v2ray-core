@@ -78,7 +78,7 @@ func TestVLessInbound(t *testing.T) {
 				],
 				"decryption": "none",
 				"fallback": {
-					"port": 80,
+					"port": 80
 				},
 				"fallback_h2": {
 					"unix": "@/dev/shm/domain.socket",
