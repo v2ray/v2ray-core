@@ -29,29 +29,29 @@ func EncodeRequestHeader(writer io.Writer, request *protocol.RequestHeader, requ
 	defer buffer.Release()
 
 	if err := buffer.WriteByte(request.Version); err != nil {
-		return newError("failed to write request version").Base(err).AtWarning()
+		return newError("failed to write request version").Base(err)
 	}
 
 	if _, err := buffer.Write(request.User.Account.(*vless.MemoryAccount).ID.Bytes()); err != nil {
-		return newError("failed to write request user id").Base(err).AtWarning()
+		return newError("failed to write request user id").Base(err)
 	}
 
 	if err := EncodeHeaderAddons(&buffer, requestAddons); err != nil {
-		return newError("failed to encode request header addons").Base(err).AtWarning()
+		return newError("failed to encode request header addons").Base(err)
 	}
 
 	if err := buffer.WriteByte(byte(request.Command)); err != nil {
-		return newError("failed to write request command").Base(err).AtWarning()
+		return newError("failed to write request command").Base(err)
 	}
 
 	if request.Command != protocol.RequestCommandMux {
 		if err := addrParser.WriteAddressPort(&buffer, request.Address, request.Port); err != nil {
-			return newError("failed to write request address and port").Base(err).AtWarning()
+			return newError("failed to write request address and port").Base(err)
 		}
 	}
 
 	if _, err := writer.Write(buffer.Bytes()); err != nil {
-		return newError("failed to write request header").Base(err).AtWarning()
+		return newError("failed to write request header").Base(err)
 	}
 
 	return nil
@@ -67,7 +67,7 @@ func DecodeRequestHeader(reader io.Reader, validator *vless.Validator) (*protoco
 
 	if _, err := buffer.ReadFullFrom(reader, 1); err != nil {
 		pre.Write(buffer.Bytes())
-		return nil, nil, newError("failed to read request version").Base(err).AtWarning(), pre
+		return nil, nil, newError("failed to read request version").Base(err), pre
 	}
 
 	request := &protocol.RequestHeader{
@@ -82,7 +82,7 @@ func DecodeRequestHeader(reader io.Reader, validator *vless.Validator) (*protoco
 		buffer.Clear()
 		if _, err := buffer.ReadFullFrom(reader, protocol.IDBytesLen); err != nil {
 			pre.Write(buffer.Bytes())
-			return nil, nil, newError("failed to read request user id").Base(err).AtWarning(), pre
+			return nil, nil, newError("failed to read request user id").Base(err), pre
 		}
 
 		var id [16]byte
@@ -90,17 +90,17 @@ func DecodeRequestHeader(reader io.Reader, validator *vless.Validator) (*protoco
 
 		if request.User = validator.Get(id); request.User == nil {
 			pre.Write(buffer.Bytes())
-			return nil, nil, newError("invalid request user id").AtWarning(), pre
+			return nil, nil, newError("invalid request user id"), pre
 		}
 
 		requestAddons, err := DecodeHeaderAddons(&buffer, reader)
 		if err != nil {
-			return nil, nil, newError("failed to decode request header addons").Base(err).AtWarning(), nil
+			return nil, nil, newError("failed to decode request header addons").Base(err), nil
 		}
 
 		buffer.Clear()
 		if _, err := buffer.ReadFullFrom(reader, 1); err != nil {
-			return nil, nil, newError("failed to read request command").Base(err).AtWarning(), nil
+			return nil, nil, newError("failed to read request command").Base(err), nil
 		}
 
 		request.Command = protocol.RequestCommand(buffer.Byte(0))
@@ -116,14 +116,14 @@ func DecodeRequestHeader(reader io.Reader, validator *vless.Validator) (*protoco
 		}
 
 		if request.Address == nil {
-			return nil, nil, newError("invalid request address").AtWarning(), nil
+			return nil, nil, newError("invalid request address"), nil
 		}
 
 		return request, requestAddons, nil, nil
 
 	default:
 
-		return nil, nil, newError("unexpected request version").AtWarning(), pre
+		return nil, nil, newError("unexpected request version"), pre
 
 	}
 
@@ -136,15 +136,15 @@ func EncodeResponseHeader(writer io.Writer, request *protocol.RequestHeader, res
 	defer buffer.Release()
 
 	if err := buffer.WriteByte(request.Version); err != nil {
-		return newError("failed to write response version").Base(err).AtWarning()
+		return newError("failed to write response version").Base(err)
 	}
 
 	if err := EncodeHeaderAddons(&buffer, responseAddons); err != nil {
-		return newError("failed to encode response header addons").Base(err).AtWarning()
+		return newError("failed to encode response header addons").Base(err)
 	}
 
 	if _, err := writer.Write(buffer.Bytes()); err != nil {
-		return newError("failed to write response header").Base(err).AtWarning()
+		return newError("failed to write response header").Base(err)
 	}
 
 	return nil
@@ -157,16 +157,16 @@ func DecodeResponseHeader(reader io.Reader, request *protocol.RequestHeader, res
 	defer buffer.Release()
 
 	if _, err := buffer.ReadFullFrom(reader, 1); err != nil {
-		return newError("failed to read response version").Base(err).AtWarning()
+		return newError("failed to read response version").Base(err)
 	}
 
 	if buffer.Byte(0) != request.Version {
-		return newError("unexpected response version. Expecting ", int(request.Version), " but actually ", int(buffer.Byte(0))).AtWarning()
+		return newError("unexpected response version. Expecting ", int(request.Version), " but actually ", int(buffer.Byte(0)))
 	}
 
 	responseAddons, err := DecodeHeaderAddons(&buffer, reader)
 	if err != nil {
-		return newError("failed to decode response header addons").Base(err).AtWarning()
+		return newError("failed to decode response header addons").Base(err)
 	}
 
 	return nil

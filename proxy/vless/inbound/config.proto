@@ -13,6 +13,14 @@ message Fallback {
   v2ray.core.common.net.IPOrDomain addr = 1;
   uint32 port = 2;
   string unix = 3;
+  uint32 xver = 4;
+}
+
+message Fallback_h2 {
+  v2ray.core.common.net.IPOrDomain addr = 1;
+  uint32 port = 2;
+  string unix = 3;
+  uint32 xver = 4;
 }
 
 message Config {
@@ -20,4 +28,5 @@ message Config {
   // Decryption settings. Only applies to server side, and only accepts "none" for now.
   string decryption = 2;
   Fallback fallback = 3;
+  Fallback_h2 fallback_h2 = 4;
 }

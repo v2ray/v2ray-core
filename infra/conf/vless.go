@@ -17,12 +17,14 @@ type VLessInboundFallback struct {
 	Addr *Address `json:"addr"`
 	Port uint16   `json:"port"`
 	Unix string   `json:"unix"`
+	Xver uint16   `json:"xver"`
 }
 
 type VLessInboundConfig struct {
-	Users      []json.RawMessage     `json:"clients"`
-	Decryption string                `json:"decryption"`
-	Fallback   *VLessInboundFallback `json:"fallback"`
+	Users       []json.RawMessage     `json:"clients"`
+	Decryption  string                `json:"decryption"`
+	Fallback    *VLessInboundFallback `json:"fallback"`
+	Fallback_h2 *VLessInboundFallback `json:"fallback_h2"`
 }
 
 // Build implements Buildable
@@ -36,6 +38,9 @@ func (c *VLessInboundConfig) Build() (proto.Message, error) {
 	config.Decryption = c.Decryption
 
 	if c.Fallback != nil {
+		if c.Fallback.Xver > 2 {
+			return nil, newError(`VLESS "fallback": invalid PROXY protocol version, "xver" only accepts 0, 1, 2`)
+		}
 		if c.Fallback.Unix != "" {
 			if c.Fallback.Unix[0] == '@' {
 				c.Fallback.Unix = "\x00" + c.Fallback.Unix[1:]
@@ -54,6 +59,36 @@ func (c *VLessInboundConfig) Build() (proto.Message, error) {
 			Addr: c.Fallback.Addr.Build(),
 			Port: uint32(c.Fallback.Port),
 			Unix: c.Fallback.Unix,
+			Xver: uint32(c.Fallback.Xver),
+		}
+	}
+
+	if c.Fallback_h2 != nil {
+		if config.Fallback == nil {
+			return nil, newError(`VLESS "fallback_h2" can't exist alone without "fallback"`)
+		}
+		if c.Fallback_h2.Xver > 2 {
+			return nil, newError(`VLESS "fallback_h2": invalid PROXY protocol version, "xver" only accepts 0, 1, 2`)
+		}
+		if c.Fallback_h2.Unix != "" {
+			if c.Fallback_h2.Unix[0] == '@' {
+				c.Fallback_h2.Unix = "\x00" + c.Fallback_h2.Unix[1:]
+			}
+		} else {
+			if c.Fallback_h2.Port == 0 {
+				return nil, newError(`please fill in a valid value for "port" in VLESS "fallback_h2"`)
+			}
+		}
+		if c.Fallback_h2.Addr == nil {
+			c.Fallback_h2.Addr = &Address{
+				Address: net.ParseAddress("127.0.0.1"),
+			}
+		}
+		config.FallbackH2 = &inbound.FallbackH2{
+			Addr: c.Fallback_h2.Addr.Build(),
+			Port: uint32(c.Fallback_h2.Port),
+			Unix: c.Fallback_h2.Unix,
+			Xver: uint32(c.Fallback_h2.Xver),
 		}
 	}
 
