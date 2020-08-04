@@ -121,33 +121,6 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	first := buf.New()
 	first.ReadFrom(connection)
 
-	var fallback uint32
-	var addrport string
-	var unixpath string
-	var proxyver uint32
-
-	if h.fallback != nil {
-		fallback = 1
-		addrport = h.addrport
-		unixpath = h.fallback.Unix
-		proxyver = h.fallback.Xver
-	}
-
-	if h.fallback_h2 != nil {
-		iConn := connection
-		if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
-			iConn = statConn.Connection
-		}
-		if tlsConn, ok := iConn.(*tls.Conn); ok {
-			if tlsConn.ConnectionState().NegotiatedProtocol == "h2" {
-				fallback = 2
-				addrport = h.addrport_h2
-				unixpath = h.fallback_h2.Unix
-				proxyver = h.fallback_h2.Xver
-			}
-		}
-	}
-
 	sid := session.ExportIDToError(ctx)
 	newError("firstLen = ", first.Len()).AtInfo().WriteToLog(sid)
 
@@ -161,7 +134,12 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	var err error
 	var pre *buf.Buffer
 
-	if fallback > 0 && first.Len() < 18 {
+	fallback := 0
+	if h.fallback != nil {
+		fallback = 1
+	}
+
+	if fallback == 1 && first.Len() < 18 {
 		err = newError("fallback directly")
 	} else {
 		request, requestAddons, err, pre = encoding.DecodeRequestHeader(reader, h.validator)
@@ -172,11 +150,33 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 
 	if err != nil {
 
-		if fallback > 0 {
+		if fallback == 1 {
+			if h.fallback_h2 != nil {
+				iConn := connection
+				if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
+					iConn = statConn.Connection
+				}
+				if tlsConn, ok := iConn.(*tls.Conn); ok {
+					if tlsConn.ConnectionState().NegotiatedProtocol == "h2" {
+						fallback = 2
+					}
+				}
+			}
+
+			var addrport string
+			var unixpath string
+			var proxyver uint32
+
 			switch fallback {
 			case 1:
+				addrport = h.addrport
+				unixpath = h.fallback.Unix
+				proxyver = h.fallback.Xver
 				newError("fallback starts").Base(err).AtInfo().WriteToLog(sid)
 			case 2:
+				addrport = h.addrport_h2
+				unixpath = h.fallback_h2.Unix
+				proxyver = h.fallback_h2.Xver
 				newError("fallback_h2 starts").Base(err).AtInfo().WriteToLog(sid)
 			}
 
