@@ -22,7 +22,7 @@ type Counter interface {
 type Manager interface {
 	features.Feature
 
-	// RegisterCounter registers a new counter to the manager. The identifier string must not be emtpy, and unique among other counters.
+	// RegisterCounter registers a new counter to the manager. The identifier string must not be empty, and unique among other counters.
 	RegisterCounter(string) (Counter, error)
 	UnregisterCounter(string) error
 	// GetCounter returns a counter by its identifier.

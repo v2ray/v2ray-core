@@ -2,71 +2,25 @@ trigger:
   batch: true
   branches:
     include:
-    - master
-    - dev*
-    - refs/tags/*
+      - master
+      - dev*
+      - refs/tags/*
 
-pr:
-  - master
-  - dev*
+pool:
+  vmImage: 'ubuntu-latest'
 
-jobs:
-- template: azure-pipelines.template.yml
-  parameters:
-    name: linux
-    vmImage: 'ubuntu-latest'
+variables:
+  - group: GithubToken
+  - name: GOPATH
+    value: '$(system.defaultWorkingDirectory)/gopath'
+  - name: BAZEL_VER
+    value: '0.23.0'
 
-- template: azure-pipelines.template.yml
-  parameters:
-    name: windows
-    vmImage: 'windows-latest'
-
-- template: azure-pipelines.template.yml
-  parameters:
-    name: macos
-    vmImage: 'macOS-latest'
-
-- job: linux_coverage
-  dependsOn: linux
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-  timeoutInMinutes: 30
-
-  pool:
-    vmImage: 'ubuntu-latest'
-
-#variables:
-#    CODECOV_TOKEN: '$(coverage.token)'
-
-
-  steps:
+steps:
   - checkout: self
   - task: GoTool@0
     inputs:
-      version: '1.14.4'
-  - script: |
-      bash ./testing/coverage/coverall
-    workingDirectory: '$(Build.SourcesDirectory)'
-    displayName: 'Coverage'
-
-- job: make_release
-  dependsOn: linux
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-  timeoutInMinutes: 60
-
-  pool:
-    vmImage: 'ubuntu-latest'
-  variables:
-    - group: GithubToken
-    - name: GOPATH
-      value: '$(system.defaultWorkingDirectory)/gopath'
-    - name: BAZEL_VER
-      value: '0.23.0'
-
-  steps:
-  - checkout: self
-  - task: GoTool@0
-    inputs:
-      version: '1.14.4'
+      version: '1.14.6'
   - script: |
       mkdir triggersrc
       ls -I "triggersrc" | xargs cp -rf -t triggersrc
