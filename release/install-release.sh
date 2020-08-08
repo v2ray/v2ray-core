@@ -489,4 +489,6 @@ main(){
     return 0
 }
 
+colorEcho ${RED} "WARN: This script will be obsolete soon, please switch to the fhs-install-v2ray project in time."
+colorEcho ${YELLOW} "URL: https://github.com/v2fly/fhs-install-v2ray"
 main
