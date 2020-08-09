@@ -1,11 +1,12 @@
 package protocol
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	proto "github.com/golang/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 	serial "v2ray.com/core/common/serial"
 )
 
@@ -28,8 +29,12 @@ type User struct {
 
 	Level uint32 `protobuf:"varint,1,opt,name=level,proto3" json:"level,omitempty"`
 	Email string `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+
 	// Protocol specific account information. Must be the account proto in one of the proxies.
 	Account *serial.TypedMessage `protobuf:"bytes,3,opt,name=account,proto3" json:"account,omitempty"`
+
+	// Multiuser rate limit
+	Rate uint64 `protobuf:"bytes,4,opt,name=rate,proto3" json:"rate,omitempty"`
 }
 
 func (x *User) Reset() {

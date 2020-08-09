@@ -1,11 +1,12 @@
 package dispatcher
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	proto "github.com/golang/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -104,7 +105,7 @@ func (x *Config) GetSettings() *SessionConfig {
 	return nil
 }
 
-var File_v2ray_com_core_app_dispatcher_config_proto protoreflect.FileDescriptor
+var file_v2ray_com_core_app_dispatcher_config_proto protoreflect.FileDescriptor
 
 var file_v2ray_com_core_app_dispatcher_config_proto_rawDesc = []byte{
 	0x0a, 0x2a, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x72, 0x65,
@@ -154,7 +155,7 @@ var file_v2ray_com_core_app_dispatcher_config_proto_depIdxs = []int32{
 
 func init() { file_v2ray_com_core_app_dispatcher_config_proto_init() }
 func file_v2ray_com_core_app_dispatcher_config_proto_init() {
-	if File_v2ray_com_core_app_dispatcher_config_proto != nil {
+	if file_v2ray_com_core_app_dispatcher_config_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
@@ -197,7 +198,7 @@ func file_v2ray_com_core_app_dispatcher_config_proto_init() {
 		DependencyIndexes: file_v2ray_com_core_app_dispatcher_config_proto_depIdxs,
 		MessageInfos:      file_v2ray_com_core_app_dispatcher_config_proto_msgTypes,
 	}.Build()
-	File_v2ray_com_core_app_dispatcher_config_proto = out.File
+	file_v2ray_com_core_app_dispatcher_config_proto = out.File
 	file_v2ray_com_core_app_dispatcher_config_proto_rawDesc = nil
 	file_v2ray_com_core_app_dispatcher_config_proto_goTypes = nil
 	file_v2ray_com_core_app_dispatcher_config_proto_depIdxs = nil

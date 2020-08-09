@@ -27,6 +27,7 @@ func (u *User) ToMemoryUser() (*MemoryUser, error) {
 		Account: account,
 		Email:   u.Email,
 		Level:   u.Level,
+		Rate:    u.Rate,
 	}, nil
 }
 
@@ -36,4 +37,5 @@ type MemoryUser struct {
 	Account Account
 	Email   string
 	Level   uint32
+	Rate    uint64
 }
