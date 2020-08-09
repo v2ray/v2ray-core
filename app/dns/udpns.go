@@ -134,7 +134,7 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, packet *udp_prot
 	}
 
 	elapsed := time.Since(req.start)
-	newError(s.name, " got answere: ", req.domain, " ", req.reqType, " -> ", ipRec.IP, " ", elapsed).AtInfo().WriteToLog()
+	newError(s.name, " got answer: ", req.domain, " ", req.reqType, " -> ", ipRec.IP, " ", elapsed).AtInfo().WriteToLog()
 	if len(req.domain) > 0 && (rec.A != nil || rec.AAAA != nil) {
 		s.updateIP(req.domain, rec)
 	}
