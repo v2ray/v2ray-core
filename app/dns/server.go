@@ -86,10 +86,18 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	}
 	server.hosts = hosts
 
-	addNameServer := func(endpoint *net.Endpoint) int {
+	addNameServer := func(ns *NameServer) int {
+		endpoint := ns.Address
 		address := endpoint.Address.AsAddress()
 		if address.Family().IsDomain() && address.Domain() == "localhost" {
 			server.clients = append(server.clients, NewLocalNameServer())
+			if len(ns.PrioritizedDomain) == 0 { // Priotize local domain with .local domain or without any dot to local DNS
+				ns.PrioritizedDomain = []*NameServer_PriorityDomain{
+					{Type: DomainMatchingType_Regex, Domain: "^[^.]*$"}, // This will only match domain without any dot
+					{Type: DomainMatchingType_Subdomain, Domain: "local"},
+					{Type: DomainMatchingType_Subdomain, Domain: "localdomain"},
+				}
+			}
 		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "https+local://") {
 			// URI schemed string treated as domain
 			// DOH Local mode
@@ -137,7 +145,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	if len(config.NameServers) > 0 {
 		features.PrintDeprecatedFeatureWarning("simple DNS server")
 		for _, destPB := range config.NameServers {
-			addNameServer(destPB)
+			addNameServer(&NameServer{Address: destPB})
 		}
 	}
 
@@ -148,7 +156,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		var geoIPMatcherContainer router.GeoIPMatcherContainer
 
 		for _, ns := range config.NameServer {
-			idx := addNameServer(ns.Address)
+			idx := addNameServer(ns)
 
 			for _, domain := range ns.PrioritizedDomain {
 				matcher, err := toStrMatcher(domain.Type, domain.Domain)
@@ -305,11 +313,6 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 	// normalize the FQDN form query
 	if domain[len(domain)-1] == '.' {
 		domain = domain[:len(domain)-1]
-	}
-
-	// skip domain without any dot
-	if !strings.Contains(domain, ".") {
-		return nil, newError("invalid domain name").AtWarning()
 	}
 
 	ips := s.lookupStatic(domain, option, 0)
