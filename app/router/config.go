@@ -83,9 +83,13 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 	}
 
 	if rr.PortList != nil {
-		conds.Add(NewPortMatcher(rr.PortList))
+		conds.Add(NewPortMatcher(rr.PortList, false))
 	} else if rr.PortRange != nil {
-		conds.Add(NewPortMatcher(&net.PortList{Range: []*net.PortRange{rr.PortRange}}))
+		conds.Add(NewPortMatcher(&net.PortList{Range: []*net.PortRange{rr.PortRange}}, false))
+	}
+
+	if rr.SourcePortList != nil {
+		conds.Add(NewPortMatcher(rr.SourcePortList, true))
 	}
 
 	if len(rr.Networks) > 0 {

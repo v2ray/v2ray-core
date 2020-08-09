@@ -154,20 +154,32 @@ func (m *MultiGeoIPMatcher) Apply(ctx *Context) bool {
 }
 
 type PortMatcher struct {
-	port net.MemoryPortList
+	port     net.MemoryPortList
+	onSource bool
 }
 
-func NewPortMatcher(list *net.PortList) *PortMatcher {
+// NewPortMatcher create a new port matcher that can match source or destination port
+func NewPortMatcher(list *net.PortList, onSource bool) *PortMatcher {
 	return &PortMatcher{
-		port: net.PortListFromProto(list),
+		port:     net.PortListFromProto(list),
+		onSource: onSource,
 	}
 }
 
 func (v *PortMatcher) Apply(ctx *Context) bool {
-	if ctx.Outbound == nil || !ctx.Outbound.Target.IsValid() {
-		return false
+	var port net.Port
+	if v.onSource {
+		if ctx.Inbound == nil || !ctx.Inbound.Source.IsValid() {
+			return false
+		}
+		port = ctx.Inbound.Source.Port
+	} else {
+		if ctx.Outbound == nil || !ctx.Outbound.Target.IsValid() {
+			return false
+		}
+		port = ctx.Outbound.Target.Port
 	}
-	return v.port.Contains(ctx.Outbound.Target.Port)
+	return v.port.Contains(port)
 }
 
 type NetworkMatcher struct {
