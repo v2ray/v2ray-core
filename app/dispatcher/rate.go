@@ -27,7 +27,8 @@ func NewRateLimiter(rate int64) *RateLimiter {
 
 func RateWriter(writer buf.Writer, limiter *RateLimiter) buf.Writer {
 	return &Writer{
-		writer: writer,
+		writer:  writer,
+		limiter: limiter,
 	}
 }
 
