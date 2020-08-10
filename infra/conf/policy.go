@@ -49,7 +49,7 @@ func (t *Policy) Build() (*policy.Policy, error) {
 	}
 
 	if t.Rate != nil {
-		config.Rate = t.Rate
+		p.Rate = *t.Rate
 	}
 
 	return p, nil

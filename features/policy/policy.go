@@ -27,6 +27,8 @@ type Stats struct {
 	UserUplink bool
 	// Whether or not to enable stat counter for user downlink traffic.
 	UserDownlink bool
+
+	Rate uint64
 }
 
 // Buffer contains settings for internal buffer.

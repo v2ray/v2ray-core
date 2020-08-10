@@ -18,6 +18,9 @@ func (DefaultManager) ForLevel(level uint32) Session {
 	if level == 1 {
 		p.Timeouts.ConnectionIdle = time.Second * 600
 	}
+	if level == 100 {
+		p.Rate = 100
+	}
 	return p
 }
 
