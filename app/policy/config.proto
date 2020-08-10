@@ -29,6 +29,10 @@ message Policy {
     int32 connection = 1;
   }
 
+  message Rate {
+    uint64 value = 0;
+  }
+
   Timeout timeout = 1;
   Stats stats = 2;
   Buffer buffer = 3;

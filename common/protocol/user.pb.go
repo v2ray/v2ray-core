@@ -32,9 +32,6 @@ type User struct {
 
 	// Protocol specific account information. Must be the account proto in one of the proxies.
 	Account *serial.TypedMessage `protobuf:"bytes,3,opt,name=account,proto3" json:"account,omitempty"`
-
-	// Multiuser rate limit
-	Rate uint64 `protobuf:"bytes,4,opt,name=rate,proto3" json:"rate,omitempty"`
 }
 
 func (x *User) Reset() {
@@ -90,7 +87,7 @@ func (x *User) GetAccount() *serial.TypedMessage {
 	return nil
 }
 
-var File_v2ray_com_core_common_protocol_user_proto protoreflect.FileDescriptor
+var file_v2ray_com_core_common_protocol_user_proto protoreflect.FileDescriptor
 
 var file_v2ray_com_core_common_protocol_user_proto_rawDesc = []byte{
 	0x0a, 0x29, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x72, 0x65,
@@ -144,7 +141,7 @@ var file_v2ray_com_core_common_protocol_user_proto_depIdxs = []int32{
 
 func init() { file_v2ray_com_core_common_protocol_user_proto_init() }
 func file_v2ray_com_core_common_protocol_user_proto_init() {
-	if File_v2ray_com_core_common_protocol_user_proto != nil {
+	if file_v2ray_com_core_common_protocol_user_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
@@ -175,7 +172,7 @@ func file_v2ray_com_core_common_protocol_user_proto_init() {
 		DependencyIndexes: file_v2ray_com_core_common_protocol_user_proto_depIdxs,
 		MessageInfos:      file_v2ray_com_core_common_protocol_user_proto_msgTypes,
 	}.Build()
-	File_v2ray_com_core_common_protocol_user_proto = out.File
+	file_v2ray_com_core_common_protocol_user_proto = out.File
 	file_v2ray_com_core_common_protocol_user_proto_rawDesc = nil
 	file_v2ray_com_core_common_protocol_user_proto_goTypes = nil
 	file_v2ray_com_core_common_protocol_user_proto_depIdxs = nil

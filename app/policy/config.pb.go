@@ -80,6 +80,7 @@ type Policy struct {
 	Timeout *Policy_Timeout `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	Stats   *Policy_Stats   `protobuf:"bytes,2,opt,name=stats,proto3" json:"stats,omitempty"`
 	Buffer  *Policy_Buffer  `protobuf:"bytes,3,opt,name=buffer,proto3" json:"buffer,omitempty"`
+	Rate    *uint64         `protobuf:"bytes,4,opt,name=rate,proto3" json:"rate,omitempty"`
 }
 
 func (x *Policy) Reset() {
@@ -247,6 +248,7 @@ type Policy_Timeout struct {
 	ConnectionIdle *Second `protobuf:"bytes,2,opt,name=connection_idle,json=connectionIdle,proto3" json:"connection_idle,omitempty"`
 	UplinkOnly     *Second `protobuf:"bytes,3,opt,name=uplink_only,json=uplinkOnly,proto3" json:"uplink_only,omitempty"`
 	DownlinkOnly   *Second `protobuf:"bytes,4,opt,name=downlink_only,json=downlinkOnly,proto3" json:"downlink_only,omitempty"`
+	Rate           *uint64 `protobuf:"bytes,5,opt,name=rate,proto3" json:"rate,omitempty"`
 }
 
 func (x *Policy_Timeout) Reset() {

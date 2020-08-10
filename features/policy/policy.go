@@ -58,6 +58,7 @@ type Session struct {
 	Timeouts Timeout // Timeout settings
 	Stats    Stats
 	Buffer   Buffer
+	Rate     uint64
 }
 
 // Manager is a feature that provides Policy for the given user by its id or level.
@@ -129,6 +130,7 @@ func SessionDefault() Session {
 			UserDownlink: false,
 		},
 		Buffer: defaultBufferPolicy(),
+		Rate:   0,
 	}
 }
 

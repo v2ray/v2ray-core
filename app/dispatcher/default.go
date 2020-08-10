@@ -6,6 +6,7 @@ package dispatcher
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -154,13 +155,14 @@ func (d *DefaultDispatcher) getLink(ctx context.Context) (*transport.Link, *tran
 	if user != nil && len(user.Email) > 0 {
 
 		var bucket *RateLimiter
-		if user.Rate != 0 {
-			bucket = NewRateLimiter(int64(user.Rate) * 1024)
+		p := d.policy.ForLevel(user.Level)
+		fmt.Println(p.Rate)
+		if p.Rate != 0 {
+			bucket = NewRateLimiter(int64(p.Rate) * 1024)
 			inboundLink.Writer = RateWriter(inboundLink.Writer, bucket)
 			outboundLink.Writer = RateWriter(outboundLink.Writer, bucket)
 		}
 
-		p := d.policy.ForLevel(user.Level)
 		if p.Stats.UserUplink {
 			name := "user>>>" + user.Email + ">>>traffic>>>uplink"
 			if c, _ := stats.GetOrRegisterCounter(d.stats, name); c != nil {
