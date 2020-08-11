@@ -8,10 +8,18 @@ option java_multiple_files = true;
 
 import "v2ray.com/core/common/serial/typed_message.proto";
 
+message ApiCertTuple{
+  string ca = 1;
+  string key = 2;
+  string pub = 3;
+}
+
 // Config is the settings for Commander.
 message Config {
   // Tag of the outbound handler that handles grpc connections.
   string tag = 1;
   // Services that supported by this server. All services must implement Service interface.
   repeated v2ray.core.common.serial.TypedMessage service = 2;
+  // Cert
+  ApiCertTuple cert = 3;
 }
