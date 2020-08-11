@@ -50,6 +50,9 @@ func (*staticHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 				rr, _ := dns.NewRR("google.com. IN A 8.8.4.4")
 				ans.Answer = append(ans.Answer, rr)
 			}
+		} else if q.Name == "api.google.com." && q.Qtype == dns.TypeA {
+			rr, _ := dns.NewRR("api.google.com. IN A 8.8.7.7")
+			ans.Answer = append(ans.Answer, rr)
 		} else if q.Name == "facebook.com." && q.Qtype == dns.TypeA {
 			rr, _ := dns.NewRR("facebook.com. IN A 9.9.9.9")
 			ans.Answer = append(ans.Answer, rr)
@@ -745,6 +748,167 @@ func TestLocalDomain(t *testing.T) {
 		}
 
 		if r := cmp.Diff(ips, []net.IP{{127, 0, 0, 1}}); r != "" {
+			t.Fatal(r)
+		}
+	}
+
+	endTime := time.Now()
+	if startTime.After(endTime.Add(time.Second * 2)) {
+		t.Error("DNS query doesn't finish in 2 seconds.")
+	}
+}
+
+func TestMultiMatchPrioritizedDomain(t *testing.T) {
+	port := udp.PickPort()
+
+	dnsServer := dns.Server{
+		Addr:    "127.0.0.1:" + port.String(),
+		Net:     "udp",
+		Handler: &staticHandler{},
+		UDPSize: 1200,
+	}
+
+	go dnsServer.ListenAndServe()
+	time.Sleep(time.Second)
+
+	config := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&Config{
+				NameServers: []*net.Endpoint{
+					{
+						Network: net.Network_UDP,
+						Address: &net.IPOrDomain{
+							Address: &net.IPOrDomain_Ip{
+								Ip: []byte{127, 0, 0, 1},
+							},
+						},
+						Port: 9999, /* unreachable */
+					},
+				},
+				NameServer: []*NameServer{
+					{
+						Address: &net.Endpoint{
+							Network: net.Network_UDP,
+							Address: &net.IPOrDomain{
+								Address: &net.IPOrDomain_Ip{
+									Ip: []byte{127, 0, 0, 1},
+								},
+							},
+							Port: uint32(port),
+						},
+						PrioritizedDomain: []*NameServer_PriorityDomain{
+							{
+								Type:   DomainMatchingType_Subdomain,
+								Domain: "google.com",
+							},
+						},
+						Geoip: []*router.GeoIP{
+							{ // Will only match 8.8.8.8 and 8.8.4.4
+								Cidr: []*router.CIDR{
+									{Ip: []byte{8, 8, 8, 8}, Prefix: 32},
+									{Ip: []byte{8, 8, 4, 4}, Prefix: 32},
+								},
+							},
+						},
+					},
+					{
+						Address: &net.Endpoint{
+							Network: net.Network_UDP,
+							Address: &net.IPOrDomain{
+								Address: &net.IPOrDomain_Ip{
+									Ip: []byte{127, 0, 0, 1},
+								},
+							},
+							Port: uint32(port),
+						},
+						PrioritizedDomain: []*NameServer_PriorityDomain{
+							{
+								Type:   DomainMatchingType_Subdomain,
+								Domain: "google.com",
+							},
+						},
+						Geoip: []*router.GeoIP{
+							{ // Will match 8.8.8.8 and 8.8.8.7, etc
+								Cidr: []*router.CIDR{
+									{Ip: []byte{8, 8, 8, 7}, Prefix: 24},
+								},
+							},
+						},
+					},
+					{
+						Address: &net.Endpoint{
+							Network: net.Network_UDP,
+							Address: &net.IPOrDomain{
+								Address: &net.IPOrDomain_Ip{
+									Ip: []byte{127, 0, 0, 1},
+								},
+							},
+							Port: uint32(port),
+						},
+						PrioritizedDomain: []*NameServer_PriorityDomain{
+							{
+								Type:   DomainMatchingType_Full,
+								Domain: "api.google.com",
+							},
+						},
+						Geoip: []*router.GeoIP{
+							{ // Will only match 8.8.7.7 (api.google.com)
+								Cidr: []*router.CIDR{
+									{Ip: []byte{8, 8, 7, 7}, Prefix: 0},
+								},
+							},
+						},
+					},
+				},
+			}),
+			serial.ToTypedMessage(&dispatcher.Config{}),
+			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
+			serial.ToTypedMessage(&policy.Config{}),
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	v, err := core.New(config)
+	common.Must(err)
+
+	client := v.GetFeature(feature_dns.ClientType()).(feature_dns.Client)
+
+	startTime := time.Now()
+
+	{ // Will match server 1,2 and server 1 returns expected ip
+		ips, err := client.LookupIP("google.com")
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
+
+		if r := cmp.Diff(ips, []net.IP{{8, 8, 8, 8}}); r != "" {
+			t.Fatal(r)
+		}
+	}
+
+	{ // Will match server 1,2 and server 1 returns unexpected ip, then server 2 returns expected one
+		clientv4 := client.(feature_dns.IPv4Lookup)
+		ips, err := clientv4.LookupIPv4("ipv6.google.com")
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
+
+		if r := cmp.Diff(ips, []net.IP{{8, 8, 8, 7}}); r != "" {
+			t.Fatal(r)
+		}
+	}
+
+	{ // Will match server 1,2,3 and server 1,2 returns unexpected ip, then server 3 returns expected one
+		ips, err := client.LookupIP("api.google.com")
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
+
+		if r := cmp.Diff(ips, []net.IP{{8, 8, 7, 7}}); r != "" {
 			t.Fatal(r)
 		}
 	}

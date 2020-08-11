@@ -330,8 +330,8 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 	var lastErr error
 	var matchedClient Client
 	if s.domainMatcher != nil {
-		idx := s.domainMatcher.Match(domain)
-		if idx > 0 {
+		indices := s.domainMatcher.Match(domain)
+		for _, idx := range indices {
 			matchedClient = s.clients[s.domainIndexMap[idx]]
 			ips, err := s.queryIPTimeout(s.domainIndexMap[idx], matchedClient, domain, option)
 			if len(ips) > 0 {
