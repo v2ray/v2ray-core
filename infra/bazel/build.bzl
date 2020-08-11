@@ -3,7 +3,7 @@ def _go_command(ctx):
   if ctx.attr.os == "windows":
     output = output + ".exe"
 
-  output_file = ctx.actions.declare_file(ctx.attr.os + "/" + ctx.attr.arch + "/" + output)
+  output_file = ctx.actions.declare_file(ctx.attr.os + "/" + ctx.attr.arch + "/" + ctx.attr.ver + "/" + output)
   pkg = ctx.attr.pkg
 
   ld_flags = "-s -w"
@@ -61,6 +61,7 @@ foreign_go_binary = rule(
     'output': attr.string(),
     'os': attr.string(mandatory=True),
     'arch': attr.string(mandatory=True),
+    'ver': attr.string(mandatory=True),
     'mips': attr.string(),
     'arm': attr.string(),
     'ld': attr.string(),

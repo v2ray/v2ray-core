@@ -108,7 +108,7 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, packet *udp_prot
 
 	ipRec, err := parseResponse(packet.Payload.Bytes())
 	if err != nil {
-		newError(s.name, " fail to parse responsed DNS udp").AtError().WriteToLog()
+		newError(s.name, " fail to parse responded DNS udp").AtError().WriteToLog()
 		return
 	}
 

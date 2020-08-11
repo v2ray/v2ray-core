@@ -35,7 +35,7 @@ func (s *Server) Type() interface{} {
 	return s.dispatcher.Type()
 }
 
-// Dispatch impliments routing.Dispatcher
+// Dispatch implements routing.Dispatcher
 func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*transport.Link, error) {
 	if dest.Address != muxCoolAddress {
 		return s.dispatcher.Dispatch(ctx, dest)

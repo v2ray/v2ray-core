@@ -27,9 +27,9 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-// DoHNameServer implimented DNS over HTTPS (RFC8484) Wire Format,
-// which is compatiable with traditional dns over udp(RFC1035),
-// thus most of the DOH implimentation is copied from udpns.go
+// DoHNameServer implemented DNS over HTTPS (RFC8484) Wire Format,
+// which is compatible with traditional dns over udp(RFC1035),
+// thus most of the DOH implementation is copied from udpns.go
 type DoHNameServer struct {
 	sync.RWMutex
 	ips        map[string]record
@@ -48,16 +48,17 @@ func NewDoHNameServer(url *url.URL, dispatcher routing.Dispatcher, clientIP net.
 	newError("DNS: created Remote DOH client for ", url.String()).AtInfo().WriteToLog()
 	s := baseDOHNameServer(url, "DOH", clientIP)
 
-	// Dispatched connection will be closed (interupted) after each request
-	// This makes DOH inefficient without a keeped-alive connection
+	// Dispatched connection will be closed (interrupted) after each request
+	// This makes DOH inefficient without a keep-alived connection
 	// See: core/app/proxyman/outbound/handler.go:113
 	// Using mux (https request wrapped in a stream layer) improves the situation.
-	// Recommand to use NewDoHLocalNameServer (DOHL:) if v2ray instance is running on
+	// Recommend to use NewDoHLocalNameServer (DOHL:) if v2ray instance is running on
 	//  a normal network eg. the server side of v2ray
 	tr := &http.Transport{
 		MaxIdleConns:        30,
 		IdleConnTimeout:     90 * time.Second,
 		TLSHandshakeTimeout: 30 * time.Second,
+		ForceAttemptHTTP2:   true,
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			dest, err := net.ParseDestination(network + ":" + addr)
 			if err != nil {
@@ -89,7 +90,8 @@ func NewDoHLocalNameServer(url *url.URL, clientIP net.IP) *DoHNameServer {
 	url.Scheme = "https"
 	s := baseDOHNameServer(url, "DOHL", clientIP)
 	tr := &http.Transport{
-		IdleConnTimeout: 90 * time.Second,
+		IdleConnTimeout:   90 * time.Second,
+		ForceAttemptHTTP2: true,
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			dest, err := net.ParseDestination(network + ":" + addr)
 			if err != nil {
@@ -191,7 +193,7 @@ func (s *DoHNameServer) updateIP(req *dnsRequest, ipRec *IPRecord) {
 			updated = true
 		}
 	}
-	newError(s.name, " got answere: ", req.domain, " ", req.reqType, " -> ", ipRec.IP, " ", elapsed).AtInfo().WriteToLog()
+	newError(s.name, " got answer: ", req.domain, " ", req.reqType, " -> ", ipRec.IP, " ", elapsed).AtInfo().WriteToLog()
 
 	if updated {
 		s.ips[req.domain] = rec
@@ -246,10 +248,14 @@ func (s *DoHNameServer) sendQuery(ctx context.Context, domain string, option IPO
 			dnsCtx, cancel := context.WithDeadline(dnsCtx, deadline)
 			defer cancel()
 
-			b, _ := dns.PackMessage(r.msg)
+			b, err := dns.PackMessage(r.msg)
+			if err != nil {
+				newError("failed to pack dns query").Base(err).AtError().WriteToLog()
+				return
+			}
 			resp, err := s.dohHTTPSContext(dnsCtx, b.Bytes())
 			if err != nil {
-				newError("failed to retrive response").Base(err).AtError().WriteToLog()
+				newError("failed to retrieve response").Base(err).AtError().WriteToLog()
 				return
 			}
 			rec, err := parseResponse(resp)

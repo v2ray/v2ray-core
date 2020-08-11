@@ -159,8 +159,7 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protoco
 	copy(fixedSizeHash[:], userHash)
 	pair, found := v.userHash[fixedSizeHash]
 	if found {
-		var user protocol.MemoryUser
-		user = pair.user.user
+		user := pair.user.user
 		if atomic.LoadUint32(pair.taintedFuse) == 0 {
 			return &user, protocol.Timestamp(pair.timeInc) + v.baseTime, true, nil
 		}
@@ -186,13 +185,12 @@ func (v *TimedUserValidator) Remove(email string) bool {
 	v.Lock()
 	defer v.Unlock()
 
-	email = strings.ToLower(email)
 	idx := -1
-	for i, u := range v.users {
-		if strings.EqualFold(u.user.Email, email) {
+	for i := range v.users {
+		if strings.EqualFold(v.users[i].user.Email, email) {
 			idx = i
 			var cmdkeyfl [16]byte
-			copy(cmdkeyfl[:], u.user.Account.(*MemoryAccount).ID.CmdKey())
+			copy(cmdkeyfl[:], v.users[i].user.Account.(*MemoryAccount).ID.CmdKey())
 			v.aeadDecoderHolder.RemoveUser(cmdkeyfl)
 			break
 		}

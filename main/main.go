@@ -28,9 +28,9 @@ var (
 	test        = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
 	format      = flag.String("format", "json", "Format of input file.")
 
-	/*  We have to do this here because Golang's Test will also need to parse flag, before
-		main func in this file is run.
-	*/
+	/* We have to do this here because Golang's Test will also need to parse flag, before
+	 * main func in this file is run.
+	 */
 	_ = func() error {
 
 		flag.Var(&configFiles, "config", "Config file for V2Ray. Multiple assign is accepted (only json). Latter ones overrides the former ones.")
@@ -166,7 +166,7 @@ func main() {
 
 	{
 		osSignals := make(chan os.Signal, 1)
-		signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
+		signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
 		<-osSignals
 	}
 }

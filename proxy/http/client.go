@@ -3,10 +3,15 @@
 package http
 
 import (
+	"bufio"
 	"context"
 	"encoding/base64"
 	"io"
-	"strings"
+	"net/http"
+	"net/url"
+	"sync"
+
+	"golang.org/x/net/http2"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
@@ -20,12 +25,23 @@ import (
 	"v2ray.com/core/features/policy"
 	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/tls"
 )
 
 type Client struct {
 	serverPicker  protocol.ServerPicker
 	policyManager policy.Manager
 }
+
+type h2Conn struct {
+	rawConn net.Conn
+	h2Conn  *http2.ClientConn
+}
+
+var (
+	cachedH2Mutex sync.Mutex
+	cachedH2Conns map[net.Destination]h2Conn
+)
 
 // NewClient create a new http client based on the given config.
 func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
@@ -54,25 +70,26 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("target not specified.")
 	}
-	destination := outbound.Target
+	target := outbound.Target
+	targetAddr := target.NetAddr()
 
-	if destination.Network == net.Network_UDP {
+	if target.Network == net.Network_UDP {
 		return newError("UDP is not supported by HTTP outbound")
 	}
 
-	var server *protocol.ServerSpec
+	var user *protocol.MemoryUser
 	var conn internet.Connection
 
 	if err := retry.ExponentialBackoff(5, 100).On(func() error {
-		server = c.serverPicker.PickServer()
+		server := c.serverPicker.PickServer()
 		dest := server.Destination()
-		rawConn, err := dialer.Dial(ctx, dest)
-		if err != nil {
-			return err
-		}
-		conn = rawConn
+		user = server.PickUser()
 
-		return nil
+		netConn, err := setUpHTTPTunnel(ctx, dest, targetAddr, user, dialer)
+		if netConn != nil {
+			conn = internet.Connection(netConn)
+		}
+		return err
 	}); err != nil {
 		return newError("failed to find an available destination").Base(err)
 	}
@@ -84,14 +101,8 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	}()
 
 	p := c.policyManager.ForLevel(0)
-
-	user := server.PickUser()
 	if user != nil {
 		p = c.policyManager.ForLevel(user.Level)
-	}
-
-	if err := setUpHttpTunnel(conn, conn, &destination, user); err != nil {
-		return err
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -114,31 +125,145 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	return nil
 }
 
-// setUpHttpTunnel will create a socket tunnel via HTTP CONNECT method
-func setUpHttpTunnel(reader io.Reader, writer io.Writer, destination *net.Destination, user *protocol.MemoryUser) error {
-	var headers []string
-	destNetAddr := destination.NetAddr()
-	headers = append(headers, "CONNECT "+destNetAddr+" HTTP/1.1")
-	headers = append(headers, "Host: "+destNetAddr)
+// setUpHTTPTunnel will create a socket tunnel via HTTP CONNECT method
+func setUpHTTPTunnel(ctx context.Context, dest net.Destination, target string, user *protocol.MemoryUser, dialer internet.Dialer) (net.Conn, error) {
+	req := &http.Request{
+		Method: http.MethodConnect,
+		URL:    &url.URL{Host: target},
+		Header: http.Header{"Proxy-Connection": []string{"Keep-Alive"}},
+		Host:   target,
+	}
+
 	if user != nil && user.Account != nil {
 		account := user.Account.(*Account)
 		auth := account.GetUsername() + ":" + account.GetPassword()
-		headers = append(headers, "Proxy-Authorization: Basic "+base64.StdEncoding.EncodeToString([]byte(auth)))
-	}
-	headers = append(headers, "Proxy-Connection: Keep-Alive")
-
-	b := buf.New()
-	b.WriteString(strings.Join(headers, "\r\n") + "\r\n\r\n")
-	if err := buf.WriteAllBytes(writer, b.Bytes()); err != nil {
-		return err
+		req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(auth)))
 	}
 
-	b.Clear()
-	if _, err := b.ReadFrom(reader); err != nil {
-		return err
+	connectHTTP1 := func(rawConn net.Conn) (net.Conn, error) {
+		err := req.Write(rawConn)
+		if err != nil {
+			rawConn.Close()
+			return nil, err
+		}
+
+		resp, err := http.ReadResponse(bufio.NewReader(rawConn), req)
+		if err != nil {
+			rawConn.Close()
+			return nil, err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			rawConn.Close()
+			return nil, newError("Proxy responded with non 200 code: " + resp.Status)
+		}
+		return rawConn, nil
 	}
 
-	return nil
+	connectHTTP2 := func(rawConn net.Conn, h2clientConn *http2.ClientConn) (net.Conn, error) {
+		pr, pw := io.Pipe()
+		req.Body = pr
+
+		resp, err := h2clientConn.RoundTrip(req)
+		if err != nil {
+			rawConn.Close()
+			return nil, err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			rawConn.Close()
+			return nil, newError("Proxy responded with non 200 code: " + resp.Status)
+		}
+		return newHTTP2Conn(rawConn, pw, resp.Body), nil
+	}
+
+	cachedH2Mutex.Lock()
+	defer cachedH2Mutex.Unlock()
+
+	if cachedConn, found := cachedH2Conns[dest]; found {
+		rc, cc := cachedConn.rawConn, cachedConn.h2Conn
+		if cc.CanTakeNewRequest() {
+			proxyConn, err := connectHTTP2(rc, cc)
+			if err != nil {
+				return nil, err
+			}
+
+			return proxyConn, nil
+		}
+	}
+
+	rawConn, err := dialer.Dial(ctx, dest)
+	if err != nil {
+		return nil, err
+	}
+
+	iConn := rawConn
+	if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
+		iConn = statConn.Connection
+	}
+
+	nextProto := ""
+	if tlsConn, ok := iConn.(*tls.Conn); ok {
+		if err := tlsConn.Handshake(); err != nil {
+			rawConn.Close()
+			return nil, err
+		}
+		nextProto = tlsConn.ConnectionState().NegotiatedProtocol
+	}
+
+	switch nextProto {
+	case "", "http/1.1":
+		return connectHTTP1(rawConn)
+	case "h2":
+		t := http2.Transport{}
+		h2clientConn, err := t.NewClientConn(rawConn)
+		if err != nil {
+			rawConn.Close()
+			return nil, err
+		}
+
+		proxyConn, err := connectHTTP2(rawConn, h2clientConn)
+		if err != nil {
+			rawConn.Close()
+			return nil, err
+		}
+
+		if cachedH2Conns == nil {
+			cachedH2Conns = make(map[net.Destination]h2Conn)
+		}
+
+		cachedH2Conns[dest] = h2Conn{
+			rawConn: rawConn,
+			h2Conn:  h2clientConn,
+		}
+
+		return proxyConn, err
+	default:
+		return nil, newError("negotiated unsupported application layer protocol: " + nextProto)
+	}
+}
+
+func newHTTP2Conn(c net.Conn, pipedReqBody *io.PipeWriter, respBody io.ReadCloser) net.Conn {
+	return &http2Conn{Conn: c, in: pipedReqBody, out: respBody}
+}
+
+type http2Conn struct {
+	net.Conn
+	in  *io.PipeWriter
+	out io.ReadCloser
+}
+
+func (h *http2Conn) Read(p []byte) (n int, err error) {
+	return h.out.Read(p)
+}
+
+func (h *http2Conn) Write(p []byte) (n int, err error) {
+	return h.in.Write(p)
+}
+
+func (h *http2Conn) Close() error {
+	h.in.Close()
+	return h.out.Close()
 }
 
 func init() {
