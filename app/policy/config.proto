@@ -26,11 +26,8 @@ message Policy {
 
   message Buffer {
     // Buffer size per connection, in bytes. -1 for unlimited buffer.
-    int32 connection = 1;
-  }
-
-  message Rate {
-    uint64 value = 0;
+    int32  connection = 1;
+    uint64 rate = 2;
   }
 
   Timeout timeout = 1;

@@ -27,14 +27,13 @@ type Stats struct {
 	UserUplink bool
 	// Whether or not to enable stat counter for user downlink traffic.
 	UserDownlink bool
-
-	Rate uint64
 }
 
 // Buffer contains settings for internal buffer.
 type Buffer struct {
 	// Size of buffer per connection, in bytes. -1 for unlimited buffer.
 	PerConnection int32
+	Rate          uint64
 }
 
 // SystemStats contains stat policy settings on system level.
@@ -60,7 +59,6 @@ type Session struct {
 	Timeouts Timeout // Timeout settings
 	Stats    Stats
 	Buffer   Buffer
-	Rate     uint64
 }
 
 // Manager is a feature that provides Policy for the given user by its id or level.
@@ -84,6 +82,7 @@ func ManagerType() interface{} {
 }
 
 var defaultBufferSize int32
+var defaultRate uint64
 
 func init() {
 	const key = "v2ray.ray.buffer.size"
@@ -113,6 +112,7 @@ func init() {
 func defaultBufferPolicy() Buffer {
 	return Buffer{
 		PerConnection: defaultBufferSize,
+		Rate:          defaultRate,
 	}
 }
 
@@ -132,7 +132,6 @@ func SessionDefault() Session {
 			UserDownlink: false,
 		},
 		Buffer: defaultBufferPolicy(),
-		Rate:   0,
 	}
 }
 

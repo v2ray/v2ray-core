@@ -26,8 +26,8 @@ func defaultPolicy() *Policy {
 		},
 		Buffer: &Policy_Buffer{
 			Connection: p.Buffer.PerConnection,
+			Rate:       p.Buffer.Rate,
 		},
-		Rate: p.Rate,
 	}
 }
 
@@ -44,9 +44,6 @@ func (p *Policy_Timeout) overrideWith(another *Policy_Timeout) {
 	if another.DownlinkOnly != nil {
 		p.DownlinkOnly = &Second{Value: another.DownlinkOnly.Value}
 	}
-	if another.Rate != 0 {
-		p.Rate = another.Rate
-	}
 }
 
 func (p *Policy) overrideWith(another *Policy) {
@@ -60,10 +57,8 @@ func (p *Policy) overrideWith(another *Policy) {
 	if another.Buffer != nil {
 		p.Buffer = &Policy_Buffer{
 			Connection: another.Buffer.Connection,
+			Rate:       another.Buffer.Rate,
 		}
-	}
-	if another.Rate != 0 {
-		p.Rate = another.Rate
 	}
 }
 
@@ -83,9 +78,7 @@ func (p *Policy) ToCorePolicy() policy.Session {
 	}
 	if p.Buffer != nil {
 		cp.Buffer.PerConnection = p.Buffer.Connection
-	}
-	if p.Rate != 0 {
-		cp.Rate = p.Rate
+		cp.Buffer.Rate = p.Buffer.Rate
 	}
 	return cp
 }

@@ -38,18 +38,23 @@ func (t *Policy) Build() (*policy.Policy, error) {
 		},
 	}
 
+	var bs int32
+	var rate uint64
+
 	if t.BufferSize != nil {
-		bs := int32(-1)
+		bs = int32(-1)
 		if *t.BufferSize >= 0 {
 			bs = (*t.BufferSize) * 1024
-		}
-		p.Buffer = &policy.Policy_Buffer{
-			Connection: bs,
 		}
 	}
 
 	if t.Rate != nil {
-		p.Rate = *t.Rate
+		rate = *t.Rate
+	}
+
+	p.Buffer = &policy.Policy_Buffer{
+		Connection: bs,
+		Rate:       rate,
 	}
 
 	return p, nil

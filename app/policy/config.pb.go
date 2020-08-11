@@ -80,7 +80,6 @@ type Policy struct {
 	Timeout *Policy_Timeout `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	Stats   *Policy_Stats   `protobuf:"bytes,2,opt,name=stats,proto3" json:"stats,omitempty"`
 	Buffer  *Policy_Buffer  `protobuf:"bytes,3,opt,name=buffer,proto3" json:"buffer,omitempty"`
-	Rate    uint64          `protobuf:"bytes,4,opt,name=rate,proto3" json:"rate,omitempty"`
 }
 
 func (x *Policy) Reset() {
@@ -248,7 +247,6 @@ type Policy_Timeout struct {
 	ConnectionIdle *Second `protobuf:"bytes,2,opt,name=connection_idle,json=connectionIdle,proto3" json:"connection_idle,omitempty"`
 	UplinkOnly     *Second `protobuf:"bytes,3,opt,name=uplink_only,json=uplinkOnly,proto3" json:"uplink_only,omitempty"`
 	DownlinkOnly   *Second `protobuf:"bytes,4,opt,name=downlink_only,json=downlinkOnly,proto3" json:"downlink_only,omitempty"`
-	Rate           uint64  `protobuf:"bytes,5,opt,name=rate,proto3" json:"rate,omitempty"`
 }
 
 func (x *Policy_Timeout) Reset() {
@@ -318,8 +316,6 @@ type Policy_Stats struct {
 
 	UserUplink   bool `protobuf:"varint,1,opt,name=user_uplink,json=userUplink,proto3" json:"user_uplink,omitempty"`
 	UserDownlink bool `protobuf:"varint,2,opt,name=user_downlink,json=userDownlink,proto3" json:"user_downlink,omitempty"`
-
-	Rate uint64 `protobuf:"varint,3,opt,name=rate,json=rate,proto3" json:"rate,omitempty"`
 }
 
 func (x *Policy_Stats) Reset() {
@@ -368,20 +364,14 @@ func (x *Policy_Stats) GetUserDownlink() bool {
 	return false
 }
 
-func (x *Policy_Stats) GetRate() uint64 {
-	if x != nil {
-		return x.Rate
-	}
-	return 0
-}
-
 type Policy_Buffer struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	// Buffer size per connection, in bytes. -1 for unlimited buffer.
-	Connection int32 `protobuf:"varint,1,opt,name=connection,proto3" json:"connection,omitempty"`
+	Connection int32  `protobuf:"varint,1,opt,name=connection,proto3" json:"connection,omitempty"`
+	Rate       uint64 `protobuf:"varint,2,opt,name=rate,proto3" json:"rate,omitempty"`
 }
 
 func (x *Policy_Buffer) Reset() {
@@ -419,6 +409,13 @@ func (*Policy_Buffer) Descriptor() ([]byte, []int) {
 func (x *Policy_Buffer) GetConnection() int32 {
 	if x != nil {
 		return x.Connection
+	}
+	return 0
+}
+
+func (x *Policy_Buffer) GetRate() uint64 {
+	if x != nil {
+		return x.Rate
 	}
 	return 0
 }

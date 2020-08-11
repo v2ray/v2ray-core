@@ -28,8 +28,10 @@ func TestBufferSize(t *testing.T) {
 
 	for _, c := range cases {
 		bs := int32(c.Input)
+		rate := uint64(c.Input)
 		pConf := Policy{
 			BufferSize: &bs,
+			Rate:       &rate,
 		}
 		p, err := pConf.Build()
 		common.Must(err)
