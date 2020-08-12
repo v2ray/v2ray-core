@@ -82,7 +82,7 @@ func NewDomainMatcher(domains []*Domain) (*DomainMatcher, error) {
 }
 
 func (m *DomainMatcher) ApplyDomain(domain string) bool {
-	return m.matchers.Match(domain) > 0
+	return len(m.matchers.Match(domain)) > 0
 }
 
 func (m *DomainMatcher) Apply(ctx *Context) bool {

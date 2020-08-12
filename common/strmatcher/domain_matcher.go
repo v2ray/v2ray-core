@@ -7,8 +7,8 @@ func breakDomain(domain string) []string {
 }
 
 type node struct {
-	value uint32
-	sub   map[string]*node
+	values []uint32
+	sub    map[string]*node
 }
 
 // DomainMatcherGroup is a IndexMatcher for a large set of Domain matchers.
@@ -25,7 +25,7 @@ func (g *DomainMatcherGroup) Add(domain string, value uint32) {
 	current := g.root
 	parts := breakDomain(domain)
 	for i := len(parts) - 1; i >= 0; i-- {
-		if current.value > 0 {
+		if len(current.values) > 0 {
 			// if current node is already a match, it is not necessary to match further.
 			return
 		}
@@ -42,7 +42,7 @@ func (g *DomainMatcherGroup) Add(domain string, value uint32) {
 		current = next
 	}
 
-	current.value = value
+	current.values = append(current.values, value)
 	current.sub = nil // shortcut sub nodes as current node is a match.
 }
 
@@ -50,14 +50,14 @@ func (g *DomainMatcherGroup) addMatcher(m domainMatcher, value uint32) {
 	g.Add(string(m), value)
 }
 
-func (g *DomainMatcherGroup) Match(domain string) uint32 {
+func (g *DomainMatcherGroup) Match(domain string) []uint32 {
 	if domain == "" {
-		return 0
+		return nil
 	}
 
 	current := g.root
 	if current == nil {
-		return 0
+		return nil
 	}
 
 	nextPart := func(idx int) int {
@@ -84,5 +84,5 @@ func (g *DomainMatcherGroup) Match(domain string) uint32 {
 		current = next
 		idx = nidx
 	}
-	return current.value
+	return current.values
 }
