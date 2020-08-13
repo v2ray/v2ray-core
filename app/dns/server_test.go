@@ -53,6 +53,9 @@ func (*staticHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 		} else if q.Name == "api.google.com." && q.Qtype == dns.TypeA {
 			rr, _ := dns.NewRR("api.google.com. IN A 8.8.7.7")
 			ans.Answer = append(ans.Answer, rr)
+		} else if q.Name == "v2.api.google.com." && q.Qtype == dns.TypeA {
+			rr, _ := dns.NewRR("v2.api.google.com. IN A 8.8.7.8")
+			ans.Answer = append(ans.Answer, rr)
 		} else if q.Name == "facebook.com." && q.Qtype == dns.TypeA {
 			rr, _ := dns.NewRR("facebook.com. IN A 9.9.9.9")
 			ans.Answer = append(ans.Answer, rr)
@@ -847,14 +850,38 @@ func TestMultiMatchPrioritizedDomain(t *testing.T) {
 						},
 						PrioritizedDomain: []*NameServer_PriorityDomain{
 							{
-								Type:   DomainMatchingType_Full,
+								Type:   DomainMatchingType_Subdomain,
 								Domain: "api.google.com",
 							},
 						},
 						Geoip: []*router.GeoIP{
 							{ // Will only match 8.8.7.7 (api.google.com)
 								Cidr: []*router.CIDR{
-									{Ip: []byte{8, 8, 7, 7}, Prefix: 0},
+									{Ip: []byte{8, 8, 7, 7}, Prefix: 32},
+								},
+							},
+						},
+					},
+					{
+						Address: &net.Endpoint{
+							Network: net.Network_UDP,
+							Address: &net.IPOrDomain{
+								Address: &net.IPOrDomain_Ip{
+									Ip: []byte{127, 0, 0, 1},
+								},
+							},
+							Port: uint32(port),
+						},
+						PrioritizedDomain: []*NameServer_PriorityDomain{
+							{
+								Type:   DomainMatchingType_Full,
+								Domain: "v2.api.google.com",
+							},
+						},
+						Geoip: []*router.GeoIP{
+							{ // Will only match 8.8.7.8 (v2.api.google.com)
+								Cidr: []*router.CIDR{
+									{Ip: []byte{8, 8, 7, 8}, Prefix: 32},
 								},
 							},
 						},
@@ -902,13 +929,24 @@ func TestMultiMatchPrioritizedDomain(t *testing.T) {
 		}
 	}
 
-	{ // Will match server 1,2,3 and server 1,2 returns unexpected ip, then server 3 returns expected one
+	{ // Will match server 3,1,2 and server 3 returns expected one
 		ips, err := client.LookupIP("api.google.com")
 		if err != nil {
 			t.Fatal("unexpected error: ", err)
 		}
 
 		if r := cmp.Diff(ips, []net.IP{{8, 8, 7, 7}}); r != "" {
+			t.Fatal(r)
+		}
+	}
+
+	{ // Will match server 4,3,1,2 and server 4 returns expected one
+		ips, err := client.LookupIP("v2.api.google.com")
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
+
+		if r := cmp.Diff(ips, []net.IP{{8, 8, 7, 8}}); r != "" {
 			t.Fatal(r)
 		}
 	}

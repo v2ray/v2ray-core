@@ -33,9 +33,9 @@ func TestDomainMatcherGroup(t *testing.T) {
 			Domain: "a.b.com",
 			Result: []uint32{4},
 		},
-		{
+		{ // Matches [c.a.b.com, a.b.com]
 			Domain: "c.a.b.com",
-			Result: []uint32{4},
+			Result: []uint32{5, 4},
 		},
 		{
 			Domain: "c.a..b.com",
