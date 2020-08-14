@@ -20,7 +20,7 @@ steps:
   - checkout: self
   - task: GoTool@0
     inputs:
-      version: '1.14.6'
+      version: '1.14.7'
   - script: |
       mkdir triggersrc
       ls -I "triggersrc" | xargs cp -rf -t triggersrc
