@@ -8,6 +8,7 @@ import (
 type Matcher interface {
 	// Match returns true if the given string matches a predefined pattern.
 	Match(string) bool
+	String() string
 }
 
 // Type is the type of the matcher.

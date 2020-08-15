@@ -62,11 +62,12 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 	}
 
 	var domains []*dns.NameServer_PriorityDomain
+	var originalRules []*dns.NameServer_OriginalRule
 
-	for _, d := range c.Domains {
-		parsedDomain, err := parseDomainRule(d)
+	for _, rule := range c.Domains {
+		parsedDomain, err := parseDomainRule(rule)
 		if err != nil {
-			return nil, newError("invalid domain rule: ", d).Base(err)
+			return nil, newError("invalid domain rule: ", rule).Base(err)
 		}
 
 		for _, pd := range parsedDomain {
@@ -75,6 +76,10 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 				Domain: pd.Value,
 			})
 		}
+		originalRules = append(originalRules, &dns.NameServer_OriginalRule{
+			Rule: rule,
+			Size: uint32(len(parsedDomain)),
+		})
 	}
 
 	geoipList, err := toCidrList(c.ExpectIPs)
@@ -90,6 +95,7 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 		},
 		PrioritizedDomain: domains,
 		Geoip:             geoipList,
+		OriginalRules:     originalRules,
 	}, nil
 }
 
