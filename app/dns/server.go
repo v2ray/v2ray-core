@@ -6,6 +6,7 @@ package dns
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/url"
 	"strings"
@@ -370,6 +371,16 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 	var matchedClient Client
 	if s.domainMatcher != nil {
 		indices := s.domainMatcher.Match(domain)
+		domainRules := []string{}
+		matchingDNS := []string{}
+		for _, idx := range indices {
+			info := s.matcherInfos[idx]
+			rule := s.domainRules[info.clientIdx][info.domainRuleIdx]
+			domainRules = append(domainRules, fmt.Sprintf("%s(DNS idx:%d)", rule, info.clientIdx))
+			matchingDNS = append(matchingDNS, s.clients[info.clientIdx].Name())
+		}
+		newError("domain ", domain, " matching following rules: ", domainRules).AtDebug().WriteToLog()
+		newError("domain ", domain, " uses following DNS first: ", matchingDNS).AtDebug().WriteToLog()
 		for _, idx := range indices {
 			clientIdx := int(s.matcherInfos[idx].clientIdx)
 			matchedClient = s.clients[clientIdx]

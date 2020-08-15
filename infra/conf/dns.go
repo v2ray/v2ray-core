@@ -192,6 +192,19 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 				mapping.Domain = domain[5:]
 
 				mappings = append(mappings, mapping)
+			} else if strings.HasPrefix(domain, "dotless:") {
+				mapping := getHostMapping(addr)
+				mapping.Type = dns.DomainMatchingType_Regex
+				switch substr := domain[8:]; {
+				case substr == "":
+					mapping.Domain = "^[^.]*$"
+				case !strings.Contains(substr, "."):
+					mapping.Domain = "^[^.]*" + substr + "[^.]*$"
+				default:
+					return nil, newError("substr in dotless rule should not contain a dot: ", substr)
+				}
+
+				mappings = append(mappings, mapping)
 			} else if strings.HasPrefix(domain, "ext:") {
 				kv := strings.Split(domain[4:], ":")
 				if len(kv) != 2 {
