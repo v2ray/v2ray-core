@@ -16,5 +16,5 @@ colorEcho(){
     echo -e "\033[${1}${@:2}\033[0m" 1>& 2
 }
 
-colorEcho ${RED} "WARN: This script will be obsolete soon, please switch to the fhs-install-v2ray project in time."
+colorEcho ${RED} "ERROR: This script has been deprecated, please switch to the fhs-install-v2ray project."
 colorEcho ${YELLOW} "URL: https://github.com/v2fly/fhs-install-v2ray"
