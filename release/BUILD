@@ -16,7 +16,6 @@ filegroup(
     name = "systemd",
     srcs = [
         "config/systemd/v2ray.service",
-        "config/systemv/v2ray",
     ],
 )
 
