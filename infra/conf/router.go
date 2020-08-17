@@ -299,6 +299,16 @@ func parseDomainRule(domain string) ([]*router.Domain, error) {
 	case strings.HasPrefix(domain, "keyword:"):
 		domainRule.Type = router.Domain_Plain
 		domainRule.Value = domain[8:]
+	case strings.HasPrefix(domain, "dotless:"):
+		domainRule.Type = router.Domain_Regex
+		switch substr := domain[8:]; {
+		case substr == "":
+			domainRule.Value = "^[^.]*$"
+		case !strings.Contains(substr, "."):
+			domainRule.Value = "^[^.]*" + substr + "[^.]*$"
+		default:
+			return nil, newError("Substr in dotless rule should not contain a dot: ", substr)
+		}
 	default:
 		domainRule.Type = router.Domain_Plain
 		domainRule.Value = domain
@@ -380,6 +390,7 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 		Port       *PortList    `json:"port"`
 		Network    *NetworkList `json:"network"`
 		SourceIP   *StringList  `json:"source"`
+		SourcePort *PortList    `json:"sourcePort"`
 		User       *StringList  `json:"user"`
 		InboundTag *StringList  `json:"inboundTag"`
 		Protocols  *StringList  `json:"protocol"`
@@ -436,6 +447,10 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 			return nil, err
 		}
 		rule.SourceGeoip = geoipList
+	}
+
+	if rawFieldRule.SourcePort != nil {
+		rule.SourcePortList = rawFieldRule.SourcePort.Build()
 	}
 
 	if rawFieldRule.User != nil {
