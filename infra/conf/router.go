@@ -307,7 +307,7 @@ func parseDomainRule(domain string) ([]*router.Domain, error) {
 		case !strings.Contains(substr, "."):
 			domainRule.Value = "^[^.]*" + substr + "[^.]*$"
 		default:
-			return nil, newError("Substr in dotless rule should not contain a dot: ", substr)
+			return nil, newError("substr in dotless rule should not contain a dot: ", substr)
 		}
 	default:
 		domainRule.Type = router.Domain_Plain

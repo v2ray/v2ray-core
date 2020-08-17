@@ -94,6 +94,12 @@ func TestDnsConfigParsing(t *testing.T) {
 								Domain: "v2ray.com",
 							},
 						},
+						OriginalRules: []*dns.NameServer_OriginalRule{
+							{
+								Rule: "domain:v2ray.com",
+								Size: 1,
+							},
+						},
 					},
 				},
 				StaticHosts: []*dns.Config_HostMapping{
