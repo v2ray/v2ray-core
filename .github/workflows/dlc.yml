@@ -16,8 +16,8 @@ jobs:
 
     - name: Download and Write
       run: |
-        curl -L -o release/config/geoip.dat "https://github.com/v2ray/geoip/raw/release/geoip.dat"
-        curl -L -o release/config/geosite.dat "https://github.com/v2ray/domain-list-community/raw/release/dlc.dat"
+        curl -L -o release/config/geoip.dat "https://github.com/v2fly/geoip/raw/release/geoip.dat"
+        curl -L -o release/config/geosite.dat "https://github.com/v2fly/domain-list-community/raw/release/dlc.dat"
         
     - name: push
       run: |
