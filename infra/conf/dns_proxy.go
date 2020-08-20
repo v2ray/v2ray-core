@@ -7,9 +7,9 @@ import (
 )
 
 type DnsOutboundConfig struct {
-	Network Network  `json:network`
-	Address *Address `json:address`
-	Port    uint16   `json:port`
+	Network Network  `json:"network"`
+	Address *Address `json:"address"`
+	Port    uint16   `json:"port"`
 }
 
 func (c *DnsOutboundConfig) Build() (proto.Message, error) {

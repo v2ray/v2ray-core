@@ -57,7 +57,7 @@ func (v *RequestConfig) GetFullVersion() string {
 func (v *ResponseConfig) HasHeader(header string) bool {
 	cHeader := strings.ToLower(header)
 	for _, tHeader := range v.Header {
-		if strings.ToLower(tHeader.Name) == cHeader {
+		if strings.EqualFold(tHeader.Name, cHeader) {
 			return true
 		}
 	}

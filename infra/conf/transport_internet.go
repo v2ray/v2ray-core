@@ -43,6 +43,7 @@ type KCPConfig struct {
 	ReadBufferSize  *uint32         `json:"readBufferSize"`
 	WriteBufferSize *uint32         `json:"writeBufferSize"`
 	HeaderConfig    json.RawMessage `json:"header"`
+	Seed            *string         `json:"seed"`
 }
 
 // Build implements Buildable.
@@ -100,6 +101,10 @@ func (c *KCPConfig) Build() (proto.Message, error) {
 		config.HeaderConfig = serial.ToTypedMessage(ts)
 	}
 
+	if c.Seed != nil {
+		config.Seed = &kcp.EncryptionSeed{Seed: *c.Seed}
+	}
+
 	return config, nil
 }
 
@@ -134,7 +139,7 @@ type WebSocketConfig struct {
 // Build implements Buildable.
 func (c *WebSocketConfig) Build() (proto.Message, error) {
 	path := c.Path
-	if len(path) == 0 && len(c.Path2) > 0 {
+	if path == "" && c.Path2 != "" {
 		path = c.Path2
 	}
 	header := make([]*websocket.Header, 0, 32)
@@ -269,12 +274,13 @@ func (c *TLSCertConfig) Build() (*tls.Certificate, error) {
 }
 
 type TLSConfig struct {
-	Insecure         bool             `json:"allowInsecure"`
-	InsecureCiphers  bool             `json:"allowInsecureCiphers"`
-	Certs            []*TLSCertConfig `json:"certificates"`
-	ServerName       string           `json:"serverName"`
-	ALPN             *StringList      `json:"alpn"`
-	DiableSystemRoot bool             `json:"disableSystemRoot"`
+	Insecure                 bool             `json:"allowInsecure"`
+	InsecureCiphers          bool             `json:"allowInsecureCiphers"`
+	Certs                    []*TLSCertConfig `json:"certificates"`
+	ServerName               string           `json:"serverName"`
+	ALPN                     *StringList      `json:"alpn"`
+	DisableSessionResumption bool             `json:"disableSessionResumption"`
+	DisableSystemRoot        bool             `json:"disableSystemRoot"`
 }
 
 // Build implements Buildable.
@@ -297,7 +303,8 @@ func (c *TLSConfig) Build() (proto.Message, error) {
 	if c.ALPN != nil && len(*c.ALPN) > 0 {
 		config.NextProtocol = []string(*c.ALPN)
 	}
-	config.DisableSystemRoot = c.DiableSystemRoot
+	config.DisableSessionResumption = c.DisableSessionResumption
+	config.DisableSystemRoot = c.DisableSystemRoot
 	return config, nil
 }
 
@@ -380,7 +387,7 @@ func (c *StreamConfig) Build() (*internet.StreamConfig, error) {
 		}
 		config.ProtocolName = protocol
 	}
-	if strings.ToLower(c.Security) == "tls" {
+	if strings.EqualFold(c.Security, "tls") {
 		tlsSettings := c.TLSSettings
 		if tlsSettings == nil {
 			tlsSettings = &TLSConfig{}
@@ -469,7 +476,7 @@ type ProxyConfig struct {
 
 // Build implements Buildable.
 func (v *ProxyConfig) Build() (*internet.ProxyConfig, error) {
-	if len(v.Tag) == 0 {
+	if v.Tag == "" {
 		return nil, newError("Proxy tag is not set.")
 	}
 	return &internet.ProxyConfig{

@@ -48,6 +48,10 @@ func TestRouterConfig(t *testing.T) {
 							"type": "field",
 							"port": "53, 443, 1000-2000",
 							"outboundTag": "test"
+						},{
+							"type": "field",
+							"port": 123,
+							"outboundTag": "test"
 						}
 					]
 				},
@@ -108,6 +112,16 @@ func TestRouterConfig(t *testing.T) {
 								{From: 53, To: 53},
 								{From: 443, To: 443},
 								{From: 1000, To: 2000},
+							},
+						},
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "test",
+						},
+					},
+					{
+						PortList: &net.PortList{
+							Range: []*net.PortRange{
+								{From: 123, To: 123},
 							},
 						},
 						TargetTag: &router.RoutingRule_Tag{

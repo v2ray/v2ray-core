@@ -68,6 +68,14 @@ type Content struct {
 	SniffingRequest SniffingRequest
 
 	Attributes map[string]interface{}
+
+	SkipRoutePick bool
+}
+
+// Sockopt is the settings for socket connection.
+type Sockopt struct {
+	// Mark of the socket connection.
+	Mark int32
 }
 
 func (c *Content) SetAttribute(name string, value interface{}) {

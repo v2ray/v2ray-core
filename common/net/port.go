@@ -33,7 +33,7 @@ func PortFromString(s string) (Port, error) {
 	return PortFromInt(uint32(val))
 }
 
-// Value return the correspoding uint16 value of a Port.
+// Value return the corresponding uint16 value of a Port.
 func (p Port) Value() uint16 {
 	return uint16(p)
 }

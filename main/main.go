@@ -5,24 +5,40 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"syscall"
 
 	"v2ray.com/core"
+	"v2ray.com/core/common/cmdarg"
 	"v2ray.com/core/common/platform"
-	"v2ray.com/core/main/confloader"
 	_ "v2ray.com/core/main/distro/all"
 )
 
 var (
-	configFile = flag.String("config", "", "Config file for V2Ray.")
-	version    = flag.Bool("version", false, "Show current version of V2Ray.")
-	test       = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
-	format     = flag.String("format", "json", "Format of input file.")
+	configFiles cmdarg.Arg // "Config file for V2Ray.", the option is customed type, parse in main
+	configDir   string
+	version     = flag.Bool("version", false, "Show current version of V2Ray.")
+	test        = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
+	format      = flag.String("format", "json", "Format of input file.")
+
+	/* We have to do this here because Golang's Test will also need to parse flag, before
+	 * main func in this file is run.
+	 */
+	_ = func() error {
+
+		flag.Var(&configFiles, "config", "Config file for V2Ray. Multiple assign is accepted (only json). Latter ones overrides the former ones.")
+		flag.Var(&configFiles, "c", "Short alias of -config")
+		flag.StringVar(&configDir, "confdir", "", "A dir with multiple json config")
+
+		return nil
+	}()
 )
 
 func fileExists(file string) bool {
@@ -30,23 +46,56 @@ func fileExists(file string) bool {
 	return err == nil && !info.IsDir()
 }
 
-func getConfigFilePath() string {
-	if len(*configFile) > 0 {
-		return *configFile
+func dirExists(file string) bool {
+	if file == "" {
+		return false
+	}
+	info, err := os.Stat(file)
+	return err == nil && info.IsDir()
+}
+
+func readConfDir(dirPath string) {
+	confs, err := ioutil.ReadDir(dirPath)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	for _, f := range confs {
+		if strings.HasSuffix(f.Name(), ".json") {
+			configFiles.Set(path.Join(dirPath, f.Name()))
+		}
+	}
+}
+
+func getConfigFilePath() (cmdarg.Arg, error) {
+	if dirExists(configDir) {
+		log.Println("Using confdir from arg:", configDir)
+		readConfDir(configDir)
+	} else {
+		if envConfDir := platform.GetConfDirPath(); dirExists(envConfDir) {
+			log.Println("Using confdir from env:", envConfDir)
+			readConfDir(envConfDir)
+		}
+	}
+
+	if len(configFiles) > 0 {
+		return configFiles, nil
 	}
 
 	if workingDir, err := os.Getwd(); err == nil {
 		configFile := filepath.Join(workingDir, "config.json")
 		if fileExists(configFile) {
-			return configFile
+			log.Println("Using default config: ", configFile)
+			return cmdarg.Arg{configFile}, nil
 		}
 	}
 
 	if configFile := platform.GetConfigurationPath(); fileExists(configFile) {
-		return configFile
+		log.Println("Using config from env: ", configFile)
+		return cmdarg.Arg{configFile}, nil
 	}
 
-	return ""
+	log.Println("Using config from STDIN")
+	return cmdarg.Arg{"stdin:"}, nil
 }
 
 func GetConfigFormat() string {
@@ -59,16 +108,14 @@ func GetConfigFormat() string {
 }
 
 func startV2Ray() (core.Server, error) {
-	configFile := getConfigFilePath()
-	configInput, err := confloader.LoadConfig(configFile)
+	configFiles, err := getConfigFilePath()
 	if err != nil {
-		return nil, newError("failed to load config: ", configFile).Base(err)
+		return nil, err
 	}
-	defer configInput.Close()
 
-	config, err := core.LoadConfig(GetConfigFormat(), configFile, configInput)
+	config, err := core.LoadConfig(GetConfigFormat(), configFiles[0], configFiles)
 	if err != nil {
-		return nil, newError("failed to read config file: ", configFile).Base(err)
+		return nil, newError("failed to read config files: [", configFiles.String(), "]").Base(err)
 	}
 
 	server, err := core.New(config)
@@ -87,6 +134,7 @@ func printVersion() {
 }
 
 func main() {
+
 	flag.Parse()
 
 	printVersion()
@@ -97,7 +145,7 @@ func main() {
 
 	server, err := startV2Ray()
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(err)
 		// Configuration error. Exit with a special value to prevent systemd from restarting.
 		os.Exit(23)
 	}
@@ -118,7 +166,7 @@ func main() {
 
 	{
 		osSignals := make(chan os.Signal, 1)
-		signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
+		signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
 		<-osSignals
 	}
 }

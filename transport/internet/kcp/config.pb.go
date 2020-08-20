@@ -1,442 +1,771 @@
 package kcp
 
 import (
-	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 	serial "v2ray.com/core/common/serial"
 )
 
-// Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
+const (
+	// Verify that this generated code is sufficiently up-to-date.
+	_ = protoimpl.EnforceVersion(20 - protoimpl.MinVersion)
+	// Verify that runtime/protoimpl is sufficiently up-to-date.
+	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
+)
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+// This is a compile-time assertion that a sufficiently up-to-date version
+// of the legacy proto package is being used.
+const _ = proto.ProtoPackageIsVersion4
 
 // Maximum Transmission Unit, in bytes.
 type MTU struct {
-	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Value uint32 `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *MTU) Reset()         { *m = MTU{} }
-func (m *MTU) String() string { return proto.CompactTextString(m) }
-func (*MTU) ProtoMessage()    {}
+func (x *MTU) Reset() {
+	*x = MTU{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MTU) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MTU) ProtoMessage() {}
+
+func (x *MTU) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MTU.ProtoReflect.Descriptor instead.
 func (*MTU) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3746d5d763e81577, []int{0}
+	return file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescGZIP(), []int{0}
 }
 
-func (m *MTU) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MTU.Unmarshal(m, b)
-}
-func (m *MTU) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MTU.Marshal(b, m, deterministic)
-}
-func (m *MTU) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MTU.Merge(m, src)
-}
-func (m *MTU) XXX_Size() int {
-	return xxx_messageInfo_MTU.Size(m)
-}
-func (m *MTU) XXX_DiscardUnknown() {
-	xxx_messageInfo_MTU.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MTU proto.InternalMessageInfo
-
-func (m *MTU) GetValue() uint32 {
-	if m != nil {
-		return m.Value
+func (x *MTU) GetValue() uint32 {
+	if x != nil {
+		return x.Value
 	}
 	return 0
 }
 
 // Transmission Time Interview, in milli-sec.
 type TTI struct {
-	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Value uint32 `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *TTI) Reset()         { *m = TTI{} }
-func (m *TTI) String() string { return proto.CompactTextString(m) }
-func (*TTI) ProtoMessage()    {}
+func (x *TTI) Reset() {
+	*x = TTI{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TTI) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TTI) ProtoMessage() {}
+
+func (x *TTI) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TTI.ProtoReflect.Descriptor instead.
 func (*TTI) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3746d5d763e81577, []int{1}
+	return file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescGZIP(), []int{1}
 }
 
-func (m *TTI) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_TTI.Unmarshal(m, b)
-}
-func (m *TTI) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_TTI.Marshal(b, m, deterministic)
-}
-func (m *TTI) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TTI.Merge(m, src)
-}
-func (m *TTI) XXX_Size() int {
-	return xxx_messageInfo_TTI.Size(m)
-}
-func (m *TTI) XXX_DiscardUnknown() {
-	xxx_messageInfo_TTI.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TTI proto.InternalMessageInfo
-
-func (m *TTI) GetValue() uint32 {
-	if m != nil {
-		return m.Value
+func (x *TTI) GetValue() uint32 {
+	if x != nil {
+		return x.Value
 	}
 	return 0
 }
 
 // Uplink capacity, in MB.
 type UplinkCapacity struct {
-	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Value uint32 `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *UplinkCapacity) Reset()         { *m = UplinkCapacity{} }
-func (m *UplinkCapacity) String() string { return proto.CompactTextString(m) }
-func (*UplinkCapacity) ProtoMessage()    {}
+func (x *UplinkCapacity) Reset() {
+	*x = UplinkCapacity{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UplinkCapacity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UplinkCapacity) ProtoMessage() {}
+
+func (x *UplinkCapacity) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UplinkCapacity.ProtoReflect.Descriptor instead.
 func (*UplinkCapacity) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3746d5d763e81577, []int{2}
+	return file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescGZIP(), []int{2}
 }
 
-func (m *UplinkCapacity) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_UplinkCapacity.Unmarshal(m, b)
-}
-func (m *UplinkCapacity) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_UplinkCapacity.Marshal(b, m, deterministic)
-}
-func (m *UplinkCapacity) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UplinkCapacity.Merge(m, src)
-}
-func (m *UplinkCapacity) XXX_Size() int {
-	return xxx_messageInfo_UplinkCapacity.Size(m)
-}
-func (m *UplinkCapacity) XXX_DiscardUnknown() {
-	xxx_messageInfo_UplinkCapacity.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_UplinkCapacity proto.InternalMessageInfo
-
-func (m *UplinkCapacity) GetValue() uint32 {
-	if m != nil {
-		return m.Value
+func (x *UplinkCapacity) GetValue() uint32 {
+	if x != nil {
+		return x.Value
 	}
 	return 0
 }
 
 // Downlink capacity, in MB.
 type DownlinkCapacity struct {
-	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Value uint32 `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *DownlinkCapacity) Reset()         { *m = DownlinkCapacity{} }
-func (m *DownlinkCapacity) String() string { return proto.CompactTextString(m) }
-func (*DownlinkCapacity) ProtoMessage()    {}
+func (x *DownlinkCapacity) Reset() {
+	*x = DownlinkCapacity{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DownlinkCapacity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownlinkCapacity) ProtoMessage() {}
+
+func (x *DownlinkCapacity) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownlinkCapacity.ProtoReflect.Descriptor instead.
 func (*DownlinkCapacity) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3746d5d763e81577, []int{3}
+	return file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescGZIP(), []int{3}
 }
 
-func (m *DownlinkCapacity) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_DownlinkCapacity.Unmarshal(m, b)
-}
-func (m *DownlinkCapacity) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_DownlinkCapacity.Marshal(b, m, deterministic)
-}
-func (m *DownlinkCapacity) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DownlinkCapacity.Merge(m, src)
-}
-func (m *DownlinkCapacity) XXX_Size() int {
-	return xxx_messageInfo_DownlinkCapacity.Size(m)
-}
-func (m *DownlinkCapacity) XXX_DiscardUnknown() {
-	xxx_messageInfo_DownlinkCapacity.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_DownlinkCapacity proto.InternalMessageInfo
-
-func (m *DownlinkCapacity) GetValue() uint32 {
-	if m != nil {
-		return m.Value
+func (x *DownlinkCapacity) GetValue() uint32 {
+	if x != nil {
+		return x.Value
 	}
 	return 0
 }
 
 type WriteBuffer struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
 	// Buffer size in bytes.
-	Size                 uint32   `protobuf:"varint,1,opt,name=size,proto3" json:"size,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Size uint32 `protobuf:"varint,1,opt,name=size,proto3" json:"size,omitempty"`
 }
 
-func (m *WriteBuffer) Reset()         { *m = WriteBuffer{} }
-func (m *WriteBuffer) String() string { return proto.CompactTextString(m) }
-func (*WriteBuffer) ProtoMessage()    {}
+func (x *WriteBuffer) Reset() {
+	*x = WriteBuffer{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *WriteBuffer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WriteBuffer) ProtoMessage() {}
+
+func (x *WriteBuffer) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WriteBuffer.ProtoReflect.Descriptor instead.
 func (*WriteBuffer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3746d5d763e81577, []int{4}
+	return file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescGZIP(), []int{4}
 }
 
-func (m *WriteBuffer) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WriteBuffer.Unmarshal(m, b)
-}
-func (m *WriteBuffer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WriteBuffer.Marshal(b, m, deterministic)
-}
-func (m *WriteBuffer) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WriteBuffer.Merge(m, src)
-}
-func (m *WriteBuffer) XXX_Size() int {
-	return xxx_messageInfo_WriteBuffer.Size(m)
-}
-func (m *WriteBuffer) XXX_DiscardUnknown() {
-	xxx_messageInfo_WriteBuffer.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_WriteBuffer proto.InternalMessageInfo
-
-func (m *WriteBuffer) GetSize() uint32 {
-	if m != nil {
-		return m.Size
+func (x *WriteBuffer) GetSize() uint32 {
+	if x != nil {
+		return x.Size
 	}
 	return 0
 }
 
 type ReadBuffer struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
 	// Buffer size in bytes.
-	Size                 uint32   `protobuf:"varint,1,opt,name=size,proto3" json:"size,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Size uint32 `protobuf:"varint,1,opt,name=size,proto3" json:"size,omitempty"`
 }
 
-func (m *ReadBuffer) Reset()         { *m = ReadBuffer{} }
-func (m *ReadBuffer) String() string { return proto.CompactTextString(m) }
-func (*ReadBuffer) ProtoMessage()    {}
+func (x *ReadBuffer) Reset() {
+	*x = ReadBuffer{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ReadBuffer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadBuffer) ProtoMessage() {}
+
+func (x *ReadBuffer) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadBuffer.ProtoReflect.Descriptor instead.
 func (*ReadBuffer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3746d5d763e81577, []int{5}
+	return file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescGZIP(), []int{5}
 }
 
-func (m *ReadBuffer) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ReadBuffer.Unmarshal(m, b)
-}
-func (m *ReadBuffer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ReadBuffer.Marshal(b, m, deterministic)
-}
-func (m *ReadBuffer) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ReadBuffer.Merge(m, src)
-}
-func (m *ReadBuffer) XXX_Size() int {
-	return xxx_messageInfo_ReadBuffer.Size(m)
-}
-func (m *ReadBuffer) XXX_DiscardUnknown() {
-	xxx_messageInfo_ReadBuffer.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ReadBuffer proto.InternalMessageInfo
-
-func (m *ReadBuffer) GetSize() uint32 {
-	if m != nil {
-		return m.Size
+func (x *ReadBuffer) GetSize() uint32 {
+	if x != nil {
+		return x.Size
 	}
 	return 0
 }
 
 type ConnectionReuse struct {
-	Enable               bool     `protobuf:"varint,1,opt,name=enable,proto3" json:"enable,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Enable bool `protobuf:"varint,1,opt,name=enable,proto3" json:"enable,omitempty"`
 }
 
-func (m *ConnectionReuse) Reset()         { *m = ConnectionReuse{} }
-func (m *ConnectionReuse) String() string { return proto.CompactTextString(m) }
-func (*ConnectionReuse) ProtoMessage()    {}
+func (x *ConnectionReuse) Reset() {
+	*x = ConnectionReuse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ConnectionReuse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectionReuse) ProtoMessage() {}
+
+func (x *ConnectionReuse) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConnectionReuse.ProtoReflect.Descriptor instead.
 func (*ConnectionReuse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3746d5d763e81577, []int{6}
+	return file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescGZIP(), []int{6}
 }
 
-func (m *ConnectionReuse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ConnectionReuse.Unmarshal(m, b)
-}
-func (m *ConnectionReuse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ConnectionReuse.Marshal(b, m, deterministic)
-}
-func (m *ConnectionReuse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ConnectionReuse.Merge(m, src)
-}
-func (m *ConnectionReuse) XXX_Size() int {
-	return xxx_messageInfo_ConnectionReuse.Size(m)
-}
-func (m *ConnectionReuse) XXX_DiscardUnknown() {
-	xxx_messageInfo_ConnectionReuse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ConnectionReuse proto.InternalMessageInfo
-
-func (m *ConnectionReuse) GetEnable() bool {
-	if m != nil {
-		return m.Enable
+func (x *ConnectionReuse) GetEnable() bool {
+	if x != nil {
+		return x.Enable
 	}
 	return false
+}
+
+// Maximum Transmission Unit, in bytes.
+type EncryptionSeed struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Seed string `protobuf:"bytes,1,opt,name=seed,proto3" json:"seed,omitempty"`
+}
+
+func (x *EncryptionSeed) Reset() {
+	*x = EncryptionSeed{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EncryptionSeed) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EncryptionSeed) ProtoMessage() {}
+
+func (x *EncryptionSeed) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EncryptionSeed.ProtoReflect.Descriptor instead.
+func (*EncryptionSeed) Descriptor() ([]byte, []int) {
+	return file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *EncryptionSeed) GetSeed() string {
+	if x != nil {
+		return x.Seed
+	}
+	return ""
 }
 
 type Config struct {
-	Mtu                  *MTU                 `protobuf:"bytes,1,opt,name=mtu,proto3" json:"mtu,omitempty"`
-	Tti                  *TTI                 `protobuf:"bytes,2,opt,name=tti,proto3" json:"tti,omitempty"`
-	UplinkCapacity       *UplinkCapacity      `protobuf:"bytes,3,opt,name=uplink_capacity,json=uplinkCapacity,proto3" json:"uplink_capacity,omitempty"`
-	DownlinkCapacity     *DownlinkCapacity    `protobuf:"bytes,4,opt,name=downlink_capacity,json=downlinkCapacity,proto3" json:"downlink_capacity,omitempty"`
-	Congestion           bool                 `protobuf:"varint,5,opt,name=congestion,proto3" json:"congestion,omitempty"`
-	WriteBuffer          *WriteBuffer         `protobuf:"bytes,6,opt,name=write_buffer,json=writeBuffer,proto3" json:"write_buffer,omitempty"`
-	ReadBuffer           *ReadBuffer          `protobuf:"bytes,7,opt,name=read_buffer,json=readBuffer,proto3" json:"read_buffer,omitempty"`
-	HeaderConfig         *serial.TypedMessage `protobuf:"bytes,8,opt,name=header_config,json=headerConfig,proto3" json:"header_config,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Mtu              *MTU                 `protobuf:"bytes,1,opt,name=mtu,proto3" json:"mtu,omitempty"`
+	Tti              *TTI                 `protobuf:"bytes,2,opt,name=tti,proto3" json:"tti,omitempty"`
+	UplinkCapacity   *UplinkCapacity      `protobuf:"bytes,3,opt,name=uplink_capacity,json=uplinkCapacity,proto3" json:"uplink_capacity,omitempty"`
+	DownlinkCapacity *DownlinkCapacity    `protobuf:"bytes,4,opt,name=downlink_capacity,json=downlinkCapacity,proto3" json:"downlink_capacity,omitempty"`
+	Congestion       bool                 `protobuf:"varint,5,opt,name=congestion,proto3" json:"congestion,omitempty"`
+	WriteBuffer      *WriteBuffer         `protobuf:"bytes,6,opt,name=write_buffer,json=writeBuffer,proto3" json:"write_buffer,omitempty"`
+	ReadBuffer       *ReadBuffer          `protobuf:"bytes,7,opt,name=read_buffer,json=readBuffer,proto3" json:"read_buffer,omitempty"`
+	HeaderConfig     *serial.TypedMessage `protobuf:"bytes,8,opt,name=header_config,json=headerConfig,proto3" json:"header_config,omitempty"`
+	Seed             *EncryptionSeed      `protobuf:"bytes,10,opt,name=seed,proto3" json:"seed,omitempty"`
 }
 
-func (m *Config) Reset()         { *m = Config{} }
-func (m *Config) String() string { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()    {}
+func (x *Config) Reset() {
+	*x = Config{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Config) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Config) ProtoMessage() {}
+
+func (x *Config) ProtoReflect() protoreflect.Message {
+	mi := &file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Config.ProtoReflect.Descriptor instead.
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3746d5d763e81577, []int{7}
+	return file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescGZIP(), []int{8}
 }
 
-func (m *Config) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Config.Unmarshal(m, b)
-}
-func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
-}
-func (m *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(m, src)
-}
-func (m *Config) XXX_Size() int {
-	return xxx_messageInfo_Config.Size(m)
-}
-func (m *Config) XXX_DiscardUnknown() {
-	xxx_messageInfo_Config.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Config proto.InternalMessageInfo
-
-func (m *Config) GetMtu() *MTU {
-	if m != nil {
-		return m.Mtu
+func (x *Config) GetMtu() *MTU {
+	if x != nil {
+		return x.Mtu
 	}
 	return nil
 }
 
-func (m *Config) GetTti() *TTI {
-	if m != nil {
-		return m.Tti
+func (x *Config) GetTti() *TTI {
+	if x != nil {
+		return x.Tti
 	}
 	return nil
 }
 
-func (m *Config) GetUplinkCapacity() *UplinkCapacity {
-	if m != nil {
-		return m.UplinkCapacity
+func (x *Config) GetUplinkCapacity() *UplinkCapacity {
+	if x != nil {
+		return x.UplinkCapacity
 	}
 	return nil
 }
 
-func (m *Config) GetDownlinkCapacity() *DownlinkCapacity {
-	if m != nil {
-		return m.DownlinkCapacity
+func (x *Config) GetDownlinkCapacity() *DownlinkCapacity {
+	if x != nil {
+		return x.DownlinkCapacity
 	}
 	return nil
 }
 
-func (m *Config) GetCongestion() bool {
-	if m != nil {
-		return m.Congestion
+func (x *Config) GetCongestion() bool {
+	if x != nil {
+		return x.Congestion
 	}
 	return false
 }
 
-func (m *Config) GetWriteBuffer() *WriteBuffer {
-	if m != nil {
-		return m.WriteBuffer
+func (x *Config) GetWriteBuffer() *WriteBuffer {
+	if x != nil {
+		return x.WriteBuffer
 	}
 	return nil
 }
 
-func (m *Config) GetReadBuffer() *ReadBuffer {
-	if m != nil {
-		return m.ReadBuffer
+func (x *Config) GetReadBuffer() *ReadBuffer {
+	if x != nil {
+		return x.ReadBuffer
 	}
 	return nil
 }
 
-func (m *Config) GetHeaderConfig() *serial.TypedMessage {
-	if m != nil {
-		return m.HeaderConfig
+func (x *Config) GetHeaderConfig() *serial.TypedMessage {
+	if x != nil {
+		return x.HeaderConfig
 	}
 	return nil
 }
 
-func init() {
-	proto.RegisterType((*MTU)(nil), "v2ray.core.transport.internet.kcp.MTU")
-	proto.RegisterType((*TTI)(nil), "v2ray.core.transport.internet.kcp.TTI")
-	proto.RegisterType((*UplinkCapacity)(nil), "v2ray.core.transport.internet.kcp.UplinkCapacity")
-	proto.RegisterType((*DownlinkCapacity)(nil), "v2ray.core.transport.internet.kcp.DownlinkCapacity")
-	proto.RegisterType((*WriteBuffer)(nil), "v2ray.core.transport.internet.kcp.WriteBuffer")
-	proto.RegisterType((*ReadBuffer)(nil), "v2ray.core.transport.internet.kcp.ReadBuffer")
-	proto.RegisterType((*ConnectionReuse)(nil), "v2ray.core.transport.internet.kcp.ConnectionReuse")
-	proto.RegisterType((*Config)(nil), "v2ray.core.transport.internet.kcp.Config")
+func (x *Config) GetSeed() *EncryptionSeed {
+	if x != nil {
+		return x.Seed
+	}
+	return nil
 }
 
-func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/kcp/config.proto", fileDescriptor_3746d5d763e81577)
+var File_v2ray_com_core_transport_internet_kcp_config_proto protoreflect.FileDescriptor
+
+var file_v2ray_com_core_transport_internet_kcp_config_proto_rawDesc = []byte{
+	0x0a, 0x32, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x72, 0x65,
+	0x2f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72,
+	0x6e, 0x65, 0x74, 0x2f, 0x6b, 0x63, 0x70, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x12, 0x21, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65,
+	0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72,
+	0x6e, 0x65, 0x74, 0x2e, 0x6b, 0x63, 0x70, 0x1a, 0x30, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63,
+	0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2f, 0x73,
+	0x65, 0x72, 0x69, 0x61, 0x6c, 0x2f, 0x74, 0x79, 0x70, 0x65, 0x64, 0x5f, 0x6d, 0x65, 0x73, 0x73,
+	0x61, 0x67, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x1b, 0x0a, 0x03, 0x4d, 0x54, 0x55,
+	0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x22, 0x1b, 0x0a, 0x03, 0x54, 0x54, 0x49, 0x12, 0x14, 0x0a,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x05, 0x76, 0x61,
+	0x6c, 0x75, 0x65, 0x22, 0x26, 0x0a, 0x0e, 0x55, 0x70, 0x6c, 0x69, 0x6e, 0x6b, 0x43, 0x61, 0x70,
+	0x61, 0x63, 0x69, 0x74, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0d, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x22, 0x28, 0x0a, 0x10, 0x44,
+	0x6f, 0x77, 0x6e, 0x6c, 0x69, 0x6e, 0x6b, 0x43, 0x61, 0x70, 0x61, 0x63, 0x69, 0x74, 0x79, 0x12,
+	0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x05,
+	0x76, 0x61, 0x6c, 0x75, 0x65, 0x22, 0x21, 0x0a, 0x0b, 0x57, 0x72, 0x69, 0x74, 0x65, 0x42, 0x75,
+	0x66, 0x66, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0d, 0x52, 0x04, 0x73, 0x69, 0x7a, 0x65, 0x22, 0x20, 0x0a, 0x0a, 0x52, 0x65, 0x61, 0x64,
+	0x42, 0x75, 0x66, 0x66, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0d, 0x52, 0x04, 0x73, 0x69, 0x7a, 0x65, 0x22, 0x29, 0x0a, 0x0f, 0x43, 0x6f,
+	0x6e, 0x6e, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x75, 0x73, 0x65, 0x12, 0x16, 0x0a,
+	0x06, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x65,
+	0x6e, 0x61, 0x62, 0x6c, 0x65, 0x22, 0x24, 0x0a, 0x0e, 0x45, 0x6e, 0x63, 0x72, 0x79, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x65, 0x65, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x73, 0x65, 0x65, 0x64, 0x22, 0x97, 0x05, 0x0a, 0x06,
+	0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x38, 0x0a, 0x03, 0x6d, 0x74, 0x75, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65,
+	0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72,
+	0x6e, 0x65, 0x74, 0x2e, 0x6b, 0x63, 0x70, 0x2e, 0x4d, 0x54, 0x55, 0x52, 0x03, 0x6d, 0x74, 0x75,
+	0x12, 0x38, 0x0a, 0x03, 0x74, 0x74, 0x69, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e,
+	0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73,
+	0x70, 0x6f, 0x72, 0x74, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x65, 0x74, 0x2e, 0x6b, 0x63,
+	0x70, 0x2e, 0x54, 0x54, 0x49, 0x52, 0x03, 0x74, 0x74, 0x69, 0x12, 0x5a, 0x0a, 0x0f, 0x75, 0x70,
+	0x6c, 0x69, 0x6e, 0x6b, 0x5f, 0x63, 0x61, 0x70, 0x61, 0x63, 0x69, 0x74, 0x79, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x31, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65,
+	0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72,
+	0x6e, 0x65, 0x74, 0x2e, 0x6b, 0x63, 0x70, 0x2e, 0x55, 0x70, 0x6c, 0x69, 0x6e, 0x6b, 0x43, 0x61,
+	0x70, 0x61, 0x63, 0x69, 0x74, 0x79, 0x52, 0x0e, 0x75, 0x70, 0x6c, 0x69, 0x6e, 0x6b, 0x43, 0x61,
+	0x70, 0x61, 0x63, 0x69, 0x74, 0x79, 0x12, 0x60, 0x0a, 0x11, 0x64, 0x6f, 0x77, 0x6e, 0x6c, 0x69,
+	0x6e, 0x6b, 0x5f, 0x63, 0x61, 0x70, 0x61, 0x63, 0x69, 0x74, 0x79, 0x18, 0x04, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x33, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x74,
+	0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x65,
+	0x74, 0x2e, 0x6b, 0x63, 0x70, 0x2e, 0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x69, 0x6e, 0x6b, 0x43, 0x61,
+	0x70, 0x61, 0x63, 0x69, 0x74, 0x79, 0x52, 0x10, 0x64, 0x6f, 0x77, 0x6e, 0x6c, 0x69, 0x6e, 0x6b,
+	0x43, 0x61, 0x70, 0x61, 0x63, 0x69, 0x74, 0x79, 0x12, 0x1e, 0x0a, 0x0a, 0x63, 0x6f, 0x6e, 0x67,
+	0x65, 0x73, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0a, 0x63, 0x6f,
+	0x6e, 0x67, 0x65, 0x73, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x51, 0x0a, 0x0c, 0x77, 0x72, 0x69, 0x74,
+	0x65, 0x5f, 0x62, 0x75, 0x66, 0x66, 0x65, 0x72, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2e,
+	0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x74, 0x72, 0x61, 0x6e,
+	0x73, 0x70, 0x6f, 0x72, 0x74, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x65, 0x74, 0x2e, 0x6b,
+	0x63, 0x70, 0x2e, 0x57, 0x72, 0x69, 0x74, 0x65, 0x42, 0x75, 0x66, 0x66, 0x65, 0x72, 0x52, 0x0b,
+	0x77, 0x72, 0x69, 0x74, 0x65, 0x42, 0x75, 0x66, 0x66, 0x65, 0x72, 0x12, 0x4e, 0x0a, 0x0b, 0x72,
+	0x65, 0x61, 0x64, 0x5f, 0x62, 0x75, 0x66, 0x66, 0x65, 0x72, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x2d, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x74, 0x72,
+	0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x65, 0x74,
+	0x2e, 0x6b, 0x63, 0x70, 0x2e, 0x52, 0x65, 0x61, 0x64, 0x42, 0x75, 0x66, 0x66, 0x65, 0x72, 0x52,
+	0x0a, 0x72, 0x65, 0x61, 0x64, 0x42, 0x75, 0x66, 0x66, 0x65, 0x72, 0x12, 0x4b, 0x0a, 0x0d, 0x68,
+	0x65, 0x61, 0x64, 0x65, 0x72, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x08, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x26, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
+	0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x73, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x2e, 0x54, 0x79,
+	0x70, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x52, 0x0c, 0x68, 0x65, 0x61, 0x64,
+	0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x45, 0x0a, 0x04, 0x73, 0x65, 0x65, 0x64,
+	0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x31, 0x2e, 0x76, 0x32, 0x72, 0x61, 0x79, 0x2e, 0x63,
+	0x6f, 0x72, 0x65, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2e, 0x69, 0x6e,
+	0x74, 0x65, 0x72, 0x6e, 0x65, 0x74, 0x2e, 0x6b, 0x63, 0x70, 0x2e, 0x45, 0x6e, 0x63, 0x72, 0x79,
+	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x04, 0x73, 0x65, 0x65, 0x64, 0x4a,
+	0x04, 0x08, 0x09, 0x10, 0x0a, 0x42, 0x52, 0x0a, 0x25, 0x63, 0x6f, 0x6d, 0x2e, 0x76, 0x32, 0x72,
+	0x61, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72,
+	0x74, 0x2e, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x65, 0x74, 0x2e, 0x6b, 0x63, 0x70, 0x50, 0x01,
+	0x5a, 0x03, 0x6b, 0x63, 0x70, 0xaa, 0x02, 0x21, 0x56, 0x32, 0x52, 0x61, 0x79, 0x2e, 0x43, 0x6f,
+	0x72, 0x65, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2e, 0x49, 0x6e, 0x74,
+	0x65, 0x72, 0x6e, 0x65, 0x74, 0x2e, 0x4b, 0x63, 0x70, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
-var fileDescriptor_3746d5d763e81577 = []byte{
-	// 471 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0x5f, 0x6f, 0xd3, 0x3e,
-	0x14, 0x55, 0xd7, 0xae, 0xbf, 0xfe, 0x6e, 0xf7, 0xa7, 0x44, 0x08, 0x45, 0x20, 0xa1, 0xb5, 0x12,
-	0xd3, 0x78, 0xc0, 0x81, 0xee, 0x85, 0xe7, 0x95, 0x97, 0x32, 0x15, 0x81, 0x95, 0x82, 0xb4, 0x97,
-	0xe2, 0x3a, 0xb7, 0xc5, 0x6a, 0x63, 0x5b, 0x8e, 0xb3, 0xaa, 0x7c, 0x24, 0x3e, 0x0d, 0x1f, 0x09,
-	0xc5, 0x6e, 0xd6, 0xae, 0x68, 0x2c, 0x6f, 0x71, 0xee, 0x39, 0xc7, 0xd6, 0x39, 0xf7, 0x40, 0xff,
-	0xb6, 0x6f, 0xd8, 0x9a, 0x70, 0x95, 0x46, 0x5c, 0x19, 0x8c, 0xac, 0x61, 0x32, 0xd3, 0xca, 0xd8,
-	0x48, 0x48, 0x8b, 0x46, 0xa2, 0x8d, 0x16, 0x5c, 0x47, 0x5c, 0xc9, 0x99, 0x98, 0x13, 0x6d, 0x94,
-	0x55, 0x41, 0xb7, 0xe4, 0x18, 0x24, 0x77, 0x78, 0x52, 0xe2, 0xc9, 0x82, 0xeb, 0xe7, 0x6f, 0xf7,
-	0x64, 0xb9, 0x4a, 0x53, 0x25, 0xa3, 0x0c, 0x8d, 0x60, 0xcb, 0xc8, 0xae, 0x35, 0x26, 0x93, 0x14,
-	0xb3, 0x8c, 0xcd, 0xd1, 0x8b, 0xf6, 0x5e, 0x40, 0x7d, 0x14, 0x8f, 0x83, 0xa7, 0x70, 0x78, 0xcb,
-	0x96, 0x39, 0x86, 0xb5, 0xb3, 0xda, 0xc5, 0x31, 0xf5, 0x87, 0x62, 0x18, 0xc7, 0xc3, 0x07, 0x86,
-	0xe7, 0x70, 0x32, 0xd6, 0x4b, 0x21, 0x17, 0x03, 0xa6, 0x19, 0x17, 0x76, 0xfd, 0x00, 0xee, 0x02,
-	0x3a, 0x1f, 0xd4, 0x4a, 0x56, 0x40, 0x76, 0xa1, 0xfd, 0xcd, 0x08, 0x8b, 0x57, 0xf9, 0x6c, 0x86,
-	0x26, 0x08, 0xa0, 0x91, 0x89, 0x9f, 0x25, 0xc6, 0x7d, 0xf7, 0xce, 0x00, 0x28, 0xb2, 0xe4, 0x1f,
-	0x88, 0xd7, 0x70, 0x3a, 0x50, 0x52, 0x22, 0xb7, 0x42, 0x49, 0x8a, 0x79, 0x86, 0xc1, 0x33, 0x68,
-	0xa2, 0x64, 0xd3, 0xa5, 0x07, 0xb6, 0xe8, 0xe6, 0xd4, 0xfb, 0xdd, 0x80, 0xe6, 0xc0, 0x39, 0x1c,
-	0xbc, 0x87, 0x7a, 0x6a, 0x73, 0x37, 0x6f, 0xf7, 0xcf, 0xc9, 0xa3, 0x4e, 0x93, 0x51, 0x3c, 0xa6,
-	0x05, 0xa5, 0x60, 0x5a, 0x2b, 0xc2, 0x83, 0xca, 0xcc, 0x38, 0x1e, 0xd2, 0x82, 0x12, 0xdc, 0xc0,
-	0x69, 0xee, 0x0c, 0x9c, 0xf0, 0x8d, 0x2f, 0x61, 0xdd, 0xa9, 0xbc, 0xab, 0xa0, 0x72, 0xdf, 0x7a,
-	0x7a, 0x92, 0xdf, 0x8f, 0xe2, 0x3b, 0x3c, 0x49, 0x36, 0xa6, 0x6f, 0xd5, 0x1b, 0x4e, 0xfd, 0xb2,
-	0x82, 0xfa, 0x7e, 0x60, 0xb4, 0x93, 0xec, 0x47, 0xf8, 0x12, 0x80, 0x2b, 0x39, 0xc7, 0xac, 0xf0,
-	0x39, 0x3c, 0x74, 0xc6, 0xee, 0xfc, 0x09, 0xbe, 0xc0, 0xd1, 0xaa, 0x08, 0x73, 0x32, 0x75, 0x59,
-	0x85, 0x4d, 0x77, 0x39, 0xa9, 0x70, 0xf9, 0xce, 0x0e, 0xd0, 0xf6, 0x6a, 0x67, 0x21, 0x3e, 0x41,
-	0xdb, 0x20, 0x4b, 0x4a, 0xc5, 0xff, 0x9c, 0xe2, 0x9b, 0x0a, 0x8a, 0xdb, 0x95, 0xa1, 0x60, 0xb6,
-	0xeb, 0x73, 0x0d, 0xc7, 0x3f, 0x90, 0x25, 0x68, 0x26, 0xbe, 0x67, 0x61, 0xeb, 0xef, 0x10, 0x7d,
-	0x83, 0x88, 0x6f, 0x10, 0x89, 0x8b, 0x06, 0x8d, 0x7c, 0x81, 0xe8, 0x91, 0x27, 0xfb, 0x0d, 0xfa,
-	0xd8, 0x68, 0xfd, 0xdf, 0x81, 0x2b, 0x0a, 0xaf, 0xb8, 0x4a, 0x1f, 0x7f, 0xd2, 0xe7, 0xda, 0x4d,
-	0x7d, 0xc1, 0xf5, 0xaf, 0x83, 0xee, 0xd7, 0x3e, 0x65, 0x6b, 0x32, 0x28, 0xa0, 0xf1, 0x1d, 0x74,
-	0x58, 0x42, 0xaf, 0xb9, 0x9e, 0x36, 0x5d, 0x53, 0x2f, 0xff, 0x04, 0x00, 0x00, 0xff, 0xff, 0x54,
-	0xdd, 0xba, 0xf9, 0x34, 0x04, 0x00, 0x00,
+var (
+	file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescOnce sync.Once
+	file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescData = file_v2ray_com_core_transport_internet_kcp_config_proto_rawDesc
+)
+
+func file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescGZIP() []byte {
+	file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescOnce.Do(func() {
+		file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescData = protoimpl.X.CompressGZIP(file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescData)
+	})
+	return file_v2ray_com_core_transport_internet_kcp_config_proto_rawDescData
+}
+
+var file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_v2ray_com_core_transport_internet_kcp_config_proto_goTypes = []interface{}{
+	(*MTU)(nil),                 // 0: v2ray.core.transport.internet.kcp.MTU
+	(*TTI)(nil),                 // 1: v2ray.core.transport.internet.kcp.TTI
+	(*UplinkCapacity)(nil),      // 2: v2ray.core.transport.internet.kcp.UplinkCapacity
+	(*DownlinkCapacity)(nil),    // 3: v2ray.core.transport.internet.kcp.DownlinkCapacity
+	(*WriteBuffer)(nil),         // 4: v2ray.core.transport.internet.kcp.WriteBuffer
+	(*ReadBuffer)(nil),          // 5: v2ray.core.transport.internet.kcp.ReadBuffer
+	(*ConnectionReuse)(nil),     // 6: v2ray.core.transport.internet.kcp.ConnectionReuse
+	(*EncryptionSeed)(nil),      // 7: v2ray.core.transport.internet.kcp.EncryptionSeed
+	(*Config)(nil),              // 8: v2ray.core.transport.internet.kcp.Config
+	(*serial.TypedMessage)(nil), // 9: v2ray.core.common.serial.TypedMessage
+}
+var file_v2ray_com_core_transport_internet_kcp_config_proto_depIdxs = []int32{
+	0, // 0: v2ray.core.transport.internet.kcp.Config.mtu:type_name -> v2ray.core.transport.internet.kcp.MTU
+	1, // 1: v2ray.core.transport.internet.kcp.Config.tti:type_name -> v2ray.core.transport.internet.kcp.TTI
+	2, // 2: v2ray.core.transport.internet.kcp.Config.uplink_capacity:type_name -> v2ray.core.transport.internet.kcp.UplinkCapacity
+	3, // 3: v2ray.core.transport.internet.kcp.Config.downlink_capacity:type_name -> v2ray.core.transport.internet.kcp.DownlinkCapacity
+	4, // 4: v2ray.core.transport.internet.kcp.Config.write_buffer:type_name -> v2ray.core.transport.internet.kcp.WriteBuffer
+	5, // 5: v2ray.core.transport.internet.kcp.Config.read_buffer:type_name -> v2ray.core.transport.internet.kcp.ReadBuffer
+	9, // 6: v2ray.core.transport.internet.kcp.Config.header_config:type_name -> v2ray.core.common.serial.TypedMessage
+	7, // 7: v2ray.core.transport.internet.kcp.Config.seed:type_name -> v2ray.core.transport.internet.kcp.EncryptionSeed
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
+}
+
+func init() { file_v2ray_com_core_transport_internet_kcp_config_proto_init() }
+func file_v2ray_com_core_transport_internet_kcp_config_proto_init() {
+	if File_v2ray_com_core_transport_internet_kcp_config_proto != nil {
+		return
+	}
+	if !protoimpl.UnsafeEnabled {
+		file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MTU); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TTI); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UplinkCapacity); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DownlinkCapacity); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*WriteBuffer); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ReadBuffer); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ConnectionReuse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*EncryptionSeed); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Config); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
+	type x struct{}
+	out := protoimpl.TypeBuilder{
+		File: protoimpl.DescBuilder{
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: file_v2ray_com_core_transport_internet_kcp_config_proto_rawDesc,
+			NumEnums:      0,
+			NumMessages:   9,
+			NumExtensions: 0,
+			NumServices:   0,
+		},
+		GoTypes:           file_v2ray_com_core_transport_internet_kcp_config_proto_goTypes,
+		DependencyIndexes: file_v2ray_com_core_transport_internet_kcp_config_proto_depIdxs,
+		MessageInfos:      file_v2ray_com_core_transport_internet_kcp_config_proto_msgTypes,
+	}.Build()
+	File_v2ray_com_core_transport_internet_kcp_config_proto = out.File
+	file_v2ray_com_core_transport_internet_kcp_config_proto_rawDesc = nil
+	file_v2ray_com_core_transport_internet_kcp_config_proto_goTypes = nil
+	file_v2ray_com_core_transport_internet_kcp_config_proto_depIdxs = nil
 }

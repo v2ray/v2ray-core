@@ -21,7 +21,7 @@ func (l *stringList) String() string {
 }
 
 func (l *stringList) Set(v string) error {
-	if len(v) == 0 {
+	if v == "" {
 		return newError("empty value")
 	}
 	*l = append(*l, v)
@@ -48,7 +48,7 @@ func (c *CertificateCommand) Description() Description {
 			"Generate new TLS certificate",
 			"--ca The new certificate is a CA certificate",
 			"--domain Common name for the certificate",
-			"--exipre Time until certificate expires. 240h = 10 days.",
+			"--expire Time until certificate expires. 240h = 10 days.",
 		},
 	}
 }

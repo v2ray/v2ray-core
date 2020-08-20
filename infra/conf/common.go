@@ -195,8 +195,11 @@ func (list *PortList) Build() *net.PortList {
 // UnmarshalJSON implements encoding/json.Unmarshaler.UnmarshalJSON
 func (list *PortList) UnmarshalJSON(data []byte) error {
 	var listStr string
+	var number uint32
 	if err := json.Unmarshal(data, &listStr); err != nil {
-		return newError("invalid port list: ", string(data)).Base(err)
+		if err2 := json.Unmarshal(data, &number); err2 != nil {
+			return newError("invalid port: ", string(data)).Base(err2)
+		}
 	}
 	rangelist := strings.Split(listStr, ",")
 	for _, rangeStr := range rangelist {
@@ -216,6 +219,9 @@ func (list *PortList) UnmarshalJSON(data []byte) error {
 				list.Range = append(list.Range, PortRange{From: uint32(port), To: uint32(port)})
 			}
 		}
+	}
+	if number != 0 {
+		list.Range = append(list.Range, PortRange{From: uint32(number), To: uint32(number)})
 	}
 	return nil
 }

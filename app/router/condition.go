@@ -82,7 +82,7 @@ func NewDomainMatcher(domains []*Domain) (*DomainMatcher, error) {
 }
 
 func (m *DomainMatcher) ApplyDomain(domain string) bool {
-	return m.matchers.Match(domain) > 0
+	return len(m.matchers.Match(domain)) > 0
 }
 
 func (m *DomainMatcher) Apply(ctx *Context) bool {
@@ -154,20 +154,32 @@ func (m *MultiGeoIPMatcher) Apply(ctx *Context) bool {
 }
 
 type PortMatcher struct {
-	port net.MemoryPortList
+	port     net.MemoryPortList
+	onSource bool
 }
 
-func NewPortMatcher(list *net.PortList) *PortMatcher {
+// NewPortMatcher create a new port matcher that can match source or destination port
+func NewPortMatcher(list *net.PortList, onSource bool) *PortMatcher {
 	return &PortMatcher{
-		port: net.PortListFromProto(list),
+		port:     net.PortListFromProto(list),
+		onSource: onSource,
 	}
 }
 
 func (v *PortMatcher) Apply(ctx *Context) bool {
-	if ctx.Outbound == nil || !ctx.Outbound.Target.IsValid() {
-		return false
+	var port net.Port
+	if v.onSource {
+		if ctx.Inbound == nil || !ctx.Inbound.Source.IsValid() {
+			return false
+		}
+		port = ctx.Inbound.Source.Port
+	} else {
+		if ctx.Outbound == nil || !ctx.Outbound.Target.IsValid() {
+			return false
+		}
+		port = ctx.Outbound.Target.Port
 	}
-	return v.port.Contains(ctx.Outbound.Target.Port)
+	return v.port.Contains(port)
 }
 
 type NetworkMatcher struct {
@@ -294,10 +306,7 @@ func NewAttributeMatcher(code string) (*AttributeMatcher, error) {
 		return nil, newError("attr rule").Base(err)
 	}
 	p, err := starlark.FileProgram(starFile, func(name string) bool {
-		if name == "attrs" {
-			return true
-		}
-		return false
+		return name == "attrs"
 	})
 	if err != nil {
 		return nil, err

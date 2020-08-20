@@ -266,6 +266,34 @@ func TestRoutingRule(t *testing.T) {
 		},
 		{
 			rule: &RoutingRule{
+				SourcePortList: &net.PortList{
+					Range: []*net.PortRange{
+						{From: 123, To: 123},
+						{From: 9993, To: 9999},
+					},
+				},
+			},
+			test: []ruleTest{
+				{
+					input:  withInbound(&session.Inbound{Source: net.UDPDestination(net.LocalHostIP, 123)}),
+					output: true,
+				},
+				{
+					input:  withInbound(&session.Inbound{Source: net.UDPDestination(net.LocalHostIP, 9999)}),
+					output: true,
+				},
+				{
+					input:  withInbound(&session.Inbound{Source: net.UDPDestination(net.LocalHostIP, 9994)}),
+					output: true,
+				},
+				{
+					input:  withInbound(&session.Inbound{Source: net.UDPDestination(net.LocalHostIP, 53)}),
+					output: false,
+				},
+			},
+		},
+		{
+			rule: &RoutingRule{
 				Protocol:   []string{"http"},
 				Attributes: "attrs[':path'].startswith('/test')",
 			},

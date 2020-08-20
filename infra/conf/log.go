@@ -30,11 +30,15 @@ func (v *LogConfig) Build() *log.Config {
 		AccessLogType: log.LogType_Console,
 	}
 
-	if len(v.AccessLog) > 0 {
+	if v.AccessLog == "none" {
+		config.AccessLogType = log.LogType_None
+	} else if len(v.AccessLog) > 0 {
 		config.AccessLogPath = v.AccessLog
 		config.AccessLogType = log.LogType_File
 	}
-	if len(v.ErrorLog) > 0 {
+	if v.ErrorLog == "none" {
+		config.ErrorLogType = log.LogType_None
+	} else if len(v.ErrorLog) > 0 {
 		config.ErrorLogPath = v.ErrorLog
 		config.ErrorLogType = log.LogType_File
 	}

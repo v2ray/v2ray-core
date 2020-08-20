@@ -1,11 +1,9 @@
 # Project V
+![](https://github.com/v2fly/v2ray-core/workflows/Test/badge.svg)
+[![codecov.io][3]][4] [![GoDoc][5]][6] [![codebeat][7]][8] [![Downloads][9]][10]
 
-[![Build Status][1]][2] [![codecov.io][3]][4] [![GoDoc][5]][6] [![codebeat][7]][8] [![Downloads][9]][10]
-
-[1]: https://dev.azure.com/v2ray/core/_apis/build/status/v2ray.core "Build Status badge"
-[2]: https://dev.azure.com/v2ray/core/_build/latest?definitionId=1 "Azure Build Status"
-[3]: https://codecov.io/github/v2ray/v2ray-core/coverage.svg?branch=master "Coverage badge"
-[4]: https://codecov.io/github/v2ray/v2ray-core?branch=master "Codecov Status"
+[3]: https://codecov.io/gh/v2fly/v2ray-core/branch/master/graph/badge.svg?branch=master "Coverage badge"
+[4]: https://codecov.io/gh/v2fly/v2ray-core?branch=master "Codecov Status"
 [5]: https://godoc.org/v2ray.com/core?status.svg "GoDoc badge"
 [6]: https://godoc.org/v2ray.com/core "GoDoc"
 [7]: https://codebeat.co/badges/f2354ca8-3e24-463d-a2e3-159af73b2477 "Codebeat badge"

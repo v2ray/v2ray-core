@@ -21,7 +21,8 @@ import (
 )
 
 type ClientManager struct {
-	Picker WorkerPicker
+	Enabled bool // wheather mux is enabled from user config
+	Picker  WorkerPicker
 }
 
 func (m *ClientManager) Dispatch(ctx context.Context, link *transport.Link) error {

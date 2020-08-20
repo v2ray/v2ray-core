@@ -50,7 +50,6 @@ func ReadTCPSession(user *protocol.MemoryUser, reader io.Reader) (*protocol.Requ
 		return nil, nil, newError("failed to initialize decoding stream").Base(err).AtError()
 	}
 	br := &buf.BufferedReader{Reader: r}
-	reader = nil
 
 	authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
 	request := &protocol.RequestHeader{

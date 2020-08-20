@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	http_proto "v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/session"
-	"v2ray.com/core/external/github.com/gorilla/websocket"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
@@ -27,6 +27,9 @@ var upgrader = &websocket.Upgrader{
 	ReadBufferSize:   4 * 1024,
 	WriteBufferSize:  4 * 1024,
 	HandshakeTimeout: time.Second * 4,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {

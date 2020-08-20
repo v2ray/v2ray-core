@@ -26,6 +26,8 @@ func cipherFromString(c string) shadowsocks.CipherType {
 		return shadowsocks.CipherType_AES_256_GCM
 	case "chacha20-poly1305", "aead_chacha20_poly1305", "chacha20-ietf-poly1305":
 		return shadowsocks.CipherType_CHACHA20_POLY1305
+	case "none", "plain":
+		return shadowsocks.CipherType_NONE
 	default:
 		return shadowsocks.CipherType_UNKNOWN
 	}
@@ -46,7 +48,7 @@ func (v *ShadowsocksServerConfig) Build() (proto.Message, error) {
 	config.UdpEnabled = v.UDP
 	config.Network = v.NetworkList.Build()
 
-	if len(v.Password) == 0 {
+	if v.Password == "" {
 		return nil, newError("Shadowsocks password is not specified.")
 	}
 	account := &shadowsocks.Account{
@@ -103,7 +105,7 @@ func (v *ShadowsocksClientConfig) Build() (proto.Message, error) {
 		if server.Port == 0 {
 			return nil, newError("Invalid Shadowsocks port.")
 		}
-		if len(server.Password) == 0 {
+		if server.Password == "" {
 			return nil, newError("Shadowsocks password is not specified.")
 		}
 		account := &shadowsocks.Account{

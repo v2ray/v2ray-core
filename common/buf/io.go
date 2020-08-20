@@ -3,6 +3,7 @@ package buf
 import (
 	"io"
 	"net"
+	"os"
 	"syscall"
 	"time"
 )
@@ -57,7 +58,8 @@ func NewReader(reader io.Reader) Reader {
 		}
 	}
 
-	if useReadv {
+	_, isFile := reader.(*os.File)
+	if !isFile && useReadv {
 		if sc, ok := reader.(syscall.Conn); ok {
 			rawConn, err := sc.SyscallConn()
 			if err != nil {

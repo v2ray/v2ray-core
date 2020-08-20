@@ -28,11 +28,11 @@ type Portal struct {
 }
 
 func NewPortal(config *PortalConfig, ohm outbound.Manager) (*Portal, error) {
-	if len(config.Tag) == 0 {
+	if config.Tag == "" {
 		return nil, newError("portal tag is empty")
 	}
 
-	if len(config.Domain) == 0 {
+	if config.Domain == "" {
 		return nil, newError("portal domain is empty")
 	}
 
