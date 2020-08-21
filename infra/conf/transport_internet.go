@@ -109,7 +109,8 @@ func (c *KCPConfig) Build() (proto.Message, error) {
 }
 
 type TCPConfig struct {
-	HeaderConfig json.RawMessage `json:"header"`
+	HeaderConfig        json.RawMessage `json:"header"`
+	AcceptProxyProtocol bool            `json:"acceptProxyProtocol"`
 }
 
 // Build implements Buildable.
@@ -126,7 +127,9 @@ func (c *TCPConfig) Build() (proto.Message, error) {
 		}
 		config.HeaderSettings = serial.ToTypedMessage(ts)
 	}
-
+	if c.AcceptProxyProtocol {
+		config.AcceptProxyProtocol = c.AcceptProxyProtocol
+	}
 	return config, nil
 }
 
