@@ -379,8 +379,12 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 			domainRules = append(domainRules, fmt.Sprintf("%s(DNS idx:%d)", rule, info.clientIdx))
 			matchingDNS = append(matchingDNS, s.clients[info.clientIdx].Name())
 		}
-		newError("domain ", domain, " matching following rules: ", domainRules).AtDebug().WriteToLog()
-		newError("domain ", domain, " uses following DNS first: ", matchingDNS).AtDebug().WriteToLog()
+		if len(domainRules) > 0 {
+			newError("domain ", domain, " matches following rules: ", domainRules).AtDebug().WriteToLog()
+		}
+		if len(matchingDNS) > 0 {
+			newError("domain ", domain, " uses following DNS first: ", matchingDNS).AtDebug().WriteToLog()
+		}
 		for _, idx := range indices {
 			clientIdx := int(s.matcherInfos[idx].clientIdx)
 			matchedClient = s.clients[clientIdx]
