@@ -20,3 +20,4 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_JSON: false
           VALIDATE_ANSIBLE: false
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
