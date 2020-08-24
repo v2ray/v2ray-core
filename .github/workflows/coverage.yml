@@ -3,6 +3,8 @@ name: Coverage
 on:
   push:
     branches: [master]
+    paths:
+      - "**/*.go"
 
 jobs:
   coverage:

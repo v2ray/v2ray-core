@@ -1,11 +1,11 @@
-name: Lint Code Base
+name: Lint
 
 on:
   push:
     branches: [master]
   pull_request:
     branches: [master]
-    types: [assigned, opened, synchronize, reopened]
+    types: [opened, synchronize, reopened]
 
 jobs:
   lint:
