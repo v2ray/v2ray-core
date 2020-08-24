@@ -2,30 +2,25 @@ name: Coverage
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
-
-  build:
-    name: Coverage
+  coverage:
     runs-on: ubuntu-latest
-
     steps:
-
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
           go-version: ^1.14
-        id: go
 
-      - name: Check out code into the Go module directory
+      - name: Checkout default branch
         uses: actions/checkout@v2
 
       - name: Get dependencies
         run: |
           go get -v -t -d ./...
 
-      - name: Run Coverage
+      - name: Run coverage
         run: ./testing/coverage/coverall2
 
       - name: Upload coverage to Codecov

@@ -2,21 +2,19 @@ name: Lint Code Base
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
     types: [assigned, opened, synchronize, reopened]
 
 jobs:
-  build:
-    name: Lint Code Base
+  lint:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
+      - name: Checkout default branch
         uses: actions/checkout@v2
 
-      - name: Lint Code Base
+      - name: Lint Codebase
         uses: github/super-linter@v2.2.0
         env:
           VALIDATE_ALL_CODEBASE: false
