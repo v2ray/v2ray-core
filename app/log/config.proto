@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package v2ray.core.app.log;
 option csharp_namespace = "V2Ray.Core.App.Log";
-option go_package = "log";
+option go_package = "v2ray.com/core/app/log";
 option java_package = "com.v2ray.core.app.log";
 option java_multiple_files = true;
 
-import "v2ray.com/core/common/log/log.proto";
+import "common/log/log.proto";
 
 enum LogType {
   None = 0;

@@ -1,17 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"v2ray.com/core/common"
 )
 
 var protocMap = map[string]string{
@@ -51,45 +47,27 @@ func main() {
 		return nil
 	})
 
+	var protoFilesUsingProtocGenGoFast = map[string]bool{"proxy/vless/encoding/addons.proto": true}
+
 	for _, files := range protofiles {
-		args := []string{"--proto_path", gosrc, "--go_out", "plugins=grpc:" + gosrc}
-		args = append(args, files...)
-		cmd := exec.Command(protoc, args...)
-		cmd.Env = append(cmd.Env, os.Environ()...)
-		output, err := cmd.CombinedOutput()
-		if len(output) > 0 {
-			fmt.Println(string(output))
-		}
-		if err != nil {
-			fmt.Println(err)
+		for _, absPath := range files {
+			relPath, _ := filepath.Rel(reporoot, absPath)
+			args := make([]string, 0)
+			if protoFilesUsingProtocGenGoFast[relPath] {
+				args = []string{"--proto_path", reporoot, "--gofast_out", gosrc}
+			} else {
+				args = []string{"--proto_path", reporoot, "--go_out", gosrc, "--go-grpc_out", gosrc}
+			}
+			args = append(args, absPath)
+			cmd := exec.Command(protoc, args...)
+			cmd.Env = append(cmd.Env, os.Environ()...)
+			output, err := cmd.CombinedOutput()
+			if len(output) > 0 {
+				fmt.Println(string(output))
+			}
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 	}
-
-	common.Must(filepath.Walk(reporoot, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		if !strings.HasSuffix(info.Name(), ".pb.go") {
-			return nil
-		}
-
-		content, err := ioutil.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		content = bytes.Replace(content, []byte("\"golang.org/x/net/context\""), []byte("\"context\""), 1)
-
-		pos := bytes.Index(content, []byte("\npackage"))
-		if pos > 0 {
-			content = content[pos+1:]
-		}
-
-		return ioutil.WriteFile(path, content, info.Mode())
-	}))
 }
