@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"v2ray.com/core/common/uuid"
 )
@@ -24,7 +23,7 @@ func BuildV2Ray() error {
 func RunV2RayProtobuf(config []byte) *exec.Cmd {
 	genTestBinaryPath()
 
-	covDir := filepath.Join(os.Getenv("GOPATH"), "out", "v2ray", "cov")
+	covDir := os.Getenv("V2RAY_COV")
 	os.MkdirAll(covDir, os.ModeDir)
 	randomID := uuid.New()
 	profile := randomID.String() + ".out"

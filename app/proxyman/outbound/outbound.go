@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/features/outbound"
 )
 
@@ -64,15 +65,16 @@ func (m *Manager) Close() error {
 
 	m.running = false
 
+	var errs []error
 	for _, h := range m.taggedHandler {
-		h.Close()
+		errs = append(errs, h.Close())
 	}
 
 	for _, h := range m.untaggedHandlers {
-		h.Close()
+		errs = append(errs, h.Close())
 	}
 
-	return nil
+	return errors.Combine(errs...)
 }
 
 // GetDefaultHandler implements outbound.Manager.
@@ -121,14 +123,14 @@ func (m *Manager) AddHandler(ctx context.Context, handler outbound.Handler) erro
 
 // RemoveHandler implements outbound.Manager.
 func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
-	if len(tag) == 0 {
+	if tag == "" {
 		return common.ErrNoClue
 	}
 	m.access.Lock()
 	defer m.access.Unlock()
 
 	delete(m.taggedHandler, tag)
-	if m.defaultHandler.Tag() == tag {
+	if m.defaultHandler != nil && m.defaultHandler.Tag() == tag {
 		m.defaultHandler = nil
 	}
 

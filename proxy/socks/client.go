@@ -1,3 +1,5 @@
+// +build !confonly
+
 package socks
 
 import (
@@ -137,8 +139,8 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 		}
 	}
 
-	var responseDonePost = task.Single(responseFunc, task.OnSuccess(task.Close(link.Writer)))
-	if err := task.Run(task.WithContext(ctx), task.Parallel(requestFunc, responseDonePost))(); err != nil {
+	var responseDonePost = task.OnSuccess(responseFunc, task.Close(link.Writer))
+	if err := task.Run(ctx, requestFunc, responseDonePost); err != nil {
 		return newError("connection ends").Base(err)
 	}
 

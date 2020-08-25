@@ -1,3 +1,5 @@
+// +build !confonly
+
 package reverse
 
 import (
@@ -26,11 +28,11 @@ type Portal struct {
 }
 
 func NewPortal(config *PortalConfig, ohm outbound.Manager) (*Portal, error) {
-	if len(config.Tag) == 0 {
+	if config.Tag == "" {
 		return nil, newError("portal tag is empty")
 	}
 
-	if len(config.Domain) == 0 {
+	if config.Domain == "" {
 		return nil, newError("portal domain is empty")
 	}
 
@@ -97,7 +99,7 @@ func (o *Outbound) Tag() string {
 func (o *Outbound) Dispatch(ctx context.Context, link *transport.Link) {
 	if err := o.portal.HandleConnection(ctx, link); err != nil {
 		newError("failed to process reverse connection").Base(err).WriteToLog(session.ExportIDToError(ctx))
-		pipe.CloseError(link.Writer)
+		common.Interrupt(link.Writer)
 	}
 }
 
@@ -244,7 +246,7 @@ func (w *PortalWorker) heartbeat() error {
 
 		defer func() {
 			common.Close(w.writer)
-			pipe.CloseError(w.reader)
+			common.Interrupt(w.reader)
 			w.writer = nil
 		}()
 	}

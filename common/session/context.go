@@ -8,6 +8,9 @@ const (
 	idSessionKey sessionKey = iota
 	inboundSessionKey
 	outboundSessionKey
+	contentSessionKey
+	muxPreferedSessionKey
+	sockoptSessionKey
 )
 
 // ContextWithID returns a new context with the given ID.
@@ -41,6 +44,43 @@ func ContextWithOutbound(ctx context.Context, outbound *Outbound) context.Contex
 func OutboundFromContext(ctx context.Context) *Outbound {
 	if outbound, ok := ctx.Value(outboundSessionKey).(*Outbound); ok {
 		return outbound
+	}
+	return nil
+}
+
+func ContextWithContent(ctx context.Context, content *Content) context.Context {
+	return context.WithValue(ctx, contentSessionKey, content)
+}
+
+func ContentFromContext(ctx context.Context) *Content {
+	if content, ok := ctx.Value(contentSessionKey).(*Content); ok {
+		return content
+	}
+	return nil
+}
+
+// ContextWithMuxPrefered returns a new context with the given bool
+func ContextWithMuxPrefered(ctx context.Context, forced bool) context.Context {
+	return context.WithValue(ctx, muxPreferedSessionKey, forced)
+}
+
+// MuxPreferedFromContext returns value in this context, or false if not contained.
+func MuxPreferedFromContext(ctx context.Context) bool {
+	if val, ok := ctx.Value(muxPreferedSessionKey).(bool); ok {
+		return val
+	}
+	return false
+}
+
+// ContextWithSockopt returns a new context with Socket configs included
+func ContextWithSockopt(ctx context.Context, s *Sockopt) context.Context {
+	return context.WithValue(ctx, sockoptSessionKey, s)
+}
+
+// SockoptFromContext returns Socket configs in this context, or nil if not contained.
+func SockoptFromContext(ctx context.Context) *Sockopt {
+	if sockopt, ok := ctx.Value(sockoptSessionKey).(*Sockopt); ok {
+		return sockopt
 	}
 	return nil
 }

@@ -1,3 +1,5 @@
+// +build !confonly
+
 package http
 
 import (
@@ -31,7 +33,7 @@ func (c *Config) getRandomHost() string {
 }
 
 func (c *Config) getNormalizedPath() string {
-	if len(c.Path) == 0 {
+	if c.Path == "" {
 		return "/"
 	}
 	if c.Path[0] != '/' {
@@ -41,7 +43,7 @@ func (c *Config) getNormalizedPath() string {
 }
 
 func init() {
-	common.Must(internet.RegisterProtocolConfigCreatorByName(protocolName, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreator(protocolName, func() interface{} {
 		return new(Config)
 	}))
 }

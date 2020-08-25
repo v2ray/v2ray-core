@@ -4,12 +4,9 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/signal/pubsub"
-	. "v2ray.com/ext/assert"
 )
 
 func TestPubsub(t *testing.T) {
-	assert := With(t)
-
 	service := NewService()
 
 	sub := service.Subscribe("a")
@@ -17,7 +14,9 @@ func TestPubsub(t *testing.T) {
 
 	select {
 	case v := <-sub.Wait():
-		assert(v.(int), Equals, 1)
+		if v != 1 {
+			t.Error("expected subscribed value 1, but got ", v)
+		}
 	default:
 		t.Fail()
 	}

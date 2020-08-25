@@ -1,19 +1,25 @@
+// +build !confonly
+
 package quic
 
 import (
 	"context"
+	"time"
 
-	quic "github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol/tls/cert"
+	"v2ray.com/core/common/signal/done"
+	quic "v2ray.com/core/external/github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
 
 // Listener is an internet.Listener that listens for TCP connections.
 type Listener struct {
+	rawConn  *sysConn
 	listener quic.Listener
+	done     *done.Instance
 	addConn  internet.ConnHandler
 }
 
@@ -22,8 +28,16 @@ func (l *Listener) acceptStreams(session quic.Session) {
 		stream, err := session.AcceptStream()
 		if err != nil {
 			newError("failed to accept stream").Base(err).WriteToLog()
-			session.Close()
-			return
+			select {
+			case <-session.Context().Done():
+				return
+			case <-l.done.Wait():
+				session.Close()
+				return
+			default:
+				time.Sleep(time.Second)
+				continue
+			}
 		}
 
 		conn := &interConn{
@@ -42,21 +56,27 @@ func (l *Listener) keepAccepting() {
 		conn, err := l.listener.Accept()
 		if err != nil {
 			newError("failed to accept QUIC sessions").Base(err).WriteToLog()
-			l.listener.Close()
-			return
+			if l.done.Done() {
+				break
+			}
+			time.Sleep(time.Second)
+			continue
 		}
 		go l.acceptStreams(conn)
 	}
 }
 
 // Addr implements internet.Listener.Addr.
-func (v *Listener) Addr() net.Addr {
-	return v.listener.Addr()
+func (l *Listener) Addr() net.Addr {
+	return l.listener.Addr()
 }
 
 // Close implements internet.Listener.Close.
-func (v *Listener) Close() error {
-	return v.listener.Close()
+func (l *Listener) Close() error {
+	l.done.Close()
+	l.listener.Close()
+	l.rawConn.Close()
+	return nil
 }
 
 // Listen creates a new Listener based on configurations.
@@ -83,10 +103,11 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 	}
 
 	quicConfig := &quic.Config{
-		Versions:           []quic.VersionNumber{quic.VersionMilestone0_10_0},
-		ConnectionIDLength: 12,
-		KeepAlive:          true,
-		AcceptCookie:       func(net.Addr, *quic.Cookie) bool { return true },
+		ConnectionIDLength:    12,
+		HandshakeTimeout:      time.Second * 8,
+		IdleTimeout:           time.Second * 45,
+		MaxIncomingStreams:    32,
+		MaxIncomingUniStreams: -1,
 	}
 
 	conn, err := wrapSysConn(rawConn, config)
@@ -97,11 +118,13 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 
 	qListener, err := quic.Listen(conn, tlsConfig.GetTLSConfig(), quicConfig)
 	if err != nil {
-		rawConn.Close()
+		conn.Close()
 		return nil, err
 	}
 
 	listener := &Listener{
+		done:     done.New(),
+		rawConn:  conn,
 		listener: qListener,
 		addConn:  handler,
 	}

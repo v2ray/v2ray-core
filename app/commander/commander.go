@@ -1,3 +1,5 @@
+// +build !confonly
+
 package commander
 
 //go:generate errorgen

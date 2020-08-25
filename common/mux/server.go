@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"v2ray.com/core"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
@@ -34,7 +35,7 @@ func (s *Server) Type() interface{} {
 	return s.dispatcher.Type()
 }
 
-// Dispatch impliments routing.Dispatcher
+// Dispatch implements routing.Dispatcher
 func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*transport.Link, error) {
 	if dest.Address != muxCoolAddress {
 		return s.dispatcher.Dispatch(ctx, dest)
@@ -117,8 +118,9 @@ func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata,
 		}
 		if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
 			msg.From = inbound.Source
+			msg.Email = inbound.User.Email
 		}
-		log.Record(msg)
+		ctx = log.ContextWithAccessMessage(ctx, msg)
 	}
 	link, err := w.dispatcher.Dispatch(ctx, meta.Target)
 	if err != nil {
@@ -146,7 +148,7 @@ func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata,
 	rr := s.NewReader(reader)
 	if err := buf.Copy(rr, s.output); err != nil {
 		buf.Copy(rr, buf.Discard)
-		pipe.CloseError(s.input)
+		common.Interrupt(s.input)
 		return s.Close()
 	}
 	return nil
@@ -177,7 +179,7 @@ func (w *ServerWorker) handleStatusKeep(meta *FrameMetadata, reader *buf.Buffere
 		closingWriter.Close()
 
 		drainErr := buf.Copy(rr, buf.Discard)
-		pipe.CloseError(s.input)
+		common.Interrupt(s.input)
 		s.Close()
 		return drainErr
 	}
@@ -188,8 +190,8 @@ func (w *ServerWorker) handleStatusKeep(meta *FrameMetadata, reader *buf.Buffere
 func (w *ServerWorker) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if s, found := w.sessionManager.Get(meta.SessionID); found {
 		if meta.Option.Has(OptionError) {
-			pipe.CloseError(s.input)
-			pipe.CloseError(s.output)
+			common.Interrupt(s.input)
+			common.Interrupt(s.output)
 		}
 		s.Close()
 	}
@@ -241,7 +243,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 			if err != nil {
 				if errors.Cause(err) != io.EOF {
 					newError("unexpected EOF").Base(err).WriteToLog(session.ExportIDToError(ctx))
-					pipe.CloseError(input)
+					common.Interrupt(input)
 				}
 				return
 			}

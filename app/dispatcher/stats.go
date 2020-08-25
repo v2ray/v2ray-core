@@ -1,10 +1,11 @@
+// +build !confonly
+
 package dispatcher
 
 import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/features/stats"
-	"v2ray.com/core/transport/pipe"
 )
 
 type SizeStatWriter struct {
@@ -21,6 +22,6 @@ func (w *SizeStatWriter) Close() error {
 	return common.Close(w.Writer)
 }
 
-func (w *SizeStatWriter) CloseError() {
-	pipe.CloseError(w.Writer)
+func (w *SizeStatWriter) Interrupt() {
+	common.Interrupt(w.Writer)
 }

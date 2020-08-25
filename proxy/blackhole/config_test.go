@@ -5,14 +5,12 @@ import (
 	"net/http"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/proxy/blackhole"
-	. "v2ray.com/ext/assert"
 )
 
 func TestHTTPResponse(t *testing.T) {
-	assert := With(t)
-
 	buffer := buf.New()
 
 	httpResponse := new(HTTPResponse)
@@ -20,6 +18,8 @@ func TestHTTPResponse(t *testing.T) {
 
 	reader := bufio.NewReader(buffer)
 	response, err := http.ReadResponse(reader, nil)
-	assert(err, IsNil)
-	assert(response.StatusCode, Equals, 403)
+	common.Must(err)
+	if response.StatusCode != 403 {
+		t.Error("expected status code 403, but got ", response.StatusCode)
+	}
 }

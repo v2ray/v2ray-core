@@ -35,6 +35,7 @@ func (m *MuxClientWorkerFactory) EXPECT() *MuxClientWorkerFactoryMockRecorder {
 
 // Create mocks base method
 func (m *MuxClientWorkerFactory) Create() (*mux.ClientWorker, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create")
 	ret0, _ := ret[0].(*mux.ClientWorker)
 	ret1, _ := ret[1].(error)
@@ -43,5 +44,6 @@ func (m *MuxClientWorkerFactory) Create() (*mux.ClientWorker, error) {
 
 // Create indicates an expected call of Create
 func (mr *MuxClientWorkerFactoryMockRecorder) Create() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MuxClientWorkerFactory)(nil).Create))
 }

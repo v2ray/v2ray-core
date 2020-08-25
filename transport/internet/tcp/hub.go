@@ -1,9 +1,12 @@
+// +build !confonly
+
 package tcp
 
 import (
 	"context"
 	gotls "crypto/tls"
 	"strings"
+	"time"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
@@ -62,10 +65,14 @@ func (v *Listener) keepAccepting() {
 	for {
 		conn, err := v.listener.Accept()
 		if err != nil {
-			if strings.Contains(err.Error(), "closed") {
+			errStr := err.Error()
+			if strings.Contains(errStr, "closed") {
 				break
 			}
 			newError("failed to accepted raw connections").Base(err).AtWarning().WriteToLog()
+			if strings.Contains(errStr, "too many") {
+				time.Sleep(time.Millisecond * 500)
+			}
 			continue
 		}
 

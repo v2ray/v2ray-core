@@ -1,8 +1,11 @@
+// +build !confonly
+
 package tls
 
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,6 +18,8 @@ var (
 	globalSessionCache = tls.NewLRUClientSessionCache(128)
 )
 
+const exp8357 = "experiment:8357"
+
 // ParseCertificate converts a cert.Certificate to Certificate.
 func ParseCertificate(c *cert.Certificate) *Certificate {
 	certPEM, keyPEM := c.ToPEM()
@@ -22,6 +27,16 @@ func ParseCertificate(c *cert.Certificate) *Certificate {
 		Certificate: certPEM,
 		Key:         keyPEM,
 	}
+}
+
+func (c *Config) loadSelfCertPool() (*x509.CertPool, error) {
+	root := x509.NewCertPool()
+	for _, cert := range c.Certificate {
+		if !root.AppendCertsFromPEM(cert.Certificate) {
+			return nil, newError("failed to append cert").AtWarning()
+		}
+	}
+	return root, nil
 }
 
 // BuildCertificates builds a list of TLS certificates from proto definition.
@@ -139,11 +154,30 @@ func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.Cli
 	}
 }
 
+func (c *Config) IsExperiment8357() bool {
+	return strings.HasPrefix(c.ServerName, exp8357)
+}
+
+func (c *Config) parseServerName() string {
+	if c.IsExperiment8357() {
+		return c.ServerName[len(exp8357):]
+	}
+
+	return c.ServerName
+}
+
 // GetTLSConfig converts this Config into tls.Config.
 func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
+	root, err := c.getCertPool()
+	if err != nil {
+		newError("failed to load system root certificate").AtError().Base(err).WriteToLog()
+	}
+
 	config := &tls.Config{
 		ClientSessionCache:     globalSessionCache,
-		RootCAs:                c.getCertPool(),
+		RootCAs:                root,
+		InsecureSkipVerify:     c.AllowInsecure,
+		NextProtos:             c.NextProtocol,
 		SessionTicketsDisabled: c.DisableSessionResumption,
 	}
 	if c == nil {
@@ -154,24 +188,6 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 		opt(config)
 	}
 
-	if !c.AllowInsecureCiphers && len(config.CipherSuites) == 0 {
-		config.CipherSuites = []uint16{
-			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-		}
-	}
-
-	config.InsecureSkipVerify = c.AllowInsecure
 	config.Certificates = c.BuildCertificates()
 	config.BuildNameToCertificate()
 
@@ -180,14 +196,12 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 		config.GetCertificate = getGetCertificateFunc(config, caCerts)
 	}
 
-	if len(c.ServerName) > 0 {
-		config.ServerName = c.ServerName
+	if sn := c.parseServerName(); len(sn) > 0 {
+		config.ServerName = sn
 	}
-	if len(c.NextProtocol) > 0 {
-		config.NextProtos = c.NextProtocol
-	}
+
 	if len(config.NextProtos) == 0 {
-		config.NextProtos = []string{"http/1.1"}
+		config.NextProtos = []string{"h2", "http/1.1"}
 	}
 
 	return config
@@ -199,7 +213,7 @@ type Option func(*tls.Config)
 // WithDestination sets the server name in TLS config.
 func WithDestination(dest net.Destination) Option {
 	return func(config *tls.Config) {
-		if dest.Address.Family().IsDomain() && len(config.ServerName) == 0 {
+		if dest.Address.Family().IsDomain() && config.ServerName == "" {
 			config.ServerName = dest.Address.Domain()
 		}
 	}

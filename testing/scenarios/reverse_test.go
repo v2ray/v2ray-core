@@ -1,10 +1,10 @@
 package scenarios
 
 import (
-	"crypto/rand"
-	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
@@ -13,7 +13,6 @@ import (
 	"v2ray.com/core/app/reverse"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/compare"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -189,36 +188,14 @@ func TestReverseProxy(t *testing.T) {
 
 	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(32)
+	var errg errgroup.Group
 	for i := 0; i < 32; i++ {
-		go func() {
-			defer wg.Done()
-
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(externalPort),
-			})
-			common.Must(err)
-			defer conn.Close()
-
-			payload := make([]byte, 10240*1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write([]byte(payload))
-			common.Must(err)
-
-			if nBytes != len(payload) {
-				t.Error("only part of payload is written: ", nBytes)
-			}
-
-			response := readFrom(conn, time.Second*20, 10240*1024)
-			if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
-				t.Error(err)
-			}
-		}()
+		errg.Go(testTCPConn(externalPort, 10240*1024, time.Second*40))
 	}
-	wg.Wait()
+
+	if err := errg.Wait(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestReverseProxyLongRunning(t *testing.T) {
@@ -411,27 +388,8 @@ func TestReverseProxyLongRunning(t *testing.T) {
 	defer CloseAllServers(servers)
 
 	for i := 0; i < 4096; i++ {
-		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-			IP:   []byte{127, 0, 0, 1},
-			Port: int(externalPort),
-		})
-		common.Must(err)
-
-		payload := make([]byte, 1024)
-		rand.Read(payload)
-
-		nBytes, err := conn.Write([]byte(payload))
-		common.Must(err)
-
-		if nBytes != len(payload) {
-			t.Error("only part of payload is written: ", nBytes)
-		}
-
-		response := readFrom(conn, time.Second*5, 1024)
-		if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
+		if err := testTCPConn(externalPort, 1024, time.Second*20)(); err != nil {
 			t.Error(err)
 		}
-
-		conn.Close()
 	}
 }

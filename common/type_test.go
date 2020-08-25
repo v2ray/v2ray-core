@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common"
-	. "v2ray.com/ext/assert"
 )
 
 type TConfig struct {
@@ -17,8 +16,6 @@ type YConfig struct {
 }
 
 func TestObjectCreation(t *testing.T) {
-	assert := With(t)
-
 	var f = func(ctx context.Context, t interface{}) (interface{}, error) {
 		return func() int {
 			return t.(*TConfig).value
@@ -27,12 +24,18 @@ func TestObjectCreation(t *testing.T) {
 
 	Must(RegisterConfig((*TConfig)(nil), f))
 	err := RegisterConfig((*TConfig)(nil), f)
-	assert(err, IsNotNil)
+	if err == nil {
+		t.Error("expect non-nil error, but got nil")
+	}
 
 	g, err := CreateObject(context.Background(), &TConfig{value: 2})
-	assert(err, IsNil)
-	assert(g.(func() int)(), Equals, 2)
+	Must(err)
+	if v := g.(func() int)(); v != 2 {
+		t.Error("expect return value 2, but got ", v)
+	}
 
 	_, err = CreateObject(context.Background(), &YConfig{value: "T"})
-	assert(err, IsNotNil)
+	if err == nil {
+		t.Error("expect non-nil error, but got nil")
+	}
 }

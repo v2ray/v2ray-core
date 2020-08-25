@@ -68,7 +68,7 @@ func (m *Manager) GetHandler(ctx context.Context, tag string) (inbound.Handler, 
 
 // RemoveHandler implements inbound.Manager.
 func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
-	if len(tag) == 0 {
+	if tag == "" {
 		return common.ErrNoClue
 	}
 
@@ -148,6 +148,13 @@ func NewHandler(ctx context.Context, config *core.InboundHandlerConfig) (inbound
 	receiverSettings, ok := rawReceiverSettings.(*proxyman.ReceiverConfig)
 	if !ok {
 		return nil, newError("not a ReceiverConfig").AtError()
+	}
+
+	streamSettings := receiverSettings.StreamSettings
+	if streamSettings != nil && streamSettings.SocketSettings != nil {
+		ctx = session.ContextWithSockopt(ctx, &session.Sockopt{
+			Mark: streamSettings.SocketSettings.Mark,
+		})
 	}
 
 	allocStrategy := receiverSettings.AllocationStrategy

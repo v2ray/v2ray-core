@@ -36,6 +36,7 @@ func (m *OutboundManager) EXPECT() *OutboundManagerMockRecorder {
 
 // AddHandler mocks base method
 func (m *OutboundManager) AddHandler(arg0 context.Context, arg1 outbound.Handler) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddHandler", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -43,11 +44,13 @@ func (m *OutboundManager) AddHandler(arg0 context.Context, arg1 outbound.Handler
 
 // AddHandler indicates an expected call of AddHandler
 func (mr *OutboundManagerMockRecorder) AddHandler(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddHandler", reflect.TypeOf((*OutboundManager)(nil).AddHandler), arg0, arg1)
 }
 
 // Close mocks base method
 func (m *OutboundManager) Close() error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -55,11 +58,13 @@ func (m *OutboundManager) Close() error {
 
 // Close indicates an expected call of Close
 func (mr *OutboundManagerMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*OutboundManager)(nil).Close))
 }
 
 // GetDefaultHandler mocks base method
 func (m *OutboundManager) GetDefaultHandler() outbound.Handler {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDefaultHandler")
 	ret0, _ := ret[0].(outbound.Handler)
 	return ret0
@@ -67,11 +72,13 @@ func (m *OutboundManager) GetDefaultHandler() outbound.Handler {
 
 // GetDefaultHandler indicates an expected call of GetDefaultHandler
 func (mr *OutboundManagerMockRecorder) GetDefaultHandler() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDefaultHandler", reflect.TypeOf((*OutboundManager)(nil).GetDefaultHandler))
 }
 
 // GetHandler mocks base method
 func (m *OutboundManager) GetHandler(arg0 string) outbound.Handler {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHandler", arg0)
 	ret0, _ := ret[0].(outbound.Handler)
 	return ret0
@@ -79,11 +86,13 @@ func (m *OutboundManager) GetHandler(arg0 string) outbound.Handler {
 
 // GetHandler indicates an expected call of GetHandler
 func (mr *OutboundManagerMockRecorder) GetHandler(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHandler", reflect.TypeOf((*OutboundManager)(nil).GetHandler), arg0)
 }
 
 // RemoveHandler mocks base method
 func (m *OutboundManager) RemoveHandler(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RemoveHandler", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -91,11 +100,13 @@ func (m *OutboundManager) RemoveHandler(arg0 context.Context, arg1 string) error
 
 // RemoveHandler indicates an expected call of RemoveHandler
 func (mr *OutboundManagerMockRecorder) RemoveHandler(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveHandler", reflect.TypeOf((*OutboundManager)(nil).RemoveHandler), arg0, arg1)
 }
 
 // Start mocks base method
 func (m *OutboundManager) Start() error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Start")
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -103,11 +114,13 @@ func (m *OutboundManager) Start() error {
 
 // Start indicates an expected call of Start
 func (mr *OutboundManagerMockRecorder) Start() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*OutboundManager)(nil).Start))
 }
 
 // Type mocks base method
 func (m *OutboundManager) Type() interface{} {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Type")
 	ret0, _ := ret[0].(interface{})
 	return ret0
@@ -115,6 +128,7 @@ func (m *OutboundManager) Type() interface{} {
 
 // Type indicates an expected call of Type
 func (mr *OutboundManagerMockRecorder) Type() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Type", reflect.TypeOf((*OutboundManager)(nil).Type))
 }
 
@@ -143,6 +157,7 @@ func (m *OutboundHandlerSelector) EXPECT() *OutboundHandlerSelectorMockRecorder 
 
 // Select mocks base method
 func (m *OutboundHandlerSelector) Select(arg0 []string) []string {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Select", arg0)
 	ret0, _ := ret[0].([]string)
 	return ret0
@@ -150,5 +165,6 @@ func (m *OutboundHandlerSelector) Select(arg0 []string) []string {
 
 // Select indicates an expected call of Select
 func (mr *OutboundHandlerSelectorMockRecorder) Select(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Select", reflect.TypeOf((*OutboundHandlerSelector)(nil).Select), arg0)
 }

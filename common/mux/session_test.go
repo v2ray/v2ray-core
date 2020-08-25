@@ -4,36 +4,48 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/mux"
-	. "v2ray.com/ext/assert"
 )
 
 func TestSessionManagerAdd(t *testing.T) {
-	assert := With(t)
-
 	m := NewSessionManager()
 
 	s := m.Allocate()
-	assert(s.ID, Equals, uint16(1))
-	assert(m.Size(), Equals, 1)
+	if s.ID != 1 {
+		t.Error("id: ", s.ID)
+	}
+	if m.Size() != 1 {
+		t.Error("size: ", m.Size())
+	}
 
 	s = m.Allocate()
-	assert(s.ID, Equals, uint16(2))
-	assert(m.Size(), Equals, 2)
+	if s.ID != 2 {
+		t.Error("id: ", s.ID)
+	}
+	if m.Size() != 2 {
+		t.Error("size: ", m.Size())
+	}
 
 	s = &Session{
 		ID: 4,
 	}
 	m.Add(s)
-	assert(s.ID, Equals, uint16(4))
+	if s.ID != 4 {
+		t.Error("id: ", s.ID)
+	}
+	if m.Size() != 3 {
+		t.Error("size: ", m.Size())
+	}
 }
 
 func TestSessionManagerClose(t *testing.T) {
-	assert := With(t)
-
 	m := NewSessionManager()
 	s := m.Allocate()
 
-	assert(m.CloseIfNoSession(), IsFalse)
+	if m.CloseIfNoSession() {
+		t.Error("able to close")
+	}
 	m.Remove(s.ID)
-	assert(m.CloseIfNoSession(), IsTrue)
+	if !m.CloseIfNoSession() {
+		t.Error("not able to close")
+	}
 }

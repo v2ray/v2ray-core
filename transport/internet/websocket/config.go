@@ -1,3 +1,5 @@
+// +build !confonly
+
 package websocket
 
 import (
@@ -11,7 +13,7 @@ const protocolName = "websocket"
 
 func (c *Config) GetNormalizedPath() string {
 	path := c.Path
-	if len(path) == 0 {
+	if path == "" {
 		return "/"
 	}
 	if path[0] != '/' {
@@ -29,7 +31,7 @@ func (c *Config) GetRequestHeader() http.Header {
 }
 
 func init() {
-	common.Must(internet.RegisterProtocolConfigCreatorByName(protocolName, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreator(protocolName, func() interface{} {
 		return new(Config)
 	}))
 }

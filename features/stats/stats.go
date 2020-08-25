@@ -5,6 +5,8 @@ package stats
 import "v2ray.com/core/features"
 
 // Counter is the interface for stats counters.
+//
+// v2ray:api:stable
 type Counter interface {
 	// Value is the current value of the counter.
 	Value() int64
@@ -15,11 +17,14 @@ type Counter interface {
 }
 
 // Manager is the interface for stats manager.
+//
+// v2ray:api:stable
 type Manager interface {
 	features.Feature
 
-	// RegisterCounter registers a new counter to the manager. The identifier string must not be emtpy, and unique among other counters.
+	// RegisterCounter registers a new counter to the manager. The identifier string must not be empty, and unique among other counters.
 	RegisterCounter(string) (Counter, error)
+	UnregisterCounter(string) error
 	// GetCounter returns a counter by its identifier.
 	GetCounter(string) Counter
 }
@@ -35,6 +40,8 @@ func GetOrRegisterCounter(m Manager, name string) (Counter, error) {
 }
 
 // ManagerType returns the type of Manager interface. Can be used to implement common.HasType.
+//
+// v2ray:api:stable
 func ManagerType() interface{} {
 	return (*Manager)(nil)
 }
@@ -50,6 +57,11 @@ func (NoopManager) Type() interface{} {
 // RegisterCounter implements Manager.
 func (NoopManager) RegisterCounter(string) (Counter, error) {
 	return nil, newError("not implemented")
+}
+
+// UnregisterCounter implements Manager.
+func (NoopManager) UnregisterCounter(string) error {
+	return newError("not implemented")
 }
 
 // GetCounter implements Manager.

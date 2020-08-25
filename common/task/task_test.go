@@ -3,33 +3,34 @@ package task_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/task"
-	. "v2ray.com/ext/assert"
 )
 
 func TestExecuteParallel(t *testing.T) {
-	assert := With(t)
+	err := Run(context.Background(),
+		func() error {
+			time.Sleep(time.Millisecond * 200)
+			return errors.New("test")
+		}, func() error {
+			time.Sleep(time.Millisecond * 500)
+			return errors.New("test2")
+		})
 
-	err := Run(Parallel(func() error {
-		time.Sleep(time.Millisecond * 200)
-		return errors.New("test")
-	}, func() error {
-		time.Sleep(time.Millisecond * 500)
-		return errors.New("test2")
-	}))()
-
-	assert(err.Error(), Equals, "test")
+	if r := cmp.Diff(err.Error(), "test"); r != "" {
+		t.Error(r)
+	}
 }
 
 func TestExecuteParallelContextCancel(t *testing.T) {
-	assert := With(t)
-
 	ctx, cancel := context.WithCancel(context.Background())
-	err := Run(WithContext(ctx), Parallel(func() error {
+	err := Run(ctx, func() error {
 		time.Sleep(time.Millisecond * 2000)
 		return errors.New("test")
 	}, func() error {
@@ -38,9 +39,12 @@ func TestExecuteParallelContextCancel(t *testing.T) {
 	}, func() error {
 		cancel()
 		return nil
-	}))()
+	})
 
-	assert(err.Error(), HasSubstring, "canceled")
+	errStr := err.Error()
+	if !strings.Contains(errStr, "canceled") {
+		t.Error("expected error string to contain 'canceled', but actually not: ", errStr)
+	}
 }
 
 func BenchmarkExecuteOne(b *testing.B) {
@@ -48,7 +52,7 @@ func BenchmarkExecuteOne(b *testing.B) {
 		return nil
 	}
 	for i := 0; i < b.N; i++ {
-		common.Must(Run(Parallel(noop))())
+		common.Must(Run(context.Background(), noop))
 	}
 }
 
@@ -57,17 +61,6 @@ func BenchmarkExecuteTwo(b *testing.B) {
 		return nil
 	}
 	for i := 0; i < b.N; i++ {
-		common.Must(Run(Parallel(noop, noop))())
-	}
-}
-
-func BenchmarkExecuteContext(b *testing.B) {
-	noop := func() error {
-		return nil
-	}
-	background := context.Background()
-
-	for i := 0; i < b.N; i++ {
-		common.Must(Run(WithContext(background), Parallel(noop, noop))())
+		common.Must(Run(context.Background(), noop, noop))
 	}
 }

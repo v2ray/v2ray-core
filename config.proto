@@ -23,7 +23,9 @@ message Config {
   repeated v2ray.core.common.serial.TypedMessage app = 4;
 
   // Transport settings.
-  v2ray.core.transport.Config transport = 5;
+  // Deprecated. Each inbound and outbound should choose their own transport config.
+  // Date to remove: 2020-01-13 
+  v2ray.core.transport.Config transport = 5 [deprecated = true];
 
   // Configuration for extensions. The config may not work if corresponding extension is not loaded into V2Ray.
   // V2Ray will ignore such config during initialization.

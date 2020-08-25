@@ -1,9 +1,11 @@
 package http_test
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/rand"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,31 +13,35 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	. "v2ray.com/core/transport/internet/headers/http"
-	. "v2ray.com/ext/assert"
 )
 
 func TestReaderWriter(t *testing.T) {
-	assert := With(t)
-
 	cache := buf.New()
 	b := buf.New()
 	common.Must2(b.WriteString("abcd" + ENDING))
 	writer := NewHeaderWriter(b)
 	err := writer.Write(cache)
-	assert(err, IsNil)
-	assert(cache.Len(), Equals, int32(8))
+	common.Must(err)
+	if v := cache.Len(); v != 8 {
+		t.Error("cache len: ", v)
+	}
 	_, err = cache.Write([]byte{'e', 'f', 'g'})
-	assert(err, IsNil)
+	common.Must(err)
 
 	reader := &HeaderReader{}
 	buffer, err := reader.Read(cache)
-	assert(err, IsNil)
-	assert(buffer.Bytes(), Equals, []byte{'e', 'f', 'g'})
+	if err != nil && !strings.HasPrefix(err.Error(), "malformed HTTP request") {
+		t.Error("unknown error ", err)
+	}
+	_ = buffer
+	return
+	/*
+		if buffer.String() != "efg" {
+			t.Error("buffer: ", buffer.String())
+		}*/
 }
 
 func TestRequestHeader(t *testing.T) {
-	assert := With(t)
-
 	auth, err := NewHttpAuthenticator(context.Background(), &Config{
 		Request: &RequestConfig{
 			Uri: []string{"/"},
@@ -47,13 +53,15 @@ func TestRequestHeader(t *testing.T) {
 			},
 		},
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	cache := buf.New()
 	err = auth.GetClientWriter().Write(cache)
-	assert(err, IsNil)
+	common.Must(err)
 
-	assert(cache.String(), Equals, "GET / HTTP/1.1\r\nTest: Value\r\n\r\n")
+	if cache.String() != "GET / HTTP/1.1\r\nTest: Value\r\n\r\n" {
+		t.Error("cache: ", cache.String())
+	}
 }
 
 func TestLongRequestHeader(t *testing.T) {
@@ -64,15 +72,19 @@ func TestLongRequestHeader(t *testing.T) {
 
 	reader := HeaderReader{}
 	b, err := reader.Read(bytes.NewReader(payload))
-	common.Must(err)
-	if b.String() != "abcd" {
-		t.Error("expect content abcd, but actually ", b.String())
+
+	if err != nil && !(strings.HasPrefix(err.Error(), "invalid") || strings.HasPrefix(err.Error(), "malformed")) {
+		t.Error("unknown error ", err)
 	}
+	_ = b
+	/*
+		common.Must(err)
+		if b.String() != "abcd" {
+			t.Error("expect content abcd, but actually ", b.String())
+		}*/
 }
 
 func TestConnection(t *testing.T) {
-	assert := With(t)
-
 	auth, err := NewHttpAuthenticator(context.Background(), &Config{
 		Request: &RequestConfig{
 			Method: &Method{Value: "Post"},
@@ -98,28 +110,32 @@ func TestConnection(t *testing.T) {
 			},
 		},
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	assert(err, IsNil)
+	common.Must(err)
 
 	go func() {
 		conn, err := listener.Accept()
-		assert(err, IsNil)
+		common.Must(err)
 		authConn := auth.Server(conn)
 		b := make([]byte, 256)
 		for {
 			n, err := authConn.Read(b)
-			assert(err, IsNil)
+			if err != nil {
+				break
+			}
 			_, err = authConn.Write(b[:n])
-			assert(err, IsNil)
+			common.Must(err)
 		}
 	}()
 
 	conn, err := net.DialTCP("tcp", nil, listener.Addr().(*net.TCPAddr))
-	assert(err, IsNil)
+	common.Must(err)
 
 	authConn := auth.Client(conn)
+	defer authConn.Close()
+
 	authConn.Write([]byte("Test payload"))
 	authConn.Write([]byte("Test payload 2"))
 
@@ -129,12 +145,175 @@ func TestConnection(t *testing.T) {
 	totalBytes := 0
 	for {
 		n, err := authConn.Read(actualResponse[totalBytes:])
-		assert(err, IsNil)
+		common.Must(err)
 		totalBytes += n
 		if totalBytes >= len(expectedResponse) || time.Now().After(deadline) {
 			break
 		}
 	}
 
-	assert(string(actualResponse[:totalBytes]), Equals, expectedResponse)
+	if string(actualResponse[:totalBytes]) != expectedResponse {
+		t.Error("response: ", string(actualResponse[:totalBytes]))
+	}
+}
+
+func TestConnectionInvPath(t *testing.T) {
+	auth, err := NewHttpAuthenticator(context.Background(), &Config{
+		Request: &RequestConfig{
+			Method: &Method{Value: "Post"},
+			Uri:    []string{"/testpath"},
+			Header: []*Header{
+				{
+					Name:  "Host",
+					Value: []string{"www.v2ray.com", "www.google.com"},
+				},
+				{
+					Name:  "User-Agent",
+					Value: []string{"Test-Agent"},
+				},
+			},
+		},
+		Response: &ResponseConfig{
+			Version: &Version{
+				Value: "1.1",
+			},
+			Status: &Status{
+				Code:   "404",
+				Reason: "Not Found",
+			},
+		},
+	})
+	common.Must(err)
+
+	authR, err := NewHttpAuthenticator(context.Background(), &Config{
+		Request: &RequestConfig{
+			Method: &Method{Value: "Post"},
+			Uri:    []string{"/testpathErr"},
+			Header: []*Header{
+				{
+					Name:  "Host",
+					Value: []string{"www.v2ray.com", "www.google.com"},
+				},
+				{
+					Name:  "User-Agent",
+					Value: []string{"Test-Agent"},
+				},
+			},
+		},
+		Response: &ResponseConfig{
+			Version: &Version{
+				Value: "1.1",
+			},
+			Status: &Status{
+				Code:   "404",
+				Reason: "Not Found",
+			},
+		},
+	})
+	common.Must(err)
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	common.Must(err)
+
+	go func() {
+		conn, err := listener.Accept()
+		common.Must(err)
+		authConn := auth.Server(conn)
+		b := make([]byte, 256)
+		for {
+			n, err := authConn.Read(b)
+			if err != nil {
+				authConn.Close()
+				break
+			}
+			_, err = authConn.Write(b[:n])
+			common.Must(err)
+		}
+	}()
+
+	conn, err := net.DialTCP("tcp", nil, listener.Addr().(*net.TCPAddr))
+	common.Must(err)
+
+	authConn := authR.Client(conn)
+	defer authConn.Close()
+
+	authConn.Write([]byte("Test payload"))
+	authConn.Write([]byte("Test payload 2"))
+
+	expectedResponse := "Test payloadTest payload 2"
+	actualResponse := make([]byte, 256)
+	deadline := time.Now().Add(time.Second * 5)
+	totalBytes := 0
+	for {
+		n, err := authConn.Read(actualResponse[totalBytes:])
+		if err == nil {
+			t.Error("Error Expected", err)
+		} else {
+			return
+		}
+		totalBytes += n
+		if totalBytes >= len(expectedResponse) || time.Now().After(deadline) {
+			break
+		}
+	}
+	return
+}
+
+func TestConnectionInvReq(t *testing.T) {
+	auth, err := NewHttpAuthenticator(context.Background(), &Config{
+		Request: &RequestConfig{
+			Method: &Method{Value: "Post"},
+			Uri:    []string{"/testpath"},
+			Header: []*Header{
+				{
+					Name:  "Host",
+					Value: []string{"www.v2ray.com", "www.google.com"},
+				},
+				{
+					Name:  "User-Agent",
+					Value: []string{"Test-Agent"},
+				},
+			},
+		},
+		Response: &ResponseConfig{
+			Version: &Version{
+				Value: "1.1",
+			},
+			Status: &Status{
+				Code:   "404",
+				Reason: "Not Found",
+			},
+		},
+	})
+	common.Must(err)
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	common.Must(err)
+
+	go func() {
+		conn, err := listener.Accept()
+		common.Must(err)
+		authConn := auth.Server(conn)
+		b := make([]byte, 256)
+		for {
+			n, err := authConn.Read(b)
+			if err != nil {
+				authConn.Close()
+				break
+			}
+			_, err = authConn.Write(b[:n])
+			common.Must(err)
+		}
+	}()
+
+	conn, err := net.DialTCP("tcp", nil, listener.Addr().(*net.TCPAddr))
+	common.Must(err)
+
+	conn.Write([]byte("ABCDEFGHIJKMLN\r\n\r\n"))
+	l, _, err := bufio.NewReader(conn).ReadLine()
+	common.Must(err)
+	if !strings.HasPrefix(string(l), "HTTP/1.1 400 Bad Request") {
+		t.Error("Resp to non http conn", string(l))
+	}
+	return
 }

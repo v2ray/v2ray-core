@@ -1,3 +1,5 @@
+// +build !confonly
+
 package tcp
 
 import (
@@ -19,7 +21,15 @@ func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.Me
 	}
 
 	if config := tls.ConfigFromStreamSettings(streamSettings); config != nil {
-		conn = tls.Client(conn, config.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("h2")))
+		tlsConfig := config.GetTLSConfig(tls.WithDestination(dest))
+		/*
+			if config.IsExperiment8357() {
+				conn = tls.UClient(conn, tlsConfig)
+			} else {
+				conn = tls.Client(conn, tlsConfig)
+			}
+		*/
+		conn = tls.Client(conn, tlsConfig)
 	}
 
 	tcpSettings := streamSettings.ProtocolSettings.(*Config)

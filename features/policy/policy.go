@@ -41,6 +41,10 @@ type SystemStats struct {
 	InboundUplink bool
 	// Whether or not to enable stat counter for downlink traffic in inbound handlers.
 	InboundDownlink bool
+	// Whether or not to enable stat counter for uplink traffic in outbound handlers.
+	OutboundUplink bool
+	// Whether or not to enable stat counter for downlink traffic in outbound handlers.
+	OutboundDownlink bool
 }
 
 // System contains policy settings at system level.
@@ -57,6 +61,8 @@ type Session struct {
 }
 
 // Manager is a feature that provides Policy for the given user by its id or level.
+//
+// v2ray:api:stable
 type Manager interface {
 	features.Feature
 
@@ -68,6 +74,8 @@ type Manager interface {
 }
 
 // ManagerType returns the type of Manager interface. Can be used to implement common.HasType.
+//
+// v2ray:api:stable
 func ManagerType() interface{} {
 	return (*Manager)(nil)
 }
@@ -109,7 +117,9 @@ func defaultBufferPolicy() Buffer {
 func SessionDefault() Session {
 	return Session{
 		Timeouts: Timeout{
-			Handshake:      time.Second * 4,
+			//Align Handshake timeout with nginx client_header_timeout
+			//So that this value will not indicate server identity
+			Handshake:      time.Second * 60,
 			ConnectionIdle: time.Second * 300,
 			UplinkOnly:     time.Second * 1,
 			DownlinkOnly:   time.Second * 1,

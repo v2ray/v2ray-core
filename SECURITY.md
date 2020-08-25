@@ -1,0 +1,80 @@
+# 安全策略 Security Policy
+
+## 受支持的版本 Supported Versions
+
+目前 v2ray-core 项目由 [V2Fly 社区](https://github.com/v2fly) 继续提供代码维护，由于精力有限且项目复杂度较高，只维护主线代码的功能和安全性完整。原则上主页的兼容性保证继续遵循，
+如有例外另行说明。
+
+Currently v2ray-core project is maintained by [V2Fly community](https://github.com/v2fly). Feature and security guarantee may only be limited to the
+master branch, though we would still try our best to follow the compatiblity claims listed on the official website.
+
+
+## 汇报安全风险 Reporting a Vulnerability
+
+使用邮箱: security |at| v2fly.org。
+
+Report to email: security |at| v2fly.org.
+
+GPG public key:
+
+```
+
+pub   rsa4096 2020-06-02 [SC] [有效至：2020-12-29]
+      E2E35E27914FB007C0D4B6DDB117BA3BE8B494A7
+uid           V2Fly Developers <dev |at| v2fly.org>
+sub   rsa4096 2020-06-02 [E] [有效至：2020-12-29]
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQINBF7V7pQBEACozcw4/BlPgFWaz4AdN8HKSrCDLlN+/g7m4AKZIo13fAnDh+sJ
+2H4NrWNr0xxgovbco5Xw4OSSwY1BuUhnb4AmIyxbwqUQD2UADe5xD6gMBwNiJTP4
+02VCHhh7DnWTeLbAsUgRotxUCxsWVvd2F08SYGfJggOVftOnG+VNnwzTOvHWFVEw
+1Pv1DaY7bKSA0voACerRbAPCYqhmElAGJHYNjBMaxqCaWFJWpAFfBxkvS1FDVyZk
+BsABhn6sOcGJn8EYSHUIXhWwqtkQCjBB4OOik+Jn+S2DFGyk5l1NrGRQtX8C0BYn
+nc7VaxtFOp5fnJ4y0GNd4AM9KO0/Ojosi6b64l407Fj9i9OXznmZUACQw2u+VcL3
+qNy768hsTmka3pXzpRHZwYcOLOEr3jGHmLOtXgQ656OjF8Xd9DJ4cB42X8iBeqTp
+iQchHIdBpnu27ZbBFy09OMak+STB5zA0JmxDaC8b48mVkc0BMRXdYl7wWXJsEJf1
+roAOr3RCBKiE840w0PLOTnUljfqazPYTwzs91oP+SeZjBmGOpaAh7bh5BVOpzPSE
+bdA61/n01GEb5bpOKpaTi9GviF3RCbfFnLKJnBq0vHvW9BqKTVFRPAKkBGuOPBdy
+8MBNY+VY/2aP3ukZUoYe8Ypl9Q7dVPRjnoWaH0sEMzftoh+3s7GSSgAylQARAQAB
+tCBWMkZseSBEZXZlbG9wZXJzIDxkZXZAdjJmbHkub3JnPokCVAQTAQgAPhYhBOLj
+XieRT7AHwNS23bEXujvotJSnBQJe1e6UAhsDBQkBFNsABQsJCAcCBhUKCQgLAgQW
+AgMBAh4BAheAAAoJELEXujvotJSnq1IP/1POoq4iwZ29T2DE6bCd+KFNdDZAfgY/
+U9KvzOycGl3AUPv5QoDGVs6GLXSelO9QYICXI2K9tsaNzIesFsx9r3LCRzr91LSI
+Jx6aqPpvJVBzxYBdarwpUmOsKRPzLIDMf8udlZrXWmtq2qS3cfxqiJkrWt+fnd3H
+cu8BH8fwzjZyxQYfdNRJ+Dk8d2ocgQ4mRpirB70sqi8zE95ox4YytZfd0QHD/gs+
+ihTVeXPtgFtqfCUOduTkF4gsKigQR6Jx3KUuNldLirAxF2XaVTCmygAOuymGYX9L
+vI9xc0s/RoltwOHK1m26idO/0blLPCahXM6WpJR7Ds3ou5phYPKnaF6ly/AAqpIv
+W+g7qFKxeKKJ0evwM/syMtDUEqJ7LS3XCd3z/E2mBCeNazc5TLM+Cx5AqvAN7qs1
+WXGG32LlbeD22Zq9zAWHC+mOI4iaHBGCzp58ugHJunq9AmiVHEB9ttuagtLWeQ3I
+lu65xVq1XV/2r2viUCnb6xbSuhkPnm7pr5ssZgZW07k2IwyaeFLz33moD0rmbWeR
+8dQVFbXTFMbXbj1bCMC8eav1uHme8Lr9PkJ82dt3n6d76s2V18M7ZRsfaH5yQmLF
+v/RucXo6GjAslRSEs/miNim5juletdgv7VZ3z7Vjc6LJ1hukQpRCIgZX5lQK2IOz
+dvDOqQyBTUPQuQINBF7V7pQBEADkQdO75smeKnmPt0/aNNlb7JDOSWW5VY0kYgx3
+6Toh139JstIQ2xz0CLSGReizUFB6eR3DXmezLrmhkgN2Aq5A+hCtFAJwWKuKr1HS
+usvJ1el9h0oh7IO+tF8E/gNYwWfabjPX27FGVCHR1qG7ffN51Bghrnwi1T4YC98E
+R9EGU6N0Xs9DeIJL9WQPH/DF22251i/OAXkqKVGn3PNe2cBsp0yKxr9mlSyzjrha
+KXokPiPcvNqlnkiDCgfiRj7c2C2Lyl9PoEiGpsNZaCZYkMPgjM0xiLenQddwRyOU
+z2cLG3d8WdCTRyHSZd/YQtSi5R6AnkJEsVtUiDN5zwNFVpQlTq3jNHsVUpjFU2nK
+ourTZVCCLbAC60VTdxLN6eFO0f+lS2WjyJ7uZ9SGbS6uP0jMNphH/QjVF848bWXs
+1CuZty5QQY7+MTNUAhSWWntrpTkdXYqT0zUqiOc1YNnkfg3hvC4d0dbnFTfcyZnB
+Sg8e7/9n6+ms75/deYgnLuA6h7pkIcflm7pUMfVKXKz5Vlc8FC9ia0UtobeKBKqi
+jObfiO/zmNL0HQBeX0e8GkJrCyv6ikD8cUqsmVtgw7jdxGsV0SL5CddDnGKsc68O
+pGDmkAuRqR3QtXju/4r7a8IEVveGWc3rUvddYrtqbbCNWCN0JKX13PEvbNAm+2eD
+MGQtcQARAQABiQI8BBgBCAAmFiEE4uNeJ5FPsAfA1LbdsRe6O+i0lKcFAl7V7pQC
+GwwFCQEU2wAACgkQsRe6O+i0lKfK3g//a23lroIF0RZCEMox8gP5DCEZtucSg80V
+4meDEAjllT3eyEIM/RcvYT2b1ViMvMYLL8lf81vQ6OvYq8F8iUYD/FpjH2gmVruE
+oMBliLNxwQZHO8AuZtRFCCkjlTk6KYn0b370ypHFE/e8oJaGJxrsRHIjGbKl7DBp
+a735hUl16+sT1k3V0p4BpAcd/4MOCvDSHn1TOr8gQV48tHbkm9zv1WNikzgwH9ig
+rvBFidmWr1jZ+vJmtgiZCerCS5P5Tgd1qr2kBgPPQhhwEcg9bHBcIrtTw/RTyHN5
+cchrvgViCAc4ZgybqV0inawOC96HQ1K9syxXpXhjhrqL/7tJ6Ff03N5yrnQbPpw2
+KMOMQPNMibBNWnuTsUwRa3L27Mx4q6qJp+92GL9xAefytnupvvC105nvBlIym8dQ
+gCiWHi3nZogmYoNMq50Eieawc0eR9ojwrJtEWihYM95i2Mt0pTCiAh955c3vHjt3
+BBYXYEBxKV3ByOxZEIKDYa119ggS7N1OZsLt+tXdCAkKN1qEcia4vSBqUjAV76//
+iUFxqF5n0d8tGpHN49D7MGZT/WYaQBuhxK2Mj4ljXg8EYlVi5Sy3O7GPUEhR16dx
+Y7pbP42vmaDsZaWURUdxeYkj4ha+z1MKqfhDePN6oRerh9I7fJnQK3DbRZGWAiEv
+F1cKt4RANJY=
+=qRzt
+-----END PGP PUBLIC KEY BLOCK-----
+
+```

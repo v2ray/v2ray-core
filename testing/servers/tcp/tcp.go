@@ -64,7 +64,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 	}
 
 	pReader, pWriter := pipe.New(pipe.WithoutSizeLimit())
-	err := task.Run(task.Parallel(func() error {
+	err := task.Run(context.Background(), func() error {
 		defer pWriter.Close() // nolint: errcheck
 
 		for {
@@ -81,7 +81,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 			}
 		}
 	}, func() error {
-		defer pReader.CloseError()
+		defer pReader.Interrupt()
 
 		w := buf.NewWriter(conn)
 		for {
@@ -96,7 +96,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 				return err
 			}
 		}
-	}))()
+	})
 
 	if err != nil {
 		fmt.Println("failed to transfer data: ", err.Error())

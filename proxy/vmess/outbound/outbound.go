@@ -1,3 +1,5 @@
+// +build !confonly
+
 package outbound
 
 //go:generate errorgen
@@ -87,9 +89,10 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		command = protocol.RequestCommandMux
 	}
 
+	user := rec.PickUser()
 	request := &protocol.RequestHeader{
 		Version: encoding.Version,
-		User:    rec.PickUser(),
+		User:    user,
 		Command: command,
 		Address: target.Address,
 		Port:    target.Port,
@@ -110,7 +113,9 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	input := link.Reader
 	output := link.Writer
 
-	session := encoding.NewClientSession(protocol.DefaultIDHash)
+	ctx = context.WithValue(ctx, vmess.TestsEnabled, user.Account.(*vmess.MemoryAccount).TestsEnabled)
+
+	session := encoding.NewClientSession(protocol.DefaultIDHash, ctx)
 	sessionPolicy := v.policyManager.ForLevel(request.User.Level)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -161,8 +166,8 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		return buf.Copy(bodyReader, output, buf.UpdateActivity(timer))
 	}
 
-	var responseDonePost = task.Single(responseDone, task.OnSuccess(task.Close(output)))
-	if err := task.Run(task.WithContext(ctx), task.Parallel(requestDone, responseDonePost))(); err != nil {
+	var responseDonePost = task.OnSuccess(responseDone, task.Close(output))
+	if err := task.Run(ctx, requestDone, responseDonePost); err != nil {
 		return newError("connection ends").Base(err)
 	}
 

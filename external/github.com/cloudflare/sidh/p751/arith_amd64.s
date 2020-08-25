@@ -1,0 +1,2620 @@
+// +build amd64,!noasm
+
+#include "textflag.h"
+
+// p751 + 1
+#define P751P1_5   $0xEEB0000000000000
+#define P751P1_6   $0xE3EC968549F878A8
+#define P751P1_7   $0xDA959B1A13F7CC76
+#define P751P1_8   $0x084E9867D6EBE876
+#define P751P1_9   $0x8562B5045CB25748
+#define P751P1_10  $0x0E12909F97BADC66
+#define P751P1_11  $0x00006FE5D541F71C
+
+#define P751_0     $0xFFFFFFFFFFFFFFFF
+#define P751_5     $0xEEAFFFFFFFFFFFFF
+#define P751_6     $0xE3EC968549F878A8
+#define P751_7     $0xDA959B1A13F7CC76
+#define P751_8     $0x084E9867D6EBE876
+#define P751_9     $0x8562B5045CB25748
+#define P751_10    $0x0E12909F97BADC66
+#define P751_11    $0x00006FE5D541F71C
+
+#define P751X2_0   $0xFFFFFFFFFFFFFFFE
+#define P751X2_1   $0xFFFFFFFFFFFFFFFF
+#define P751X2_5   $0xDD5FFFFFFFFFFFFF
+#define P751X2_6   $0xC7D92D0A93F0F151
+#define P751X2_7   $0xB52B363427EF98ED
+#define P751X2_8   $0x109D30CFADD7D0ED
+#define P751X2_9   $0x0AC56A08B964AE90
+#define P751X2_10  $0x1C25213F2F75B8CD
+#define P751X2_11  $0x0000DFCBAA83EE38
+
+// The MSR code uses these registers for parameter passing.  Keep using
+// them to avoid significant code changes.  This means that when the Go
+// assembler does something strange, we can diff the machine code
+// against a different assembler to find out what Go did.
+
+#define REG_P1 DI
+#define REG_P2 SI
+#define REG_P3 DX
+
+TEXT ·fp751StrongReduce(SB), NOSPLIT, $0-8
+	MOVQ	x+0(FP), REG_P1
+
+	// Zero AX for later use:
+	XORQ	AX, AX
+
+	// Load p into registers:
+	MOVQ	P751_0, R8
+	// P751_{1,2,3,4} = P751_0, so reuse R8
+	MOVQ	P751_5, R9
+	MOVQ	P751_6, R10
+	MOVQ	P751_7, R11
+	MOVQ	P751_8, R12
+	MOVQ	P751_9, R13
+	MOVQ	P751_10, R14
+	MOVQ	P751_11, R15
+
+	// Set x <- x - p
+	SUBQ	R8, (REG_P1)
+	SBBQ	R8, (8)(REG_P1)
+	SBBQ	R8, (16)(REG_P1)
+	SBBQ	R8, (24)(REG_P1)
+	SBBQ	R8, (32)(REG_P1)
+	SBBQ	R9, (40)(REG_P1)
+	SBBQ	R10, (48)(REG_P1)
+	SBBQ	R11, (56)(REG_P1)
+	SBBQ	R12, (64)(REG_P1)
+	SBBQ	R13, (72)(REG_P1)
+	SBBQ	R14, (80)(REG_P1)
+	SBBQ    R15, (88)(REG_P1)
+
+	// Save carry flag indicating x-p < 0 as a mask in AX
+	SBBQ	$0, AX
+
+	// Conditionally add p to x if x-p < 0
+	ANDQ	AX, R8
+	ANDQ	AX, R9
+	ANDQ	AX, R10
+	ANDQ	AX, R11
+	ANDQ	AX, R12
+	ANDQ	AX, R13
+	ANDQ	AX, R14
+	ANDQ	AX, R15
+
+	ADDQ	R8, (REG_P1)
+	ADCQ	R8, (8)(REG_P1)
+	ADCQ	R8, (16)(REG_P1)
+	ADCQ	R8, (24)(REG_P1)
+	ADCQ	R8, (32)(REG_P1)
+	ADCQ	R9, (40)(REG_P1)
+	ADCQ	R10, (48)(REG_P1)
+	ADCQ	R11, (56)(REG_P1)
+	ADCQ	R12, (64)(REG_P1)
+	ADCQ	R13, (72)(REG_P1)
+	ADCQ	R14, (80)(REG_P1)
+	ADCQ    R15, (88)(REG_P1)
+
+	RET
+
+TEXT ·fp751ConditionalSwap(SB), NOSPLIT, $0-17
+
+	MOVQ	x+0(FP), REG_P1
+	MOVQ	y+8(FP), REG_P2
+	MOVB	choice+16(FP), AL	// AL = 0 or 1
+	MOVBLZX	AL, AX			// AX = 0 or 1
+	NEGQ	AX			// RAX = 0x00..00 or 0xff..ff
+
+	MOVQ	(0*8)(REG_P1), BX	// BX = x[0]
+	MOVQ 	(0*8)(REG_P2), CX	// CX = y[0]
+	MOVQ	CX, DX			// DX = y[0]
+	XORQ	BX, DX			// DX = y[0] ^ x[0]
+	ANDQ	AX, DX			// DX = (y[0] ^ x[0]) & mask
+	XORQ	DX, BX			// BX = (y[0] ^ x[0]) & mask) ^ x[0] = x[0] or y[0]
+	XORQ	DX, CX			// CX = (y[0] ^ x[0]) & mask) ^ y[0] = y[0] or x[0]
+	MOVQ	BX, (0*8)(REG_P1)
+	MOVQ	CX, (0*8)(REG_P2)
+
+	MOVQ	(1*8)(REG_P1), BX
+	MOVQ 	(1*8)(REG_P2), CX
+	MOVQ	CX, DX
+	XORQ	BX, DX
+	ANDQ	AX, DX
+	XORQ	DX, BX
+	XORQ	DX, CX
+	MOVQ	BX, (1*8)(REG_P1)
+	MOVQ	CX, (1*8)(REG_P2)
+
+	MOVQ	(2*8)(REG_P1), BX
+	MOVQ 	(2*8)(REG_P2), CX
+	MOVQ	CX, DX
+	XORQ	BX, DX
+	ANDQ	AX, DX
+	XORQ	DX, BX
+	XORQ	DX, CX
+	MOVQ	BX, (2*8)(REG_P1)
+	MOVQ	CX, (2*8)(REG_P2)
+
+	MOVQ	(3*8)(REG_P1), BX
+	MOVQ 	(3*8)(REG_P2), CX
+	MOVQ	CX, DX
+	XORQ	BX, DX
+	ANDQ	AX, DX
+	XORQ	DX, BX
+	XORQ	DX, CX
+	MOVQ	BX, (3*8)(REG_P1)
+	MOVQ	CX, (3*8)(REG_P2)
+
+	MOVQ	(4*8)(REG_P1), BX
+	MOVQ 	(4*8)(REG_P2), CX
+	MOVQ	CX, DX
+	XORQ	BX, DX
+	ANDQ	AX, DX
+	XORQ	DX, BX
+	XORQ	DX, CX
+	MOVQ	BX, (4*8)(REG_P1)
+	MOVQ	CX, (4*8)(REG_P2)
+
+	MOVQ	(5*8)(REG_P1), BX
+	MOVQ 	(5*8)(REG_P2), CX
+	MOVQ	CX, DX
+	XORQ	BX, DX
+	ANDQ	AX, DX
+	XORQ	DX, BX
+	XORQ	DX, CX
+	MOVQ	BX, (5*8)(REG_P1)
+	MOVQ	CX, (5*8)(REG_P2)
+
+	MOVQ	(6*8)(REG_P1), BX
+	MOVQ 	(6*8)(REG_P2), CX
+	MOVQ	CX, DX
+	XORQ	BX, DX
+	ANDQ	AX, DX
+	XORQ	DX, BX
+	XORQ	DX, CX
+	MOVQ	BX, (6*8)(REG_P1)
+	MOVQ	CX, (6*8)(REG_P2)
+
+	MOVQ	(7*8)(REG_P1), BX
+	MOVQ 	(7*8)(REG_P2), CX
+	MOVQ	CX, DX
+	XORQ	BX, DX
+	ANDQ	AX, DX
+	XORQ	DX, BX
+	XORQ	DX, CX
+	MOVQ	BX, (7*8)(REG_P1)
+	MOVQ	CX, (7*8)(REG_P2)
+
+	MOVQ	(8*8)(REG_P1), BX
+	MOVQ 	(8*8)(REG_P2), CX
+	MOVQ	CX, DX
+	XORQ	BX, DX
+	ANDQ	AX, DX
+	XORQ	DX, BX
+	XORQ	DX, CX
+	MOVQ	BX, (8*8)(REG_P1)
+	MOVQ	CX, (8*8)(REG_P2)
+
+	MOVQ	(9*8)(REG_P1), BX
+	MOVQ 	(9*8)(REG_P2), CX
+	MOVQ	CX, DX
+	XORQ	BX, DX
+	ANDQ	AX, DX
+	XORQ	DX, BX
+	XORQ	DX, CX
+	MOVQ	BX, (9*8)(REG_P1)
+	MOVQ	CX, (9*8)(REG_P2)
+
+	MOVQ	(10*8)(REG_P1), BX
+	MOVQ 	(10*8)(REG_P2), CX
+	MOVQ	CX, DX
+	XORQ	BX, DX
+	ANDQ	AX, DX
+	XORQ	DX, BX
+	XORQ	DX, CX
+	MOVQ	BX, (10*8)(REG_P1)
+	MOVQ	CX, (10*8)(REG_P2)
+
+	MOVQ	(11*8)(REG_P1), BX
+	MOVQ 	(11*8)(REG_P2), CX
+	MOVQ	CX, DX
+	XORQ	BX, DX
+	ANDQ	AX, DX
+	XORQ	DX, BX
+	XORQ	DX, CX
+	MOVQ	BX, (11*8)(REG_P1)
+	MOVQ	CX, (11*8)(REG_P2)
+
+	RET
+
+TEXT ·fp751AddReduced(SB), NOSPLIT, $0-24
+
+	MOVQ	z+0(FP), REG_P3
+	MOVQ	x+8(FP), REG_P1
+	MOVQ	y+16(FP), REG_P2
+
+	MOVQ	(REG_P1), R8
+	MOVQ	(8)(REG_P1), R9
+	MOVQ	(16)(REG_P1), R10
+	MOVQ	(24)(REG_P1), R11
+	MOVQ	(32)(REG_P1), R12
+	MOVQ	(40)(REG_P1), R13
+	MOVQ	(48)(REG_P1), R14
+	MOVQ	(56)(REG_P1), R15
+	MOVQ	(64)(REG_P1), CX
+	ADDQ	(REG_P2), R8
+	ADCQ	(8)(REG_P2), R9
+	ADCQ	(16)(REG_P2), R10
+	ADCQ	(24)(REG_P2), R11
+	ADCQ	(32)(REG_P2), R12
+	ADCQ	(40)(REG_P2), R13
+	ADCQ	(48)(REG_P2), R14
+	ADCQ	(56)(REG_P2), R15
+	ADCQ	(64)(REG_P2), CX
+	MOVQ	(72)(REG_P1), AX
+	ADCQ	(72)(REG_P2), AX
+	MOVQ	AX, (72)(REG_P3)
+	MOVQ	(80)(REG_P1), AX
+	ADCQ	(80)(REG_P2), AX
+	MOVQ	AX, (80)(REG_P3)
+	MOVQ	(88)(REG_P1), AX
+	ADCQ	(88)(REG_P2), AX
+	MOVQ	AX, (88)(REG_P3)
+
+	MOVQ	P751X2_0, AX
+	SUBQ	AX, R8
+	MOVQ	P751X2_1, AX
+	SBBQ	AX, R9
+	SBBQ	AX, R10
+	SBBQ	AX, R11
+	SBBQ	AX, R12
+	MOVQ	P751X2_5, AX
+	SBBQ	AX, R13
+	MOVQ	P751X2_6, AX
+	SBBQ	AX, R14
+	MOVQ	P751X2_7, AX
+	SBBQ	AX, R15
+	MOVQ	P751X2_8, AX
+	SBBQ	AX, CX
+	MOVQ	R8, (REG_P3)
+	MOVQ	R9, (8)(REG_P3)
+	MOVQ	R10, (16)(REG_P3)
+	MOVQ	R11, (24)(REG_P3)
+	MOVQ	R12, (32)(REG_P3)
+	MOVQ	R13, (40)(REG_P3)
+	MOVQ	R14, (48)(REG_P3)
+	MOVQ	R15, (56)(REG_P3)
+	MOVQ	CX, (64)(REG_P3)
+	MOVQ	(72)(REG_P3), R8
+	MOVQ	(80)(REG_P3), R9
+	MOVQ	(88)(REG_P3), R10
+	MOVQ	P751X2_9, AX
+	SBBQ	AX, R8
+	MOVQ	P751X2_10, AX
+	SBBQ	AX, R9
+	MOVQ	P751X2_11, AX
+	SBBQ	AX, R10
+	MOVQ	R8, (72)(REG_P3)
+	MOVQ	R9, (80)(REG_P3)
+	MOVQ	R10, (88)(REG_P3)
+	MOVQ	$0, AX
+	SBBQ	$0, AX
+
+	MOVQ	P751X2_0, SI
+	ANDQ	AX, SI
+	MOVQ	P751X2_1, R8
+	ANDQ	AX, R8
+	MOVQ	P751X2_5, R9
+	ANDQ	AX, R9
+	MOVQ	P751X2_6, R10
+	ANDQ	AX, R10
+	MOVQ	P751X2_7, R11
+	ANDQ	AX, R11
+	MOVQ	P751X2_8, R12
+	ANDQ	AX, R12
+	MOVQ	P751X2_9, R13
+	ANDQ	AX, R13
+	MOVQ	P751X2_10, R14
+	ANDQ	AX, R14
+	MOVQ	P751X2_11, R15
+	ANDQ	AX, R15
+
+	MOVQ	(REG_P3), AX
+	ADDQ	SI, AX
+	MOVQ	AX, (REG_P3)
+	MOVQ	(8)(REG_P3), AX
+	ADCQ	R8, AX
+	MOVQ	AX, (8)(REG_P3)
+	MOVQ	(16)(REG_P3), AX
+	ADCQ	R8, AX
+	MOVQ	AX, (16)(REG_P3)
+	MOVQ	(24)(REG_P3), AX
+	ADCQ	R8, AX
+	MOVQ	AX, (24)(REG_P3)
+	MOVQ	(32)(REG_P3), AX
+	ADCQ	R8, AX
+	MOVQ	AX, (32)(REG_P3)
+	MOVQ	(40)(REG_P3), AX
+	ADCQ	R9, AX
+	MOVQ	AX, (40)(REG_P3)
+	MOVQ	(48)(REG_P3), AX
+	ADCQ	R10, AX
+	MOVQ	AX, (48)(REG_P3)
+	MOVQ	(56)(REG_P3), AX
+	ADCQ	R11, AX
+	MOVQ	AX, (56)(REG_P3)
+	MOVQ	(64)(REG_P3), AX
+	ADCQ	R12, AX
+	MOVQ	AX, (64)(REG_P3)
+	MOVQ	(72)(REG_P3), AX
+	ADCQ	R13, AX
+	MOVQ	AX, (72)(REG_P3)
+	MOVQ	(80)(REG_P3), AX
+	ADCQ	R14, AX
+	MOVQ	AX, (80)(REG_P3)
+	MOVQ	(88)(REG_P3), AX
+	ADCQ	R15, AX
+	MOVQ	AX, (88)(REG_P3)
+
+	RET
+
+TEXT ·fp751SubReduced(SB), NOSPLIT, $0-24
+
+	MOVQ	z+0(FP),  REG_P3
+	MOVQ	x+8(FP),  REG_P1
+	MOVQ	y+16(FP),  REG_P2
+
+	MOVQ	(REG_P1), R8
+	MOVQ	(8)(REG_P1), R9
+	MOVQ	(16)(REG_P1), R10
+	MOVQ	(24)(REG_P1), R11
+	MOVQ	(32)(REG_P1), R12
+	MOVQ	(40)(REG_P1), R13
+	MOVQ	(48)(REG_P1), R14
+	MOVQ	(56)(REG_P1), R15
+	MOVQ	(64)(REG_P1), CX
+	SUBQ	(REG_P2), R8
+	SBBQ	(8)(REG_P2), R9
+	SBBQ	(16)(REG_P2), R10
+	SBBQ	(24)(REG_P2), R11
+	SBBQ	(32)(REG_P2), R12
+	SBBQ	(40)(REG_P2), R13
+	SBBQ	(48)(REG_P2), R14
+	SBBQ	(56)(REG_P2), R15
+	SBBQ	(64)(REG_P2), CX
+	MOVQ	R8, (REG_P3)
+	MOVQ	R9, (8)(REG_P3)
+	MOVQ	R10, (16)(REG_P3)
+	MOVQ	R11, (24)(REG_P3)
+	MOVQ	R12, (32)(REG_P3)
+	MOVQ	R13, (40)(REG_P3)
+	MOVQ	R14, (48)(REG_P3)
+	MOVQ	R15, (56)(REG_P3)
+	MOVQ	CX, (64)(REG_P3)
+	MOVQ	(72)(REG_P1), AX
+	SBBQ	(72)(REG_P2), AX
+	MOVQ	AX, (72)(REG_P3)
+	MOVQ	(80)(REG_P1), AX
+	SBBQ	(80)(REG_P2), AX
+	MOVQ	AX, (80)(REG_P3)
+	MOVQ	(88)(REG_P1), AX
+	SBBQ	(88)(REG_P2), AX
+	MOVQ	AX, (88)(REG_P3)
+	MOVQ	$0, AX
+	SBBQ	$0, AX
+
+	MOVQ	P751X2_0, SI
+	ANDQ	AX, SI
+	MOVQ	P751X2_1, R8
+	ANDQ	AX, R8
+	MOVQ	P751X2_5, R9
+	ANDQ	AX, R9
+	MOVQ	P751X2_6, R10
+	ANDQ	AX, R10
+	MOVQ	P751X2_7, R11
+	ANDQ	AX, R11
+	MOVQ	P751X2_8, R12
+	ANDQ	AX, R12
+	MOVQ	P751X2_9, R13
+	ANDQ	AX, R13
+	MOVQ	P751X2_10, R14
+	ANDQ	AX, R14
+	MOVQ	P751X2_11, R15
+	ANDQ	AX, R15
+
+	MOVQ	(REG_P3), AX
+	ADDQ	SI, AX
+	MOVQ	AX, (REG_P3)
+	MOVQ	(8)(REG_P3), AX
+	ADCQ	R8, AX
+	MOVQ	AX, (8)(REG_P3)
+	MOVQ	(16)(REG_P3), AX
+	ADCQ	R8, AX
+	MOVQ	AX, (16)(REG_P3)
+	MOVQ	(24)(REG_P3), AX
+	ADCQ	R8, AX
+	MOVQ	AX, (24)(REG_P3)
+	MOVQ	(32)(REG_P3), AX
+	ADCQ	R8, AX
+	MOVQ	AX, (32)(REG_P3)
+	MOVQ	(40)(REG_P3), AX
+	ADCQ	R9, AX
+	MOVQ	AX, (40)(REG_P3)
+	MOVQ	(48)(REG_P3), AX
+	ADCQ	R10, AX
+	MOVQ	AX, (48)(REG_P3)
+	MOVQ	(56)(REG_P3), AX
+	ADCQ	R11, AX
+	MOVQ	AX, (56)(REG_P3)
+	MOVQ	(64)(REG_P3), AX
+	ADCQ	R12, AX
+	MOVQ	AX, (64)(REG_P3)
+	MOVQ	(72)(REG_P3), AX
+	ADCQ	R13, AX
+	MOVQ	AX, (72)(REG_P3)
+	MOVQ	(80)(REG_P3), AX
+	ADCQ	R14, AX
+	MOVQ	AX, (80)(REG_P3)
+	MOVQ	(88)(REG_P3), AX
+	ADCQ	R15, AX
+	MOVQ	AX, (88)(REG_P3)
+
+	RET
+
+TEXT ·fp751Mul(SB), $96-24
+
+	// Here we store the destination in CX instead of in REG_P3 because the
+	// multiplication instructions use DX as an implicit destination
+	// operand: MULQ $REG sets DX:AX <-- AX * $REG.
+
+	MOVQ	z+0(FP), CX
+	MOVQ	x+8(FP), REG_P1
+	MOVQ	y+16(FP), REG_P2
+
+	XORQ	AX, AX
+	MOVQ	(48)(REG_P1), R8
+	MOVQ	(56)(REG_P1), R9
+	MOVQ	(64)(REG_P1), R10
+	MOVQ	(72)(REG_P1), R11
+	MOVQ	(80)(REG_P1), R12
+	MOVQ	(88)(REG_P1), R13
+	ADDQ	(REG_P1), R8
+	ADCQ	(8)(REG_P1), R9
+	ADCQ	(16)(REG_P1), R10
+	ADCQ	(24)(REG_P1), R11
+	ADCQ	(32)(REG_P1), R12
+	ADCQ	(40)(REG_P1), R13
+	MOVQ	R8, (CX)
+	MOVQ	R9, (8)(CX)
+	MOVQ	R10, (16)(CX)
+	MOVQ	R11, (24)(CX)
+	MOVQ	R12, (32)(CX)
+	MOVQ	R13, (40)(CX)
+	SBBQ	$0, AX
+
+	XORQ	DX, DX
+	MOVQ	(48)(REG_P2), R8
+	MOVQ	(56)(REG_P2), R9
+	MOVQ	(64)(REG_P2), R10
+	MOVQ	(72)(REG_P2), R11
+	MOVQ	(80)(REG_P2), R12
+	MOVQ	(88)(REG_P2), R13
+	ADDQ	(REG_P2), R8
+	ADCQ	(8)(REG_P2), R9
+	ADCQ	(16)(REG_P2), R10
+	ADCQ	(24)(REG_P2), R11
+	ADCQ	(32)(REG_P2), R12
+	ADCQ	(40)(REG_P2), R13
+	MOVQ	R8, (48)(CX)
+	MOVQ	R9, (56)(CX)
+	MOVQ	R10, (64)(CX)
+	MOVQ	R11, (72)(CX)
+	MOVQ	R12, (80)(CX)
+	MOVQ	R13, (88)(CX)
+	SBBQ	$0, DX
+	MOVQ	AX, (80)(SP)
+	MOVQ	DX, (88)(SP)
+
+	// (SP[0-8],R10,R8,R9) <- (AH+AL)*(BH+BL)
+
+	MOVQ	(CX), R11
+	MOVQ	R8, AX
+	MULQ	R11
+	MOVQ	AX, (SP)		// c0
+	MOVQ	DX, R14
+
+	XORQ	R15, R15
+	MOVQ	R9, AX
+	MULQ	R11
+	XORQ	R9, R9
+	ADDQ	AX, R14
+	ADCQ	DX, R9
+
+	MOVQ	(8)(CX), R12
+	MOVQ	R8, AX
+	MULQ	R12
+	ADDQ	AX, R14
+	MOVQ	R14, (8)(SP)		// c1
+	ADCQ	DX, R9
+	ADCQ	$0, R15
+
+	XORQ	R8, R8
+	MOVQ	R10, AX
+	MULQ	R11
+	ADDQ	AX, R9
+	MOVQ	(48)(CX), R13
+	ADCQ	DX, R15
+	ADCQ	$0, R8
+
+	MOVQ	(16)(CX), AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R15
+	MOVQ	(56)(CX), AX
+	ADCQ	$0, R8
+
+	MULQ	R12
+	ADDQ	AX, R9
+	MOVQ	R9, (16)(SP)		// c2
+	ADCQ	DX, R15
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	(72)(CX), AX
+	MULQ	R11
+	ADDQ	AX, R15
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(24)(CX), AX
+	MULQ	R13
+	ADDQ	AX, R15
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	R10, AX
+	MULQ	R12
+	ADDQ	AX, R15
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(16)(CX), R14
+	MOVQ	(56)(CX), AX
+	MULQ	R14
+	ADDQ	AX, R15
+	MOVQ	R15, (24)(SP)		// c3
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	XORQ	R10, R10
+	MOVQ	(80)(CX), AX
+	MULQ	R11
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(64)(CX), AX
+	MULQ	R14
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(48)(CX), R15
+	MOVQ	(32)(CX), AX
+	MULQ	R15
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(72)(CX), AX
+	MULQ	R12
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(24)(CX), R13
+	MOVQ	(56)(CX), AX
+	MULQ	R13
+	ADDQ	AX, R8
+	MOVQ	R8, (32)(SP)		// c4
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	(88)(CX), AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(64)(CX), AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(72)(CX), AX
+	MULQ	R14
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(40)(CX), AX
+	MULQ	R15
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(80)(CX), AX
+	MULQ	R12
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(32)(CX), R15
+	MOVQ	(56)(CX), AX
+	MULQ	R15
+	ADDQ	AX, R9
+	MOVQ	R9, (40)(SP)		// c5
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	(64)(CX), AX
+	MULQ	R15
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(88)(CX), AX
+	MULQ	R12
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(80)(CX), AX
+	MULQ	R14
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(40)(CX), R11
+	MOVQ	(56)(CX), AX
+	MULQ	R11
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(72)(CX), AX
+	MULQ	R13
+	ADDQ	AX, R10
+	MOVQ	R10, (48)(SP)		// c6
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	XORQ	R10, R10
+	MOVQ	(88)(CX), AX
+	MULQ	R14
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(64)(CX), AX
+	MULQ	R11
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(80)(CX), AX
+	MULQ	R13
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(72)(CX), AX
+	MULQ	R15
+	ADDQ	AX, R8
+	MOVQ	R8, (56)(SP)		// c7
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	(72)(CX), AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(80)(CX), AX
+	MULQ	R15
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(88)(CX), AX
+	MULQ	R13
+	ADDQ	AX, R9
+	MOVQ	R9, (64)(SP)		// c8
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	(88)(CX), AX
+	MULQ	R15
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(80)(CX), AX
+	MULQ	R11
+	ADDQ	AX, R10			// c9
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(88)(CX), AX
+	MULQ	R11
+	ADDQ	AX, R8			// c10
+	ADCQ	DX, R9			// c11
+
+	MOVQ	(88)(SP), AX
+	MOVQ	(CX), DX
+	ANDQ	AX, R12
+	ANDQ	AX, R14
+	ANDQ	AX, DX
+	ANDQ	AX, R13
+	ANDQ	AX, R15
+	ANDQ	AX, R11
+	MOVQ	(48)(SP), AX
+	ADDQ	AX, DX
+	MOVQ	(56)(SP), AX
+	ADCQ	AX, R12
+	MOVQ	(64)(SP), AX
+	ADCQ	AX, R14
+	ADCQ	R10, R13
+	ADCQ	R8, R15
+	ADCQ	R9, R11
+	MOVQ	(80)(SP), AX
+	MOVQ	DX, (48)(SP)
+	MOVQ	R12, (56)(SP)
+	MOVQ	R14, (64)(SP)
+	MOVQ	R13, (72)(SP)
+	MOVQ	R15, (80)(SP)
+	MOVQ	R11, (88)(SP)
+
+	MOVQ	(48)(CX), R8
+	MOVQ	(56)(CX), R9
+	MOVQ	(64)(CX), R10
+	MOVQ	(72)(CX), R11
+	MOVQ	(80)(CX), R12
+	MOVQ	(88)(CX), R13
+	ANDQ	AX, R8
+	ANDQ	AX, R9
+	ANDQ	AX, R10
+	ANDQ	AX, R11
+	ANDQ	AX, R12
+	ANDQ	AX, R13
+	MOVQ	(48)(SP), AX
+	ADDQ	AX, R8
+	MOVQ	(56)(SP), AX
+	ADCQ	AX, R9
+	MOVQ	(64)(SP), AX
+	ADCQ	AX, R10
+	MOVQ	(72)(SP), AX
+	ADCQ	AX, R11
+	MOVQ	(80)(SP), AX
+	ADCQ	AX, R12
+	MOVQ	(88)(SP), AX
+	ADCQ	AX, R13
+	MOVQ	R8, (48)(SP)
+	MOVQ	R9, (56)(SP)
+	MOVQ	R11, (72)(SP)
+
+	// CX[0-11] <- AL*BL
+	MOVQ	(REG_P1), R11
+	MOVQ	(REG_P2), AX
+	MULQ	R11
+	XORQ	R9, R9
+	MOVQ	AX, (CX)		// c0
+	MOVQ	R10, (64)(SP)
+	MOVQ	DX, R8
+
+	MOVQ	(8)(REG_P2), AX
+	MULQ	R11
+	XORQ	R10, R10
+	ADDQ	AX, R8
+	MOVQ	R12, (80)(SP)
+	ADCQ	DX, R9
+
+	MOVQ	(8)(REG_P1), R12
+	MOVQ	(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R8
+	MOVQ	R8, (8)(CX)		// c1
+	ADCQ	DX, R9
+	MOVQ	R13, (88)(SP)
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	(16)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(REG_P2), R13
+	MOVQ	(16)(REG_P1), AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(8)(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R9
+	MOVQ	R9, (16)(CX)		// c2
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	(24)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(24)(REG_P1), AX
+	MULQ	R13
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(16)(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(16)(REG_P1), R14
+	MOVQ	(8)(REG_P2), AX
+	MULQ	R14
+	ADDQ	AX, R10
+	MOVQ	R10, (24)(CX)		// c3
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	XORQ	R10, R10
+	MOVQ	(32)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(16)(REG_P2), AX
+	MULQ	R14
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(32)(REG_P1), AX
+	MULQ	R13
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(24)(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(24)(REG_P1), R13
+	MOVQ	(8)(REG_P2), AX
+	MULQ	R13
+	ADDQ	AX, R8
+	MOVQ	R8, (32)(CX)		// c4
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	(40)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(16)(REG_P2), AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(24)(REG_P2), AX
+	MULQ	R14
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(40)(REG_P1), R11
+	MOVQ	(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(32)(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(32)(REG_P1), R15
+	MOVQ	(8)(REG_P2), AX
+	MULQ	R15
+	ADDQ	AX, R9
+	MOVQ	R9, (40)(CX)		//c5
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	(16)(REG_P2), AX
+	MULQ	R15
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(40)(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(32)(REG_P2), AX
+	MULQ	R14
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(8)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(24)(REG_P2), AX
+	MULQ	R13
+	ADDQ	AX, R10
+	MOVQ	R10, (48)(CX)		// c6
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	XORQ	R10, R10
+	MOVQ	(40)(REG_P2), AX
+	MULQ	R14
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(16)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(32)(REG_P2), AX
+	MULQ	R13
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(24)(REG_P2), AX
+	MULQ	R15
+	ADDQ	AX, R8
+	MOVQ	R8, (56)(CX)		// c7
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	(24)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(32)(REG_P2), AX
+	MULQ	R15
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(40)(REG_P2), AX
+	MULQ	R13
+	ADDQ	AX, R9
+	MOVQ	R9, (64)(CX)		// c8
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	(40)(REG_P2), AX
+	MULQ	R15
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(32)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R10
+	MOVQ	R10, (72)(CX)		// c9
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(40)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R8
+	MOVQ	R8, (80)(CX)		// c10
+	ADCQ	DX, R9
+	MOVQ	R9, (88)(CX)		// c11
+
+	// CX[12-23] <- AH*BH
+	MOVQ	(48)(REG_P1), R11
+	MOVQ	(48)(REG_P2), AX
+	MULQ	R11
+	XORQ	R9, R9
+	MOVQ	AX, (96)(CX)		// c0
+	MOVQ	DX, R8
+
+	MOVQ	(56)(REG_P2), AX
+	MULQ	R11
+	XORQ	R10, R10
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+
+	MOVQ	(56)(REG_P1), R12
+	MOVQ	(48)(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R8
+	MOVQ	R8, (104)(CX)		// c1
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	(64)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(48)(REG_P2), R13
+	MOVQ	(64)(REG_P1), AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(56)(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R9
+	MOVQ	R9, (112)(CX)		// c2
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	(72)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(72)(REG_P1), AX
+	MULQ	R13
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(64)(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(64)(REG_P1), R14
+	MOVQ	(56)(REG_P2), AX
+	MULQ	R14
+	ADDQ	AX, R10
+	MOVQ	R10, (120)(CX)		// c3
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	XORQ	R10, R10
+	MOVQ	(80)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(64)(REG_P2), AX
+	MULQ	R14
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(80)(REG_P1), R15
+	MOVQ	R13, AX
+	MULQ	R15
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(72)(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(72)(REG_P1), R13
+	MOVQ	(56)(REG_P2), AX
+	MULQ	R13
+	ADDQ	AX, R8
+	MOVQ	R8, (128)(CX)		// c4
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	(88)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(64)(REG_P2), AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(72)(REG_P2), AX
+	MULQ	R14
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(88)(REG_P1), R11
+	MOVQ	(48)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(80)(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(56)(REG_P2), AX
+	MULQ	R15
+	ADDQ	AX, R9
+	MOVQ	R9, (136)(CX)		// c5
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	(64)(REG_P2), AX
+	MULQ	R15
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(88)(REG_P2), AX
+	MULQ	R12
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(80)(REG_P2), AX
+	MULQ	R14
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(56)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(72)(REG_P2), AX
+	MULQ	R13
+	ADDQ	AX, R10
+	MOVQ	R10, (144)(CX)		// c6
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	XORQ	R10, R10
+	MOVQ	(88)(REG_P2), AX
+	MULQ	R14
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(64)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(80)(REG_P2), AX
+	MULQ	R13
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(72)(REG_P2), AX
+	MULQ	R15
+	ADDQ	AX, R8
+	MOVQ	R8, (152)(CX)		// c7
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	(72)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(80)(REG_P2), AX
+	MULQ	R15
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(88)(REG_P2), AX
+	MULQ	R13
+	ADDQ	AX, R9
+	MOVQ	R9, (160)(CX)		// c8
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(88)(REG_P2), AX
+	MULQ	R15
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+
+	MOVQ	(80)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R10
+	MOVQ	R10, (168)(CX)		// c9
+	ADCQ	DX, R8
+
+	MOVQ	(88)(REG_P2), AX
+	MULQ	R11
+	ADDQ	AX, R8
+	MOVQ	R8, (176)(CX)		// c10
+	ADCQ	$0, DX
+	MOVQ	DX, (184)(CX)		// c11
+
+	// [R8-R15,AX,DX,DI,(SP)] <- (AH+AL)*(BH+BL)-AL*BL
+	MOVQ	(SP), R8
+	SUBQ	(CX), R8
+	MOVQ	(8)(SP), R9
+	SBBQ	(8)(CX), R9
+	MOVQ	(16)(SP), R10
+	SBBQ	(16)(CX), R10
+	MOVQ	(24)(SP), R11
+	SBBQ	(24)(CX), R11
+	MOVQ	(32)(SP), R12
+	SBBQ	(32)(CX), R12
+	MOVQ	(40)(SP), R13
+	SBBQ	(40)(CX), R13
+	MOVQ	(48)(SP), R14
+	SBBQ	(48)(CX), R14
+	MOVQ	(56)(SP), R15
+	SBBQ	(56)(CX), R15
+	MOVQ	(64)(SP), AX
+	SBBQ	(64)(CX), AX
+	MOVQ	(72)(SP), DX
+	SBBQ	(72)(CX), DX
+	MOVQ	(80)(SP), DI
+	SBBQ	(80)(CX), DI
+	MOVQ	(88)(SP), SI
+	SBBQ	(88)(CX), SI
+	MOVQ	SI, (SP)
+
+	// [R8-R15,AX,DX,DI,(SP)] <- (AH+AL)*(BH+BL) - AL*BL - AH*BH
+	MOVQ	(96)(CX), SI
+	SUBQ	SI, R8
+	MOVQ	(104)(CX), SI
+	SBBQ	SI, R9
+	MOVQ	(112)(CX), SI
+	SBBQ	SI, R10
+	MOVQ	(120)(CX), SI
+	SBBQ	SI, R11
+	MOVQ	(128)(CX), SI
+	SBBQ	SI, R12
+	MOVQ	(136)(CX), SI
+	SBBQ	SI, R13
+	MOVQ	(144)(CX), SI
+	SBBQ	SI, R14
+	MOVQ	(152)(CX), SI
+	SBBQ	SI, R15
+	MOVQ	(160)(CX), SI
+	SBBQ	SI, AX
+	MOVQ	(168)(CX), SI
+	SBBQ	SI, DX
+	MOVQ	(176)(CX), SI
+	SBBQ	SI, DI
+	MOVQ	(SP), SI
+	SBBQ	(184)(CX), SI
+
+	// FINAL RESULT
+	ADDQ	(48)(CX), R8
+	MOVQ	R8, (48)(CX)
+	ADCQ	(56)(CX), R9
+	MOVQ	R9, (56)(CX)
+	ADCQ	(64)(CX), R10
+	MOVQ	R10, (64)(CX)
+	ADCQ	(72)(CX), R11
+	MOVQ	R11, (72)(CX)
+	ADCQ	(80)(CX), R12
+	MOVQ	R12, (80)(CX)
+	ADCQ	(88)(CX), R13
+	MOVQ	R13, (88)(CX)
+	ADCQ	(96)(CX), R14
+	MOVQ	R14, (96)(CX)
+	ADCQ	(104)(CX), R15
+	MOVQ	R15, (104)(CX)
+	ADCQ	(112)(CX), AX
+	MOVQ	AX, (112)(CX)
+	ADCQ	(120)(CX), DX
+	MOVQ	DX, (120)(CX)
+	ADCQ	(128)(CX), DI
+	MOVQ	DI, (128)(CX)
+	ADCQ	(136)(CX), SI
+	MOVQ	SI, (136)(CX)
+	MOVQ	(144)(CX), AX
+	ADCQ	$0, AX
+	MOVQ	AX, (144)(CX)
+	MOVQ	(152)(CX), AX
+	ADCQ	$0, AX
+	MOVQ	AX, (152)(CX)
+	MOVQ	(160)(CX), AX
+	ADCQ	$0, AX
+	MOVQ	AX, (160)(CX)
+	MOVQ	(168)(CX), AX
+	ADCQ	$0, AX
+	MOVQ	AX, (168)(CX)
+	MOVQ	(176)(CX), AX
+	ADCQ	$0, AX
+	MOVQ	AX, (176)(CX)
+	MOVQ	(184)(CX), AX
+	ADCQ	$0, AX
+	MOVQ	AX, (184)(CX)
+
+	RET
+
+// This multiplies a 256-bit number pointed to by M0 with p751+1.
+// It is assumed that M1 points to p751+1 stored as a 768-bit Fp751Element.
+// C points to the place to store the result and should be at least 192 bits.
+// This should only be used when the BMI2 and ADX instruction set extensions
+// are available.
+#define mul256x448bmi2adx(M0, M1, C, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10) \
+	MOVQ	0+M0, DX		\
+	MULXQ	M1+40(SB), T1, T0	\
+	MULXQ	M1+48(SB), T3, T2	\
+	MOVQ	T1, 0+C			\	// C0_final
+	XORQ	AX, AX			\
+	MULXQ	M1+56(SB), T5, T4	\
+	ADOXQ	T3, T0			\
+	ADOXQ	T5, T2			\
+	MULXQ	M1+64(SB), T3, T1	\
+	ADOXQ	T3, T4			\
+	MULXQ	M1+72(SB), T6, T5	\
+	ADOXQ	T6, T1			\
+	MULXQ	M1+80(SB), T7, T3	\
+	ADOXQ	T7, T5			\
+	MULXQ	M1+88(SB), T8, T6	\
+	ADOXQ	T8, T3			\
+	ADOXQ	AX, T6			\
+					\
+	MOVQ	8+M0, DX		\
+	MULXQ	M1+40(SB), T7, T8	\
+	XORQ	AX, AX			\
+	ADCXQ	T7, T0			\
+	MOVQ	T0, 8+C			\	// C1_final
+	ADCXQ	T8, T2			\
+	MULXQ	M1+48(SB), T8, T7	\
+	ADOXQ	T8, T2			\
+	ADCXQ	T7, T4			\
+	MULXQ	M1+56(SB), T8, T0	\
+	ADOXQ	T8, T4			\
+	ADCXQ	T1, T0			\
+	MULXQ	M1+64(SB), T7, T1	\
+	ADCXQ	T5, T1			\
+	MULXQ	M1+72(SB), T8, T5	\
+	ADCXQ	T5, T3			\
+	MULXQ	M1+80(SB), T9, T5	\
+	ADCXQ	T5, T6			\
+	MULXQ	M1+88(SB), DX, T5	\
+	ADCXQ	AX, T5			\
+					\
+	ADOXQ	T7, T0			\
+	ADOXQ	T8, T1			\
+	ADOXQ	T9, T3			\
+	ADOXQ	DX, T6			\
+	ADOXQ	AX, T5			\
+					\
+	MOVQ	16+M0, DX		\
+	MULXQ	M1+40(SB), T7, T8	\
+	XORQ	AX, AX			\
+	ADCXQ	T7, T2			\
+	MOVQ	T2, 16+C		\	// C2_final
+	ADCXQ	T8, T4			\
+	MULXQ	M1+48(SB), T7, T8	\
+	ADOXQ	T7, T4			\
+	ADCXQ	T8, T0			\
+	MULXQ	M1+56(SB), T8, T2	\
+	ADOXQ	T8, T0			\
+	ADCXQ	T2, T1			\
+	MULXQ	M1+64(SB), T7, T2	\
+	ADCXQ	T2, T3			\
+	MULXQ	M1+72(SB), T8, T2	\
+	ADCXQ	T2, T6			\
+	MULXQ	M1+80(SB), T9, T2	\
+	ADCXQ	T2, T5			\
+	MULXQ	M1+88(SB), DX, T2	\
+	ADCXQ	AX, T2			\
+					\
+	ADOXQ	T7, T1			\
+	ADOXQ	T8, T3			\
+	ADOXQ	T9, T6			\
+	ADOXQ	DX, T5			\
+	ADOXQ	AX, T2			\
+					\
+	MOVQ	24+M0, DX		\
+	MULXQ	M1+40(SB), T7, T8	\
+	XORQ	AX, AX			\
+	ADCXQ	T4, T7			\
+	ADCXQ	T8, T0			\
+	MULXQ	M1+48(SB), T10, T8	\
+	ADOXQ	T10, T0			\
+	ADCXQ	T8, T1			\
+	MULXQ	M1+56(SB), T8, T4	\
+	ADOXQ	T8, T1			\
+	ADCXQ	T4, T3			\
+	MULXQ	M1+64(SB), T10, T4	\
+	ADCXQ	T4, T6			\
+	MULXQ	M1+72(SB), T8, T4	\
+	ADCXQ	T4, T5			\
+	MULXQ	M1+80(SB), T9, T4	\
+	ADCXQ	T4, T2			\
+	MULXQ	M1+88(SB), DX, T4	\
+	ADCXQ	AX, T4			\
+					\
+	ADOXQ	T10, T3			\
+	ADOXQ	T8, T6			\
+	ADOXQ	T9, T5			\
+	ADOXQ	DX, T2			\
+	ADOXQ	AX, T4
+
+// This multiplies a 256-bit number pointed to by M0 with p751+1.
+// It is assumed that M1 points to p751+1 stored as a 768-bit Fp751Element.
+// C points to the place to store the result and should be at least 192 bits.
+// This should only be used when the BMI2 instruction set extension is
+// available.
+#define mul256x448bmi2(M0, M1, C, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10) \
+	MOVQ	0+M0, DX		\
+	MULXQ	M1+40(SB), T1, T0	\
+	MULXQ	M1+48(SB), T3, T2	\
+	MOVQ	T1, 0+C			\	// C0_final
+	XORQ	AX, AX			\
+	MULXQ	M1+56(SB), T5, T4	\
+	ADDQ	T3, T0			\
+	ADCQ	T5, T2			\
+	MULXQ	M1+64(SB), T3, T1	\
+	ADCQ	T3, T4			\
+	MULXQ	M1+72(SB), T6, T5	\
+	ADCQ	T6, T1			\
+	MULXQ	M1+80(SB), T7, T3	\
+	ADCQ	T7, T5			\
+	MULXQ	M1+88(SB), T8, T6	\
+	ADCQ	T8, T3			\
+	ADCQ	AX, T6			\
+					\
+	MOVQ	8+M0, DX		\
+	MULXQ	M1+40(SB), T7, T8	\
+	ADDQ	T7, T0			\
+	MOVQ	T0, 8+C			\	// C1_final
+	ADCQ	T8, T2			\
+	MULXQ	M1+48(SB), T8, T7	\
+	MOVQ	T8, 32+C		\
+	ADCQ	T7, T4			\
+	MULXQ	M1+56(SB), T8, T0	\
+	MOVQ	T8, 40+C		\
+	ADCQ	T1, T0			\
+	MULXQ	M1+64(SB), T7, T1	\
+	ADCQ	T5, T1			\
+	MULXQ	M1+72(SB), T8, T5	\
+	ADCQ	T5, T3			\
+	MULXQ	M1+80(SB), T9, T5	\
+	ADCQ	T5, T6			\
+	MULXQ	M1+88(SB), DX, T5	\
+	ADCQ	AX, T5			\
+					\
+	XORQ	AX, AX			\
+	ADDQ	32+C, T2		\
+	ADCQ	40+C, T4		\
+	ADCQ	T7, T0			\
+	ADCQ	T8, T1			\
+	ADCQ	T9, T3			\
+	ADCQ	DX, T6			\
+	ADCQ	AX, T5			\
+					\
+	MOVQ	16+M0, DX		\
+	MULXQ	M1+40(SB), T7, T8	\
+	ADDQ	T7, T2			\
+	MOVQ	T2, 16+C		\	// C2_final
+	ADCQ	T8, T4			\
+	MULXQ	M1+48(SB), T7, T8	\
+	MOVQ	T7, 32+C		\
+	ADCQ	T8, T0			\
+	MULXQ	M1+56(SB), T8, T2	\
+	MOVQ	T8, 40+C		\
+	ADCQ	T2, T1			\
+	MULXQ	M1+64(SB), T7, T2	\
+	ADCQ	T2, T3			\
+	MULXQ	M1+72(SB), T8, T2	\
+	ADCQ	T2, T6			\
+	MULXQ	M1+80(SB), T9, T2	\
+	ADCQ	T2, T5			\
+	MULXQ	M1+88(SB), DX, T2	\
+	ADCQ	AX, T2			\
+					\
+	XORQ	AX, AX			\
+	ADDQ	32+C, T4		\
+	ADCQ	40+C, T0		\
+	ADCQ	T7, T1			\
+	ADCQ	T8, T3			\
+	ADCQ	T9, T6			\
+	ADCQ	DX, T5			\
+	ADCQ	AX, T2			\
+					\
+	MOVQ	24+M0, DX		\
+	MULXQ	M1+40(SB), T7, T8	\
+	ADDQ	T4, T7			\
+	ADCQ	T8, T0			\
+	MULXQ	M1+48(SB), T10, T8	\
+	MOVQ	T10, 32+C		\
+	ADCQ	T8, T1			\
+	MULXQ	M1+56(SB), T8, T4	\
+	MOVQ	T8, 40+C		\
+	ADCQ	T4, T3			\
+	MULXQ	M1+64(SB), T10, T4	\
+	ADCQ	T4, T6			\
+	MULXQ	M1+72(SB), T8, T4	\
+	ADCQ	T4, T5			\
+	MULXQ	M1+80(SB), T9, T4	\
+	ADCQ	T4, T2			\
+	MULXQ	M1+88(SB), DX, T4	\
+	ADCQ	AX, T4			\
+					\
+	XORQ	AX, AX			\
+	ADDQ	32+C, T0		\
+	ADCQ	40+C, T1		\
+	ADCQ	T10, T3			\
+	ADCQ	T8, T6			\
+	ADCQ	T9, T5			\
+	ADCQ	DX, T2			\
+	ADCQ	AX, T4
+
+// Template for calculating the Montgomery reduction algorithm described in
+// section 5.2.3 of https://eprint.iacr.org/2017/1015.pdf. Template must be
+// customized with schoolbook multiplicaton for 256 x 448-bit number.
+// This macro reuses memory of IN value and *changes* it. Smashes registers
+// R[8-15], AX, BX, CX, DX, BP.
+// Input:
+//    * M0: 1536-bit number to be reduced
+//    * C : either mul256x448bmi2 or mul256x448bmi2adx
+// Output: OUT 768-bit
+#define REDC(C, M0, MULS) 	\
+    \ // a[0-3] x p751p1_nz --> result: [reg_p2+48], [reg_p2+56], [reg_p2+64], and rbp, r8:r14
+    MULS(M0, ·p751p1, 48+C, R8, R9, R13, R10, R14, R12, R11, BP, BX, CX, R15) \
+    XORQ    R15, R15        \
+    MOVQ    48+C, AX        \
+    MOVQ    56+C, DX        \
+    MOVQ    64+C, BX        \
+    ADDQ    40+M0, AX       \
+    ADCQ    48+M0, DX       \
+    ADCQ    56+M0, BX       \
+    MOVQ    AX, 40+M0       \
+    MOVQ    DX, 48+M0       \
+    MOVQ    BX, 56+M0       \
+    ADCQ    64+M0, BP       \
+    ADCQ    72+M0, R8       \
+    ADCQ    80+M0, R9       \
+    ADCQ    88+M0, R10      \
+    ADCQ    96+M0, R11      \
+    ADCQ    104+M0, R12     \
+    ADCQ    112+M0, R13     \
+    ADCQ    120+M0, R14     \
+    ADCQ    128+M0, R15     \
+    MOVQ    BP, 64+M0       \
+    MOVQ    R8, 72+M0       \
+    MOVQ    R9, 80+M0       \
+    MOVQ    R10, 88+M0      \
+    MOVQ    R11, 96+M0      \
+    MOVQ    R12, 104+M0     \
+    MOVQ    R13, 112+M0     \
+    MOVQ    R14, 120+M0     \
+    MOVQ    R15, 128+M0     \
+    MOVQ    136+M0, R8      \
+    MOVQ    144+M0, R9      \
+    MOVQ    152+M0, R10     \
+    MOVQ    160+M0, R11     \
+    MOVQ    168+M0, R12     \
+    MOVQ    176+M0, R13     \
+    MOVQ    184+M0, R14     \
+    ADCQ    $0, R8          \
+    ADCQ    $0, R9          \
+    ADCQ    $0, R10         \
+    ADCQ    $0, R11         \
+    ADCQ    $0, R12         \
+    ADCQ    $0, R13         \
+    ADCQ    $0, R14         \
+    MOVQ    R8, 136+M0      \
+    MOVQ    R9, 144+M0      \
+    MOVQ    R10, 152+M0     \
+    MOVQ    R11, 160+M0     \
+    MOVQ    R12, 168+M0     \
+    MOVQ    R13, 176+M0     \
+    MOVQ    R14, 184+M0     \
+    \ // a[4-7] x p751p1_nz --> result: [reg_p2+48], [reg_p2+56], [reg_p2+64], and rbp, r8:r14
+    MULS(32+M0, ·p751p1, 48+C, R8, R9, R13, R10, R14, R12, R11, BP, BX, CX, R15) \
+    XORQ    R15, R15          \
+    MOVQ    48+C, AX        \
+    MOVQ    56+C, DX        \
+    MOVQ    64+C, BX        \
+    ADDQ    72+M0, AX       \
+    ADCQ    80+M0, DX       \
+    ADCQ    88+M0, BX       \
+    MOVQ    AX, 72+M0       \
+    MOVQ    DX, 80+M0       \
+    MOVQ    BX, 88+M0       \
+    ADCQ    96+M0, BP       \
+    ADCQ    104+M0, R8      \
+    ADCQ    112+M0, R9      \
+    ADCQ    120+M0, R10     \
+    ADCQ    128+M0, R11     \
+    ADCQ    136+M0, R12     \
+    ADCQ    144+M0, R13     \
+    ADCQ    152+M0, R14     \
+    ADCQ    160+M0, R15     \
+    MOVQ    BP, 0+C         \   // Final result c0
+    MOVQ    R8, 104+M0      \
+    MOVQ    R9, 112+M0      \
+    MOVQ    R10, 120+M0     \
+    MOVQ    R11, 128+M0     \
+    MOVQ    R12, 136+M0     \
+    MOVQ    R13, 144+M0     \
+    MOVQ    R14, 152+M0     \
+    MOVQ    R15, 160+M0     \
+    MOVQ    168+M0, R12     \
+    MOVQ    176+M0, R13     \
+    MOVQ    184+M0, R14     \
+    ADCQ    $0, R12         \
+    ADCQ    $0, R13         \
+    ADCQ    $0, R14         \
+    MOVQ    R12, 168+M0     \
+    MOVQ    R13, 176+M0     \
+    MOVQ    R14, 184+M0     \
+    \ // a[8-11] x p751p1_nz --> result: [reg_p2+48], [reg_p2+56], [reg_p2+64], and rbp, r8:r14
+    MULS(64+M0, ·p751p1, 48+C, R8, R9, R13, R10, R14, R12, R11, BP, BX, CX, R15) \
+    MOVQ    48+C, AX        \   // Final result c1:c11
+    MOVQ    56+C, DX        \
+    MOVQ    64+C, BX        \
+    ADDQ    104+M0, AX      \
+    ADCQ    112+M0, DX      \
+    ADCQ    120+M0, BX      \
+    MOVQ    AX, 8+C         \
+    MOVQ    DX, 16+C        \
+    MOVQ    BX, 24+C        \
+    ADCQ    128+M0, BP      \
+    ADCQ    136+M0, R8      \
+    ADCQ    144+M0, R9      \
+    ADCQ    152+M0, R10     \
+    ADCQ    160+M0, R11     \
+    ADCQ    168+M0, R12     \
+    ADCQ    176+M0, R13     \
+    ADCQ    184+M0, R14     \
+    MOVQ    BP, 32+C        \
+    MOVQ    R8, 40+C        \
+    MOVQ    R9, 48+C        \
+    MOVQ    R10, 56+C       \
+    MOVQ    R11, 64+C       \
+    MOVQ    R12, 72+C       \
+    MOVQ    R13, 80+C       \
+    MOVQ    R14, 88+C
+
+TEXT ·fp751MontgomeryReduce(SB), $0-16
+	MOVQ z+0(FP), REG_P2
+	MOVQ x+8(FP), REG_P1
+
+	// Check wether to use optimized implementation
+	CMPB    ·HasADXandBMI2(SB), $1
+	JE      redc_with_mulx_adcx_adox
+	CMPB    ·HasBMI2(SB), $1
+	JE      redc_with_mulx
+
+	MOVQ	(REG_P1), R11
+	MOVQ	P751P1_5, AX
+	MULQ	R11
+	XORQ	R8, R8
+	ADDQ	(40)(REG_P1), AX
+	MOVQ	AX, (40)(REG_P2)		// Z5
+	ADCQ	DX, R8
+
+	XORQ	R9, R9
+	MOVQ	P751P1_6, AX
+	MULQ	R11
+	XORQ	R10, R10
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+
+	MOVQ	(8)(REG_P1), R12
+	MOVQ	P751P1_5, AX
+	MULQ	R12
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+	ADDQ	(48)(REG_P1), R8
+	MOVQ	R8, (48)(REG_P2)		// Z6
+	ADCQ	$0, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	P751P1_7, AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_6, AX
+	MULQ	R12
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(16)(REG_P1), R13
+	MOVQ	P751P1_5, AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+	ADDQ	(56)(REG_P1), R9
+	MOVQ	R9, (56)(REG_P2)		// Z7
+	ADCQ	$0, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	P751P1_8, AX
+	MULQ	R11
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_7, AX
+	MULQ	R12
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_6, AX
+	MULQ	R13
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(24)(REG_P1), R14
+	MOVQ	P751P1_5, AX
+	MULQ	R14
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+	ADDQ	(64)(REG_P1), R10
+	MOVQ	R10, (64)(REG_P2)		// Z8
+	ADCQ	$0, R8
+	ADCQ	$0, R9
+
+	XORQ	R10, R10
+	MOVQ	P751P1_9, AX
+	MULQ	R11
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_8, AX
+	MULQ	R12
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_7, AX
+	MULQ	R13
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_6, AX
+	MULQ	R14
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(32)(REG_P1), R15
+	MOVQ	P751P1_5, AX
+	MULQ	R15
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+	ADDQ	(72)(REG_P1), R8
+	MOVQ	R8, (72)(REG_P2)		// Z9
+	ADCQ	$0, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	P751P1_10, AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_9, AX
+	MULQ	R12
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_8, AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_7, AX
+	MULQ	R14
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_6, AX
+	MULQ	R15
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(40)(REG_P2), CX
+	MOVQ	P751P1_5, AX
+	MULQ	CX
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+	ADDQ	(80)(REG_P1), R9
+	MOVQ	R9, (80)(REG_P2)		// Z10
+	ADCQ	$0, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	P751P1_11, AX
+	MULQ	R11
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_10, AX
+	MULQ	R12
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_9, AX
+	MULQ	R13
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_8, AX
+	MULQ	R14
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_7, AX
+	MULQ	R15
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_6, AX
+	MULQ	CX
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(48)(REG_P2), R11
+	MOVQ	P751P1_5, AX
+	MULQ	R11
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+	ADDQ	(88)(REG_P1), R10
+	MOVQ	R10, (88)(REG_P2)		// Z11
+	ADCQ	$0, R8
+	ADCQ	$0, R9
+
+	XORQ	R10, R10
+	MOVQ	P751P1_11, AX
+	MULQ	R12
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_10, AX
+	MULQ	R13
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_9, AX
+	MULQ	R14
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_8, AX
+	MULQ	R15
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_7, AX
+	MULQ	CX
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_6, AX
+	MULQ	R11
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(56)(REG_P2), R12
+	MOVQ	P751P1_5, AX
+	MULQ	R12
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+	ADDQ	(96)(REG_P1), R8
+	MOVQ	R8, (REG_P2)		// Z0
+	ADCQ	$0, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	P751P1_11, AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_10, AX
+	MULQ	R14
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_9, AX
+	MULQ	R15
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_8, AX
+	MULQ	CX
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_7, AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_6, AX
+	MULQ	R12
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(64)(REG_P2), R13
+	MOVQ	P751P1_5, AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+	ADDQ	(104)(REG_P1), R9
+	MOVQ	R9, (8)(REG_P2)		// Z1
+	ADCQ	$0, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	P751P1_11, AX
+	MULQ	R14
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_10, AX
+	MULQ	R15
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_9, AX
+	MULQ	CX
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_8, AX
+	MULQ	R11
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_7, AX
+	MULQ	R12
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_6, AX
+	MULQ	R13
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	(72)(REG_P2), R14
+	MOVQ	P751P1_5, AX
+	MULQ	R14
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+	ADDQ	(112)(REG_P1), R10
+	MOVQ	R10, (16)(REG_P2)		// Z2
+	ADCQ	$0, R8
+	ADCQ	$0, R9
+
+	XORQ	R10, R10
+	MOVQ	P751P1_11, AX
+	MULQ	R15
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_10, AX
+	MULQ	CX
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_9, AX
+	MULQ	R11
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_8, AX
+	MULQ	R12
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_7, AX
+	MULQ	R13
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_6, AX
+	MULQ	R14
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	(80)(REG_P2), R15
+	MOVQ	P751P1_5, AX
+	MULQ	R15
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+	ADDQ	(120)(REG_P1), R8
+	MOVQ	R8, (24)(REG_P2)		// Z3
+	ADCQ	$0, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	P751P1_11, AX
+	MULQ	CX
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_10, AX
+	MULQ	R11
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_9, AX
+	MULQ	R12
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_8, AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_7, AX
+	MULQ	R14
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_6, AX
+	MULQ	R15
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	(88)(REG_P2), CX
+	MOVQ	P751P1_5, AX
+	MULQ	CX
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+	ADDQ	(128)(REG_P1), R9
+	MOVQ	R9, (32)(REG_P2)		// Z4
+	ADCQ	$0, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	P751P1_11, AX
+	MULQ	R11
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_10, AX
+	MULQ	R12
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_9, AX
+	MULQ	R13
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_8, AX
+	MULQ	R14
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_7, AX
+	MULQ	R15
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_6, AX
+	MULQ	CX
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+	ADDQ	(136)(REG_P1), R10
+	MOVQ	R10, (40)(REG_P2)		// Z5
+	ADCQ	$0, R8
+	ADCQ	$0, R9
+
+	XORQ	R10, R10
+	MOVQ	P751P1_11, AX
+	MULQ	R12
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_10, AX
+	MULQ	R13
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_9, AX
+	MULQ	R14
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_8, AX
+	MULQ	R15
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_7, AX
+	MULQ	CX
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+	ADDQ	(144)(REG_P1), R8
+	MOVQ	R8, (48)(REG_P2)		// Z6
+	ADCQ	$0, R9
+	ADCQ	$0, R10
+
+	XORQ	R8, R8
+	MOVQ	P751P1_11, AX
+	MULQ	R13
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_10, AX
+	MULQ	R14
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_9, AX
+	MULQ	R15
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+
+	MOVQ	P751P1_8, AX
+	MULQ	CX
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADCQ	$0, R8
+	ADDQ	(152)(REG_P1), R9
+	MOVQ	R9, (56)(REG_P2)		// Z7
+	ADCQ	$0, R10
+	ADCQ	$0, R8
+
+	XORQ	R9, R9
+	MOVQ	P751P1_11, AX
+	MULQ	R14
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_10, AX
+	MULQ	R15
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+
+	MOVQ	P751P1_9, AX
+	MULQ	CX
+	ADDQ	AX, R10
+	ADCQ	DX, R8
+	ADCQ	$0, R9
+	ADDQ	(160)(REG_P1), R10
+	MOVQ	R10, (64)(REG_P2)		// Z8
+	ADCQ	$0, R8
+	ADCQ	$0, R9
+
+	XORQ	R10, R10
+	MOVQ	P751P1_11, AX
+	MULQ	R15
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_10, AX
+	MULQ	CX
+	ADDQ	AX, R8
+	ADCQ	DX, R9
+	ADCQ	$0, R10
+	ADDQ	(168)(REG_P1), R8		// Z9
+	MOVQ	R8, (72)(REG_P2)		// Z9
+	ADCQ	$0, R9
+	ADCQ	$0, R10
+
+	MOVQ	P751P1_11, AX
+	MULQ	CX
+	ADDQ	AX, R9
+	ADCQ	DX, R10
+	ADDQ	(176)(REG_P1), R9		// Z10
+	MOVQ	R9, (80)(REG_P2)		// Z10
+	ADCQ	$0, R10
+	ADDQ	(184)(REG_P1), R10		// Z11
+	MOVQ	R10, (88)(REG_P2)		// Z11
+	RET
+
+redc_with_mulx_adcx_adox:
+	// This implements the Montgomery reduction algorithm described in
+	// section 5.2.3 of https://eprint.iacr.org/2017/1015.pdf.
+	// This assumes that the BMI2 and ADX instruction set extensions are available.
+	REDC(0(REG_P2), 0(REG_P1), mul256x448bmi2adx)
+	RET
+
+redc_with_mulx:
+	// This implements the Montgomery reduction algorithm described in
+	// section 5.2.3 of https://eprint.iacr.org/2017/1015.pdf.
+	// This assumes that the BMI2 instruction set extension is available.
+	REDC(0(REG_P2), 0(REG_P1), mul256x448bmi2)
+	RET
+
+TEXT ·fp751AddLazy(SB), NOSPLIT, $0-24
+
+	MOVQ z+0(FP), REG_P3
+	MOVQ x+8(FP), REG_P1
+	MOVQ y+16(FP), REG_P2
+
+	MOVQ	(REG_P1), R8
+	MOVQ	(8)(REG_P1), R9
+	MOVQ	(16)(REG_P1), R10
+	MOVQ	(24)(REG_P1), R11
+	MOVQ	(32)(REG_P1), R12
+	MOVQ	(40)(REG_P1), R13
+	MOVQ	(48)(REG_P1), R14
+	MOVQ	(56)(REG_P1), R15
+	MOVQ	(64)(REG_P1), AX
+	MOVQ	(72)(REG_P1), BX
+	MOVQ	(80)(REG_P1), CX
+	MOVQ	(88)(REG_P1), DI
+
+	ADDQ	(REG_P2), R8
+	ADCQ	(8)(REG_P2), R9
+	ADCQ	(16)(REG_P2), R10
+	ADCQ	(24)(REG_P2), R11
+	ADCQ	(32)(REG_P2), R12
+	ADCQ	(40)(REG_P2), R13
+	ADCQ	(48)(REG_P2), R14
+	ADCQ	(56)(REG_P2), R15
+	ADCQ	(64)(REG_P2), AX
+	ADCQ	(72)(REG_P2), BX
+	ADCQ	(80)(REG_P2), CX
+	ADCQ	(88)(REG_P2), DI
+
+	MOVQ	R8, (REG_P3)
+	MOVQ	R9, (8)(REG_P3)
+	MOVQ	R10, (16)(REG_P3)
+	MOVQ	R11, (24)(REG_P3)
+	MOVQ	R12, (32)(REG_P3)
+	MOVQ	R13, (40)(REG_P3)
+	MOVQ	R14, (48)(REG_P3)
+	MOVQ	R15, (56)(REG_P3)
+	MOVQ	AX, (64)(REG_P3)
+	MOVQ	BX, (72)(REG_P3)
+	MOVQ	CX, (80)(REG_P3)
+	MOVQ	DI, (88)(REG_P3)
+
+	RET
+
+TEXT ·fp751X2AddLazy(SB), NOSPLIT, $0-24
+
+	MOVQ z+0(FP), REG_P3
+	MOVQ x+8(FP), REG_P1
+	MOVQ y+16(FP), REG_P2
+
+	MOVQ	(REG_P1), R8
+	MOVQ	(8)(REG_P1), R9
+	MOVQ	(16)(REG_P1), R10
+	MOVQ	(24)(REG_P1), R11
+	MOVQ	(32)(REG_P1), R12
+	MOVQ	(40)(REG_P1), R13
+	MOVQ	(48)(REG_P1), R14
+	MOVQ	(56)(REG_P1), R15
+	MOVQ	(64)(REG_P1), AX
+	MOVQ	(72)(REG_P1), BX
+	MOVQ	(80)(REG_P1), CX
+
+	ADDQ	(REG_P2), R8
+	ADCQ	(8)(REG_P2), R9
+	ADCQ	(16)(REG_P2), R10
+	ADCQ	(24)(REG_P2), R11
+	ADCQ	(32)(REG_P2), R12
+	ADCQ	(40)(REG_P2), R13
+	ADCQ	(48)(REG_P2), R14
+	ADCQ	(56)(REG_P2), R15
+	ADCQ	(64)(REG_P2), AX
+	ADCQ	(72)(REG_P2), BX
+	ADCQ	(80)(REG_P2), CX
+
+	MOVQ	R8, (REG_P3)
+	MOVQ	R9, (8)(REG_P3)
+	MOVQ	R10, (16)(REG_P3)
+	MOVQ	R11, (24)(REG_P3)
+	MOVQ	R12, (32)(REG_P3)
+	MOVQ	R13, (40)(REG_P3)
+	MOVQ	R14, (48)(REG_P3)
+	MOVQ	R15, (56)(REG_P3)
+	MOVQ	AX, (64)(REG_P3)
+	MOVQ	BX, (72)(REG_P3)
+	MOVQ	CX, (80)(REG_P3)
+	MOVQ	(88)(REG_P1), AX
+	ADCQ	(88)(REG_P2), AX
+	MOVQ	AX, (88)(REG_P3)
+
+	MOVQ	(96)(REG_P1), R8
+	MOVQ	(104)(REG_P1), R9
+	MOVQ	(112)(REG_P1), R10
+	MOVQ	(120)(REG_P1), R11
+	MOVQ	(128)(REG_P1), R12
+	MOVQ	(136)(REG_P1), R13
+	MOVQ	(144)(REG_P1), R14
+	MOVQ	(152)(REG_P1), R15
+	MOVQ	(160)(REG_P1), AX
+	MOVQ	(168)(REG_P1), BX
+	MOVQ	(176)(REG_P1), CX
+	MOVQ	(184)(REG_P1), DI
+
+	ADCQ	(96)(REG_P2), R8
+	ADCQ	(104)(REG_P2), R9
+	ADCQ	(112)(REG_P2), R10
+	ADCQ	(120)(REG_P2), R11
+	ADCQ	(128)(REG_P2), R12
+	ADCQ	(136)(REG_P2), R13
+	ADCQ	(144)(REG_P2), R14
+	ADCQ	(152)(REG_P2), R15
+	ADCQ	(160)(REG_P2), AX
+	ADCQ	(168)(REG_P2), BX
+	ADCQ	(176)(REG_P2), CX
+	ADCQ	(184)(REG_P2), DI
+
+	MOVQ	R8, (96)(REG_P3)
+	MOVQ	R9, (104)(REG_P3)
+	MOVQ	R10, (112)(REG_P3)
+	MOVQ	R11, (120)(REG_P3)
+	MOVQ	R12, (128)(REG_P3)
+	MOVQ	R13, (136)(REG_P3)
+	MOVQ	R14, (144)(REG_P3)
+	MOVQ	R15, (152)(REG_P3)
+	MOVQ	AX, (160)(REG_P3)
+	MOVQ	BX, (168)(REG_P3)
+	MOVQ	CX, (176)(REG_P3)
+	MOVQ	DI, (184)(REG_P3)
+
+	RET
+
+
+TEXT ·fp751X2SubLazy(SB), NOSPLIT, $0-24
+
+	MOVQ z+0(FP), REG_P3
+	MOVQ x+8(FP), REG_P1
+	MOVQ y+16(FP), REG_P2
+
+	MOVQ	(REG_P1), R8
+	MOVQ	(8)(REG_P1), R9
+	MOVQ	(16)(REG_P1), R10
+	MOVQ	(24)(REG_P1), R11
+	MOVQ	(32)(REG_P1), R12
+	MOVQ	(40)(REG_P1), R13
+	MOVQ	(48)(REG_P1), R14
+	MOVQ	(56)(REG_P1), R15
+	MOVQ	(64)(REG_P1), AX
+	MOVQ	(72)(REG_P1), BX
+	MOVQ	(80)(REG_P1), CX
+
+	SUBQ	(REG_P2), R8
+	SBBQ	(8)(REG_P2), R9
+	SBBQ	(16)(REG_P2), R10
+	SBBQ	(24)(REG_P2), R11
+	SBBQ	(32)(REG_P2), R12
+	SBBQ	(40)(REG_P2), R13
+	SBBQ	(48)(REG_P2), R14
+	SBBQ	(56)(REG_P2), R15
+	SBBQ	(64)(REG_P2), AX
+	SBBQ	(72)(REG_P2), BX
+	SBBQ	(80)(REG_P2), CX
+
+	MOVQ	R8, (REG_P3)
+	MOVQ	R9, (8)(REG_P3)
+	MOVQ	R10, (16)(REG_P3)
+	MOVQ	R11, (24)(REG_P3)
+	MOVQ	R12, (32)(REG_P3)
+	MOVQ	R13, (40)(REG_P3)
+	MOVQ	R14, (48)(REG_P3)
+	MOVQ	R15, (56)(REG_P3)
+	MOVQ	AX, (64)(REG_P3)
+	MOVQ	BX, (72)(REG_P3)
+	MOVQ	CX, (80)(REG_P3)
+	MOVQ	(88)(REG_P1), AX
+	SBBQ	(88)(REG_P2), AX
+	MOVQ	AX, (88)(REG_P3)
+
+	MOVQ	(96)(REG_P1), R8
+	MOVQ	(104)(REG_P1), R9
+	MOVQ	(112)(REG_P1), R10
+	MOVQ	(120)(REG_P1), R11
+	MOVQ	(128)(REG_P1), R12
+	MOVQ	(136)(REG_P1), R13
+	MOVQ	(144)(REG_P1), R14
+	MOVQ	(152)(REG_P1), R15
+	MOVQ	(160)(REG_P1), AX
+	MOVQ	(168)(REG_P1), BX
+	MOVQ	(176)(REG_P1), CX
+	MOVQ	(184)(REG_P1), DI
+
+	SBBQ	(96)(REG_P2), R8
+	SBBQ	(104)(REG_P2), R9
+	SBBQ	(112)(REG_P2), R10
+	SBBQ	(120)(REG_P2), R11
+	SBBQ	(128)(REG_P2), R12
+	SBBQ	(136)(REG_P2), R13
+	SBBQ	(144)(REG_P2), R14
+	SBBQ	(152)(REG_P2), R15
+	SBBQ	(160)(REG_P2), AX
+	SBBQ	(168)(REG_P2), BX
+	SBBQ	(176)(REG_P2), CX
+	SBBQ	(184)(REG_P2), DI
+
+	MOVQ	R8, (96)(REG_P3)
+	MOVQ	R9, (104)(REG_P3)
+	MOVQ	R10, (112)(REG_P3)
+	MOVQ	R11, (120)(REG_P3)
+	MOVQ	R12, (128)(REG_P3)
+	MOVQ	R13, (136)(REG_P3)
+	MOVQ	R14, (144)(REG_P3)
+	MOVQ	R15, (152)(REG_P3)
+	MOVQ	AX, (160)(REG_P3)
+	MOVQ	BX, (168)(REG_P3)
+	MOVQ	CX, (176)(REG_P3)
+	MOVQ	DI, (184)(REG_P3)
+
+	// Now the carry flag is 1 if x-y < 0.  If so, add p*2^768.
+	MOVQ	$0, AX
+	SBBQ	$0, AX
+
+	// Load p into registers:
+	MOVQ	P751_0, R8
+	// P751_{1,2,3,4} = P751_0, so reuse R8
+	MOVQ	P751_5, R9
+	MOVQ	P751_6, R10
+	MOVQ	P751_7, R11
+	MOVQ	P751_8, R12
+	MOVQ	P751_9, R13
+	MOVQ	P751_10, R14
+	MOVQ	P751_11, R15
+
+	ANDQ	AX, R8
+	ANDQ	AX, R9
+	ANDQ	AX, R10
+	ANDQ	AX, R11
+	ANDQ	AX, R12
+	ANDQ	AX, R13
+	ANDQ	AX, R14
+	ANDQ	AX, R15
+
+	ADDQ	R8,  (96   )(REG_P3)
+	ADCQ	R8,  (96+ 8)(REG_P3)
+	ADCQ	R8,  (96+16)(REG_P3)
+	ADCQ	R8,  (96+24)(REG_P3)
+	ADCQ	R8,  (96+32)(REG_P3)
+	ADCQ	R9,  (96+40)(REG_P3)
+	ADCQ	R10, (96+48)(REG_P3)
+	ADCQ	R11, (96+56)(REG_P3)
+	ADCQ	R12, (96+64)(REG_P3)
+	ADCQ	R13, (96+72)(REG_P3)
+	ADCQ	R14, (96+80)(REG_P3)
+	ADCQ    R15, (96+88)(REG_P3)
+
+	RET
+

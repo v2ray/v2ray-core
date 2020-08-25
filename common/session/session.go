@@ -54,3 +54,40 @@ type Outbound struct {
 	// ResolvedIPs is the resolved IP addresses, if the Targe is a domain address.
 	ResolvedIPs []net.IP
 }
+
+type SniffingRequest struct {
+	OverrideDestinationForProtocol []string
+	Enabled                        bool
+}
+
+// Content is the metadata of the connection content.
+type Content struct {
+	// Protocol of current content.
+	Protocol string
+
+	SniffingRequest SniffingRequest
+
+	Attributes map[string]interface{}
+
+	SkipRoutePick bool
+}
+
+// Sockopt is the settings for socket connection.
+type Sockopt struct {
+	// Mark of the socket connection.
+	Mark int32
+}
+
+func (c *Content) SetAttribute(name string, value interface{}) {
+	if c.Attributes == nil {
+		c.Attributes = make(map[string]interface{})
+	}
+	c.Attributes[name] = value
+}
+
+func (c *Content) Attribute(name string) interface{} {
+	if c.Attributes == nil {
+		return nil
+	}
+	return c.Attributes[name]
+}

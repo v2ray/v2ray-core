@@ -1,3 +1,5 @@
+// +build !confonly
+
 package websocket
 
 import (
@@ -5,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
@@ -44,7 +45,7 @@ func dialWebsocket(ctx context.Context, dest net.Destination, streamSettings *in
 
 	if config := tls.ConfigFromStreamSettings(streamSettings); config != nil {
 		protocol = "wss"
-		dialer.TLSClientConfig = config.GetTLSConfig(tls.WithDestination(dest))
+		dialer.TLSClientConfig = config.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("http/1.1"))
 	}
 
 	host := dest.NetAddr()

@@ -7,7 +7,6 @@ import (
 
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/transport/internet/kcp"
-	. "v2ray.com/ext/assert"
 )
 
 type NoOpCloser int
@@ -17,8 +16,6 @@ func (NoOpCloser) Close() error {
 }
 
 func TestConnectionReadTimeout(t *testing.T) {
-	assert := With(t)
-
 	conn := NewConnection(ConnMetadata{Conversation: 1}, &KCPPacketWriter{
 		Writer: buf.DiscardBytes,
 	}, NoOpCloser(0), &Config{})
@@ -26,17 +23,16 @@ func TestConnectionReadTimeout(t *testing.T) {
 
 	b := make([]byte, 1024)
 	nBytes, err := conn.Read(b)
-	assert(nBytes, Equals, 0)
-	assert(err, IsNotNil)
+	if nBytes != 0 || err == nil {
+		t.Error("unexpected read: ", nBytes, err)
+	}
 
 	conn.Terminate()
 }
 
 func TestConnectionInterface(t *testing.T) {
-	assert := With(t)
-
-	assert((*Connection)(nil), Implements, (*io.Writer)(nil))
-	assert((*Connection)(nil), Implements, (*io.Reader)(nil))
-	assert((*Connection)(nil), Implements, (*buf.Reader)(nil))
-	assert((*Connection)(nil), Implements, (*buf.Writer)(nil))
+	_ = (io.Writer)(new(Connection))
+	_ = (io.Reader)(new(Connection))
+	_ = (buf.Reader)(new(Connection))
+	_ = (buf.Writer)(new(Connection))
 }

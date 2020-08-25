@@ -84,8 +84,10 @@ func (p *Policy) ToCorePolicy() policy.Session {
 func (p *SystemPolicy) ToCorePolicy() policy.System {
 	return policy.System{
 		Stats: policy.SystemStats{
-			InboundUplink:   p.Stats.InboundUplink,
-			InboundDownlink: p.Stats.InboundDownlink,
+			InboundUplink:    p.Stats.InboundUplink,
+			InboundDownlink:  p.Stats.InboundDownlink,
+			OutboundUplink:   p.Stats.OutboundUplink,
+			OutboundDownlink: p.Stats.OutboundDownlink,
 		},
 	}
 }

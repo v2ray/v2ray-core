@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -17,12 +19,9 @@ import (
 	"v2ray.com/core/transport/internet/headers/wireguard"
 	"v2ray.com/core/transport/internet/quic"
 	"v2ray.com/core/transport/internet/tls"
-	. "v2ray.com/ext/assert"
 )
 
 func TestQuicConnection(t *testing.T) {
-	assert := With(t)
-
 	port := udp.PickPort()
 
 	listener, err := quic.Listen(context.Background(), net.LocalHostIP, port, &internet.MemoryStreamConfig{
@@ -44,13 +43,11 @@ func TestQuicConnection(t *testing.T) {
 				if _, err := b.ReadFrom(conn); err != nil {
 					return
 				}
-				nBytes, err := conn.Write(b.Bytes())
-				assert(err, IsNil)
-				assert(int32(nBytes), Equals, b.Len())
+				common.Must2(conn.Write(b.Bytes()))
 			}
 		}()
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	defer listener.Close()
 
@@ -66,7 +63,7 @@ func TestQuicConnection(t *testing.T) {
 			AllowInsecure: true,
 		},
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	defer conn.Close()
 
 	const N = 1024
@@ -74,26 +71,24 @@ func TestQuicConnection(t *testing.T) {
 	common.Must2(rand.Read(b1))
 	b2 := buf.New()
 
-	nBytes, err := conn.Write(b1)
-	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must2(conn.Write(b1))
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
-	assert(b2.Bytes(), Equals, b1)
+	if r := cmp.Diff(b2.Bytes(), b1); r != "" {
+		t.Error(r)
+	}
 
-	nBytes, err = conn.Write(b1)
-	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must2(conn.Write(b1))
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
-	assert(b2.Bytes(), Equals, b1)
+	if r := cmp.Diff(b2.Bytes(), b1); r != "" {
+		t.Error(r)
+	}
 }
 
 func TestQuicConnectionWithoutTLS(t *testing.T) {
-	assert := With(t)
-
 	port := udp.PickPort()
 
 	listener, err := quic.Listen(context.Background(), net.LocalHostIP, port, &internet.MemoryStreamConfig{
@@ -111,13 +106,11 @@ func TestQuicConnectionWithoutTLS(t *testing.T) {
 				if _, err := b.ReadFrom(conn); err != nil {
 					return
 				}
-				nBytes, err := conn.Write(b.Bytes())
-				assert(err, IsNil)
-				assert(int32(nBytes), Equals, b.Len())
+				common.Must2(conn.Write(b.Bytes()))
 			}
 		}()
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	defer listener.Close()
 
@@ -128,7 +121,7 @@ func TestQuicConnectionWithoutTLS(t *testing.T) {
 		ProtocolName:     "quic",
 		ProtocolSettings: &quic.Config{},
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	defer conn.Close()
 
 	const N = 1024
@@ -136,26 +129,24 @@ func TestQuicConnectionWithoutTLS(t *testing.T) {
 	common.Must2(rand.Read(b1))
 	b2 := buf.New()
 
-	nBytes, err := conn.Write(b1)
-	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must2(conn.Write(b1))
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
-	assert(b2.Bytes(), Equals, b1)
+	if r := cmp.Diff(b2.Bytes(), b1); r != "" {
+		t.Error(r)
+	}
 
-	nBytes, err = conn.Write(b1)
-	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must2(conn.Write(b1))
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
-	assert(b2.Bytes(), Equals, b1)
+	if r := cmp.Diff(b2.Bytes(), b1); r != "" {
+		t.Error(r)
+	}
 }
 
 func TestQuicConnectionAuthHeader(t *testing.T) {
-	assert := With(t)
-
 	port := udp.PickPort()
 
 	listener, err := quic.Listen(context.Background(), net.LocalHostIP, port, &internet.MemoryStreamConfig{
@@ -179,13 +170,11 @@ func TestQuicConnectionAuthHeader(t *testing.T) {
 				if _, err := b.ReadFrom(conn); err != nil {
 					return
 				}
-				nBytes, err := conn.Write(b.Bytes())
-				assert(err, IsNil)
-				assert(int32(nBytes), Equals, b.Len())
+				common.Must2(conn.Write(b.Bytes()))
 			}
 		}()
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	defer listener.Close()
 
@@ -202,7 +191,7 @@ func TestQuicConnectionAuthHeader(t *testing.T) {
 			},
 		},
 	})
-	assert(err, IsNil)
+	common.Must(err)
 	defer conn.Close()
 
 	const N = 1024
@@ -210,19 +199,19 @@ func TestQuicConnectionAuthHeader(t *testing.T) {
 	common.Must2(rand.Read(b1))
 	b2 := buf.New()
 
-	nBytes, err := conn.Write(b1)
-	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must2(conn.Write(b1))
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
-	assert(b2.Bytes(), Equals, b1)
+	if r := cmp.Diff(b2.Bytes(), b1); r != "" {
+		t.Error(r)
+	}
 
-	nBytes, err = conn.Write(b1)
-	assert(nBytes, Equals, N)
-	assert(err, IsNil)
+	common.Must2(conn.Write(b1))
 
 	b2.Clear()
 	common.Must2(b2.ReadFullFrom(conn, N))
-	assert(b2.Bytes(), Equals, b1)
+	if r := cmp.Diff(b2.Bytes(), b1); r != "" {
+		t.Error(r)
+	}
 }

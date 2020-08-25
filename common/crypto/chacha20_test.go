@@ -5,8 +5,9 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/compare"
 	. "v2ray.com/core/common/crypto"
 )
 
@@ -49,8 +50,8 @@ func TestChaCha20Stream(t *testing.T) {
 		input := make([]byte, len(c.output))
 		actualOutout := make([]byte, len(c.output))
 		s.XORKeyStream(actualOutout, input)
-		if err := compare.BytesEqualWithDetail(c.output, actualOutout); err != nil {
-			t.Fatal(err)
+		if r := cmp.Diff(c.output, actualOutout); r != "" {
+			t.Fatal(r)
 		}
 	}
 }
@@ -70,7 +71,7 @@ func TestChaCha20Decoding(t *testing.T) {
 
 	stream2 := NewChaCha20Stream(key, iv)
 	stream2.XORKeyStream(x, x)
-	if err := compare.BytesEqualWithDetail(x, payload); err != nil {
-		t.Fatal(err)
+	if r := cmp.Diff(x, payload); r != "" {
+		t.Fatal(r)
 	}
 }

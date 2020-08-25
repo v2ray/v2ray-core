@@ -1,39 +1,33 @@
+// +build !confonly
+
 package dns
 
 import (
 	"context"
-	"encoding/binary"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"golang.org/x/net/dns/dnsmessage"
-
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol/dns"
+	udp_proto "v2ray.com/core/common/protocol/udp"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/pubsub"
 	"v2ray.com/core/common/task"
+	dns_feature "v2ray.com/core/features/dns"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/internet/udp"
 )
 
-type IPRecord struct {
-	IP     net.IP
-	Expire time.Time
-}
-
-type pendingRequest struct {
-	domain string
-	expire time.Time
-}
-
 type ClassicNameServer struct {
 	sync.RWMutex
+	name      string
 	address   net.Destination
-	ips       map[string][]IPRecord
-	requests  map[uint16]pendingRequest
+	ips       map[string]record
+	requests  map[uint16]dnsRequest
 	pub       *pubsub.Service
 	udpServer *udp.Dispatcher
 	cleanup   *task.Periodic
@@ -42,19 +36,31 @@ type ClassicNameServer struct {
 }
 
 func NewClassicNameServer(address net.Destination, dispatcher routing.Dispatcher, clientIP net.IP) *ClassicNameServer {
+
+	// default to 53 if unspecific
+	if address.Port == 0 {
+		address.Port = net.Port(53)
+	}
+
 	s := &ClassicNameServer{
 		address:  address,
-		ips:      make(map[string][]IPRecord),
-		requests: make(map[uint16]pendingRequest),
+		ips:      make(map[string]record),
+		requests: make(map[uint16]dnsRequest),
 		clientIP: clientIP,
 		pub:      pubsub.NewService(),
+		name:     strings.ToUpper(address.String()),
 	}
 	s.cleanup = &task.Periodic{
 		Interval: time.Minute,
 		Execute:  s.Cleanup,
 	}
 	s.udpServer = udp.NewDispatcher(dispatcher, s.HandleResponse)
+	newError("DNS: created udp client inited for ", address.NetAddr()).AtInfo().WriteToLog()
 	return s
+}
+
+func (s *ClassicNameServer) Name() string {
+	return s.name
 }
 
 func (s *ClassicNameServer) Cleanup() error {
@@ -63,25 +69,26 @@ func (s *ClassicNameServer) Cleanup() error {
 	defer s.Unlock()
 
 	if len(s.ips) == 0 && len(s.requests) == 0 {
-		return newError("nothing to do. stopping...")
+		return newError(s.name, " nothing to do. stopping...")
 	}
 
-	for domain, ips := range s.ips {
-		newIPs := make([]IPRecord, 0, len(ips))
-		for _, ip := range ips {
-			if ip.Expire.After(now) {
-				newIPs = append(newIPs, ip)
-			}
+	for domain, record := range s.ips {
+		if record.A != nil && record.A.Expire.Before(now) {
+			record.A = nil
 		}
-		if len(newIPs) == 0 {
+		if record.AAAA != nil && record.AAAA.Expire.Before(now) {
+			record.AAAA = nil
+		}
+
+		if record.A == nil && record.AAAA == nil {
 			delete(s.ips, domain)
-		} else if len(newIPs) < len(ips) {
-			s.ips[domain] = newIPs
+		} else {
+			s.ips[domain] = record
 		}
 	}
 
 	if len(s.ips) == 0 {
-		s.ips = make(map[string][]IPRecord)
+		s.ips = make(map[string]record)
 	}
 
 	for id, req := range s.requests {
@@ -91,268 +98,195 @@ func (s *ClassicNameServer) Cleanup() error {
 	}
 
 	if len(s.requests) == 0 {
-		s.requests = make(map[uint16]pendingRequest)
+		s.requests = make(map[uint16]dnsRequest)
 	}
 
 	return nil
 }
 
-func (s *ClassicNameServer) HandleResponse(ctx context.Context, payload *buf.Buffer) {
-	var parser dnsmessage.Parser
-	header, err := parser.Start(payload.Bytes())
+func (s *ClassicNameServer) HandleResponse(ctx context.Context, packet *udp_proto.Packet) {
+
+	ipRec, err := parseResponse(packet.Payload.Bytes())
 	if err != nil {
-		newError("failed to parse DNS response").Base(err).AtWarning().WriteToLog()
-		return
-	}
-	if err := parser.SkipAllQuestions(); err != nil {
-		newError("failed to skip questions in DNS response").Base(err).AtWarning().WriteToLog()
+		newError(s.name, " fail to parse responded DNS udp").AtError().WriteToLog()
 		return
 	}
 
-	id := header.ID
 	s.Lock()
-	req, f := s.requests[id]
-	if f {
+	id := ipRec.ReqID
+	req, ok := s.requests[id]
+	if ok {
+		// remove the pending request
 		delete(s.requests, id)
 	}
 	s.Unlock()
-
-	if !f {
+	if !ok {
+		newError(s.name, " cannot find the pending request").AtError().WriteToLog()
 		return
 	}
 
-	domain := req.domain
-	ips := make([]IPRecord, 0, 16)
-
-	now := time.Now()
-	for {
-		header, err := parser.AnswerHeader()
-		if err != nil {
-			break
-		}
-		ttl := header.TTL
-		if ttl == 0 {
-			ttl = 600
-		}
-		switch header.Type {
-		case dnsmessage.TypeA:
-			ans, err := parser.AResource()
-			if err != nil {
-				break
-			}
-			ips = append(ips, IPRecord{
-				IP:     net.IP(ans.A[:]),
-				Expire: now.Add(time.Duration(ttl) * time.Second),
-			})
-		case dnsmessage.TypeAAAA:
-			ans, err := parser.AAAAResource()
-			if err != nil {
-				break
-			}
-			ips = append(ips, IPRecord{
-				IP:     net.IP(ans.AAAA[:]),
-				Expire: now.Add(time.Duration(ttl) * time.Second),
-			})
-		default:
-		}
+	var rec record
+	switch req.reqType {
+	case dnsmessage.TypeA:
+		rec.A = ipRec
+	case dnsmessage.TypeAAAA:
+		rec.AAAA = ipRec
 	}
 
-	if len(domain) > 0 && len(ips) > 0 {
-		s.updateIP(domain, ips)
+	elapsed := time.Since(req.start)
+	newError(s.name, " got answer: ", req.domain, " ", req.reqType, " -> ", ipRec.IP, " ", elapsed).AtInfo().WriteToLog()
+	if len(req.domain) > 0 && (rec.A != nil || rec.AAAA != nil) {
+		s.updateIP(req.domain, rec)
 	}
 }
 
-func (s *ClassicNameServer) updateIP(domain string, ips []IPRecord) {
+func (s *ClassicNameServer) updateIP(domain string, newRec record) {
 	s.Lock()
 
-	newError("updating IP records for domain:", domain).AtDebug().WriteToLog()
-	now := time.Now()
-	eips := s.ips[domain]
-	for _, ip := range eips {
-		if ip.Expire.After(now) {
-			ips = append(ips, ip)
-		}
-	}
-	s.ips[domain] = ips
-	s.pub.Publish(domain, nil)
+	newError(s.name, " updating IP records for domain:", domain).AtDebug().WriteToLog()
+	rec := s.ips[domain]
 
+	updated := false
+	if isNewer(rec.A, newRec.A) {
+		rec.A = newRec.A
+		updated = true
+	}
+	if isNewer(rec.AAAA, newRec.AAAA) {
+		rec.AAAA = newRec.AAAA
+		updated = true
+	}
+
+	if updated {
+		s.ips[domain] = rec
+	}
+	if newRec.A != nil {
+		s.pub.Publish(domain+"4", nil)
+	}
+	if newRec.AAAA != nil {
+		s.pub.Publish(domain+"6", nil)
+	}
 	s.Unlock()
 	common.Must(s.cleanup.Start())
 }
 
-func (s *ClassicNameServer) getMsgOptions() *dnsmessage.Resource {
-	if len(s.clientIP) == 0 {
-		return nil
-	}
-
-	var netmask int
-	var family uint16
-
-	if len(s.clientIP) == 4 {
-		family = 1
-		netmask = 24 // 24 for IPV4, 96 for IPv6
-	} else {
-		family = 2
-		netmask = 96
-	}
-
-	b := make([]byte, 4)
-	binary.BigEndian.PutUint16(b[0:], family)
-	b[2] = byte(netmask)
-	b[3] = 0
-	switch family {
-	case 1:
-		ip := s.clientIP.To4().Mask(net.CIDRMask(netmask, net.IPv4len*8))
-		needLength := (netmask + 8 - 1) / 8 // division rounding up
-		b = append(b, ip[:needLength]...)
-	case 2:
-		ip := s.clientIP.Mask(net.CIDRMask(netmask, net.IPv6len*8))
-		needLength := (netmask + 8 - 1) / 8 // division rounding up
-		b = append(b, ip[:needLength]...)
-	}
-
-	const EDNS0SUBNET = 0x08
-
-	opt := new(dnsmessage.Resource)
-	common.Must(opt.Header.SetEDNS0(1350, 0xfe00, true))
-
-	opt.Body = &dnsmessage.OPTResource{
-		Options: []dnsmessage.Option{
-			{
-				Code: EDNS0SUBNET,
-				Data: b,
-			},
-		},
-	}
-
-	return opt
+func (s *ClassicNameServer) newReqID() uint16 {
+	return uint16(atomic.AddUint32(&s.reqID, 1))
 }
 
-func (s *ClassicNameServer) addPendingRequest(domain string) uint16 {
-	id := uint16(atomic.AddUint32(&s.reqID, 1))
+func (s *ClassicNameServer) addPendingRequest(req *dnsRequest) {
 	s.Lock()
 	defer s.Unlock()
 
-	s.requests[id] = pendingRequest{
-		domain: domain,
-		expire: time.Now().Add(time.Second * 8),
-	}
-
-	return id
-}
-
-func (s *ClassicNameServer) buildMsgs(domain string, option IPOption) []*dnsmessage.Message {
-	qA := dnsmessage.Question{
-		Name:  dnsmessage.MustNewName(domain),
-		Type:  dnsmessage.TypeA,
-		Class: dnsmessage.ClassINET,
-	}
-
-	qAAAA := dnsmessage.Question{
-		Name:  dnsmessage.MustNewName(domain),
-		Type:  dnsmessage.TypeAAAA,
-		Class: dnsmessage.ClassINET,
-	}
-
-	var msgs []*dnsmessage.Message
-
-	if option.IPv4Enable {
-		msg := new(dnsmessage.Message)
-		msg.Header.ID = s.addPendingRequest(domain)
-		msg.Header.RecursionDesired = true
-		msg.Questions = []dnsmessage.Question{qA}
-		if opt := s.getMsgOptions(); opt != nil {
-			msg.Additionals = append(msg.Additionals, *opt)
-		}
-		msgs = append(msgs, msg)
-	}
-
-	if option.IPv6Enable {
-		msg := new(dnsmessage.Message)
-		msg.Header.ID = s.addPendingRequest(domain)
-		msg.Header.RecursionDesired = true
-		msg.Questions = []dnsmessage.Question{qAAAA}
-		if opt := s.getMsgOptions(); opt != nil {
-			msg.Additionals = append(msg.Additionals, *opt)
-		}
-		msgs = append(msgs, msg)
-	}
-
-	return msgs
-}
-
-func msgToBuffer2(msg *dnsmessage.Message) (*buf.Buffer, error) {
-	buffer := buf.New()
-	rawBytes := buffer.Extend(buf.Size)
-	packed, err := msg.AppendPack(rawBytes[:0])
-	if err != nil {
-		buffer.Release()
-		return nil, err
-	}
-	buffer.Resize(0, int32(len(packed)))
-	return buffer, nil
+	id := req.msg.ID
+	req.expire = time.Now().Add(time.Second * 8)
+	s.requests[id] = *req
 }
 
 func (s *ClassicNameServer) sendQuery(ctx context.Context, domain string, option IPOption) {
-	newError("querying DNS for: ", domain).AtDebug().WriteToLog(session.ExportIDToError(ctx))
+	newError(s.name, " querying DNS for: ", domain).AtDebug().WriteToLog(session.ExportIDToError(ctx))
 
-	msgs := s.buildMsgs(domain, option)
+	reqs := buildReqMsgs(domain, option, s.newReqID, genEDNS0Options(s.clientIP))
 
-	for _, msg := range msgs {
-		b, err := msgToBuffer2(msg)
-		common.Must(err)
-		s.udpServer.Dispatch(context.Background(), s.address, b)
+	for _, req := range reqs {
+		s.addPendingRequest(req)
+		b, _ := dns.PackMessage(req.msg)
+		udpCtx := context.Background()
+		if inbound := session.InboundFromContext(ctx); inbound != nil {
+			udpCtx = session.ContextWithInbound(udpCtx, inbound)
+		}
+		udpCtx = session.ContextWithContent(udpCtx, &session.Content{
+			Protocol: "dns",
+		})
+		s.udpServer.Dispatch(udpCtx, s.address, b)
 	}
 }
 
-func (s *ClassicNameServer) findIPsForDomain(domain string, option IPOption) []net.IP {
+func (s *ClassicNameServer) findIPsForDomain(domain string, option IPOption) ([]net.IP, error) {
 	s.RLock()
-	records, found := s.ips[domain]
+	record, found := s.ips[domain]
 	s.RUnlock()
 
-	if found && len(records) > 0 {
-		var ips []net.IP
-		now := time.Now()
-		for _, rec := range records {
-			if rec.Expire.After(now) {
-				ips = append(ips, rec.IP)
-			}
-		}
-		return filterIP(ips, option)
+	if !found {
+		return nil, errRecordNotFound
 	}
-	return nil
-}
 
-func Fqdn(domain string) string {
-	if len(domain) > 0 && domain[len(domain)-1] == '.' {
-		return domain
+	var ips []net.Address
+	var lastErr error
+	if option.IPv4Enable {
+		a, err := record.A.getIPs()
+		if err != nil {
+			lastErr = err
+		}
+		ips = append(ips, a...)
 	}
-	return domain + "."
+
+	if option.IPv6Enable {
+		aaaa, err := record.AAAA.getIPs()
+		if err != nil {
+			lastErr = err
+		}
+		ips = append(ips, aaaa...)
+	}
+
+	if len(ips) > 0 {
+		return toNetIP(ips), nil
+	}
+
+	if lastErr != nil {
+		return nil, lastErr
+	}
+
+	return nil, dns_feature.ErrEmptyResponse
 }
 
 func (s *ClassicNameServer) QueryIP(ctx context.Context, domain string, option IPOption) ([]net.IP, error) {
+
 	fqdn := Fqdn(domain)
 
-	ips := s.findIPsForDomain(fqdn, option)
-	if len(ips) > 0 {
-		return ips, nil
+	ips, err := s.findIPsForDomain(fqdn, option)
+	if err != errRecordNotFound {
+		newError(s.name, " cache HIT ", domain, " -> ", ips).Base(err).AtDebug().WriteToLog()
+		return ips, err
 	}
 
-	sub := s.pub.Subscribe(fqdn)
-	defer sub.Close()
-
+	// ipv4 and ipv6 belong to different subscription groups
+	var sub4, sub6 *pubsub.Subscriber
+	if option.IPv4Enable {
+		sub4 = s.pub.Subscribe(fqdn + "4")
+		defer sub4.Close()
+	}
+	if option.IPv6Enable {
+		sub6 = s.pub.Subscribe(fqdn + "6")
+		defer sub6.Close()
+	}
+	done := make(chan interface{})
+	go func() {
+		if sub4 != nil {
+			select {
+			case <-sub4.Wait():
+			case <-ctx.Done():
+			}
+		}
+		if sub6 != nil {
+			select {
+			case <-sub6.Wait():
+			case <-ctx.Done():
+			}
+		}
+		close(done)
+	}()
 	s.sendQuery(ctx, fqdn, option)
 
 	for {
-		ips := s.findIPsForDomain(fqdn, option)
-		if len(ips) > 0 {
-			return ips, nil
+		ips, err := s.findIPsForDomain(fqdn, option)
+		if err != errRecordNotFound {
+			return ips, err
 		}
 
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case <-sub.Wait():
+		case <-done:
 		}
 	}
 }
