@@ -18,4 +18,6 @@ message Config {
   string path = 2;
 
   repeated Header header = 3;
+
+  bool accept_proxy_protocol = 4;
 }
