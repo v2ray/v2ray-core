@@ -70,14 +70,14 @@ func ListenWS(ctx context.Context, address net.Address, port net.Port, streamSet
 	if err != nil {
 		return nil, newError("failed to listen TCP(for WS) on", address, ":", port).Base(err)
 	}
-	newError("Listening TCP(for WS) on ", address, ":", port).WriteToLog(session.ExportIDToError(ctx))
+	newError("listening TCP(for WS) on ", address, ":", port).WriteToLog(session.ExportIDToError(ctx))
 
 	wsSettings := streamSettings.ProtocolSettings.(*Config)
 
 	if wsSettings.AcceptProxyProtocol {
 		policyFunc := func(upstream net.Addr) (proxyproto.Policy, error) { return proxyproto.REQUIRE, nil }
 		listener = &proxyproto.Listener{Listener: listener, Policy: policyFunc}
-		newError("Accepting PROXY protocol").AtWarning().WriteToLog(session.ExportIDToError(ctx))
+		newError("accepting PROXY protocol").AtWarning().WriteToLog(session.ExportIDToError(ctx))
 	}
 
 	if config := v2tls.ConfigFromStreamSettings(streamSettings); config != nil {
