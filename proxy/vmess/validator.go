@@ -3,6 +3,9 @@
 package vmess
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"hash"
 	"hash/crc64"
 	"strings"
 	"sync"
@@ -139,7 +142,9 @@ func (v *TimedUserValidator) Add(u *protocol.MemoryUser) error {
 
 	account := uu.user.Account.(*MemoryAccount)
 	if v.behaviorFused == false {
-		v.behaviorSeed = crc64.Update(v.behaviorSeed, crc64.MakeTable(crc64.ECMA), account.ID.Bytes())
+		hashkdf := hmac.New(func()hash.Hash{return sha256.New()}, []byte("VMESSBSKDF"))
+		hashkdf.Write(account.ID.Bytes())
+		v.behaviorSeed = crc64.Update(v.behaviorSeed, crc64.MakeTable(crc64.ECMA), hashkdf.Sum(nil))
 	}
 
 	var cmdkeyfl [16]byte
