@@ -11,9 +11,9 @@ import (
 )
 
 var protocMap = map[string]string{
-	"windows": filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", ".dev", "protoc", "windows", "protoc.exe"),
-	"darwin":  filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", ".dev", "protoc", "macos", "protoc"),
-	"linux":   filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", ".dev", "protoc", "linux", "protoc"),
+	"windows": filepath.Join(".dev", "protoc", "windows", "protoc.exe"),
+	"darwin":  filepath.Join(".dev", "protoc", "macos", "protoc"),
+	"linux":   filepath.Join(".dev", "protoc", "linux", "protoc"),
 }
 
 var (
