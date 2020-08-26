@@ -25,7 +25,7 @@ type Listener struct {
 	server  *http.Server
 	handler internet.ConnHandler
 	local   net.Addr
-	config  Config
+	config  *Config
 }
 
 func (l *Listener) Addr() net.Addr {
@@ -102,7 +102,7 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 			IP:   address.IP(),
 			Port: int(port),
 		},
-		config: *httpSettings,
+		config: httpSettings,
 	}
 
 	var server *http.Server

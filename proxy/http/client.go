@@ -48,7 +48,7 @@ var (
 func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Server {
-		s, err := protocol.NewServerSpecFromPB(*rec)
+		s, err := protocol.NewServerSpecFromPB(rec)
 		if err != nil {
 			return nil, newError("failed to get server spec").Base(err)
 		}
