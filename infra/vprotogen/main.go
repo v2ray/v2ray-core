@@ -1,14 +1,17 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"v2ray.com/core/common"
 )
+
+var protoFilesUsingProtocGenGoFast = map[string]bool{"proxy/vless/encoding/addons.proto": true}
 
 var protocMap = map[string]string{
 	"windows": filepath.Join(".dev", "protoc", "windows", "protoc.exe"),
@@ -16,19 +19,18 @@ var protocMap = map[string]string{
 	"linux":   filepath.Join(".dev", "protoc", "linux", "protoc"),
 }
 
-var (
-	repo = flag.String("repo", "", "Repo for protobuf generation, such as v2ray.com/core")
-)
-
 func main() {
-	flag.Parse()
+	pwd, wdErr := os.Getwd()
+	if wdErr != nil {
+		fmt.Println("Can not get current working directory.")
+		os.Exit(1)
+	}
 
-	protofiles := make(map[string][]string)
+	GOBIN := common.GetGOBIN()
 	protoc := protocMap[runtime.GOOS]
-	gosrc := filepath.Join(os.Getenv("GOPATH"), "src")
-	reporoot := filepath.Join(os.Getenv("GOPATH"), "src", *repo)
 
-	filepath.Walk(reporoot, func(path string, info os.FileInfo, err error) error {
+	protoFilesMap := make(map[string][]string)
+	walkErr := filepath.Walk("./", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -41,33 +43,114 @@ func main() {
 		dir := filepath.Dir(path)
 		filename := filepath.Base(path)
 		if strings.HasSuffix(filename, ".proto") {
-			protofiles[dir] = append(protofiles[dir], path)
+			protoFilesMap[dir] = append(protoFilesMap[dir], path)
 		}
 
 		return nil
 	})
+	if walkErr != nil {
+		fmt.Println(walkErr)
+		os.Exit(1)
+	}
 
-	var protoFilesUsingProtocGenGoFast = map[string]bool{"proxy/vless/encoding/addons.proto": true}
-
-	for _, files := range protofiles {
-		for _, absPath := range files {
-			relPath, _ := filepath.Rel(reporoot, absPath)
-			args := make([]string, 0)
-			if protoFilesUsingProtocGenGoFast[relPath] {
-				args = []string{"--proto_path", reporoot, "--gofast_out", gosrc}
+	for _, files := range protoFilesMap {
+		for _, relProtoFile := range files {
+			var args []string
+			if protoFilesUsingProtocGenGoFast[relProtoFile] {
+				args = []string{"--gofast_out", pwd, "--plugin", "protoc-gen-gofast=" + GOBIN + "/protoc-gen-gofast"}
 			} else {
-				args = []string{"--proto_path", reporoot, "--go_out", gosrc, "--go-grpc_out", gosrc}
+				args = []string{"--go_out", pwd, "--go-grpc_out", pwd, "--plugin", "protoc-gen-go=" + GOBIN + "/protoc-gen-go", "--plugin", "protoc-gen-go-grpc=" + GOBIN + "/protoc-gen-go-grpc"}
 			}
-			args = append(args, absPath)
+			args = append(args, relProtoFile)
 			cmd := exec.Command(protoc, args...)
 			cmd.Env = append(cmd.Env, os.Environ()...)
-			output, err := cmd.CombinedOutput()
+			cmd.Env = append(cmd.Env, "GOBIN="+GOBIN)
+			output, cmdErr := cmd.CombinedOutput()
 			if len(output) > 0 {
 				fmt.Println(string(output))
 			}
+			if cmdErr != nil {
+				fmt.Println(cmdErr)
+				os.Exit(1)
+			}
+		}
+	}
+
+	moduleName, gmnErr := common.GetModuleName(pwd)
+	if gmnErr != nil {
+		fmt.Println(gmnErr)
+		os.Exit(1)
+	}
+	modulePath := filepath.Join(strings.Split(moduleName, string(os.PathSeparator))...)
+
+	pbGoFilesMap := make(map[string][]string)
+	walkErr2 := filepath.Walk(modulePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		dir := filepath.Dir(path)
+		filename := filepath.Base(path)
+		if strings.HasSuffix(filename, ".pb.go") {
+			pbGoFilesMap[dir] = append(pbGoFilesMap[dir], path)
+		}
+
+		return nil
+	})
+	if walkErr2 != nil {
+		fmt.Println(walkErr2)
+		os.Exit(1)
+	}
+
+	var err error
+	for _, srcPbGoFiles := range pbGoFilesMap {
+		for _, srcPbGoFile := range srcPbGoFiles {
+			var dstPbGoFile string
+			dstPbGoFile, err = filepath.Rel(modulePath, srcPbGoFile)
 			if err != nil {
 				fmt.Println(err)
+				continue
 			}
+			err = os.Link(srcPbGoFile, dstPbGoFile)
+			if err != nil {
+				if os.IsNotExist(err) {
+					fmt.Printf("'%s' does not exist\n", srcPbGoFile)
+					continue
+				}
+				if os.IsPermission(err) {
+					fmt.Println(err)
+					continue
+				}
+				if os.IsExist(err) {
+					err = os.Remove(dstPbGoFile)
+					if err != nil {
+						fmt.Printf("Failed to delete file '%s'\n", dstPbGoFile)
+						continue
+					}
+					err = os.Rename(srcPbGoFile, dstPbGoFile)
+					if err != nil {
+						fmt.Printf("Can not move '%s' to '%s'\n", srcPbGoFile, dstPbGoFile)
+					}
+					continue
+				}
+			}
+			err = os.Rename(srcPbGoFile, dstPbGoFile)
+			if err != nil {
+				fmt.Printf("Can not move '%s' to '%s'\n", srcPbGoFile, dstPbGoFile)
+			}
+			continue
+		}
+	}
+
+	if err == nil {
+		err = os.RemoveAll(strings.Split(modulePath, string(os.PathSeparator))[0])
+		if err != nil {
+			fmt.Println(err)
 		}
 	}
 }
