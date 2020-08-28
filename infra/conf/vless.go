@@ -2,6 +2,7 @@ package conf
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/golang/protobuf/proto"
 
@@ -14,17 +15,18 @@ import (
 )
 
 type VLessInboundFallback struct {
-	Addr *Address `json:"addr"`
-	Port uint16   `json:"port"`
-	Unix string   `json:"unix"`
-	Xver uint16   `json:"xver"`
+	Alpn string          `json:"alpn"`
+	Path string          `json:"path"`
+	Type string          `json:"type"`
+	Dest json.RawMessage `json:"dest"`
+	Xver uint64          `json:"xver"`
 }
 
 type VLessInboundConfig struct {
-	Users       []json.RawMessage     `json:"clients"`
-	Decryption  string                `json:"decryption"`
-	Fallback    *VLessInboundFallback `json:"fallback"`
-	Fallback_h2 *VLessInboundFallback `json:"fallback_h2"`
+	Clients    []json.RawMessage       `json:"clients"`
+	Decryption string                  `json:"decryption"`
+	Fallback   json.RawMessage         `json:"fallback"`
+	Fallbacks  []*VLessInboundFallback `json:"fallbacks"`
 }
 
 // Build implements Buildable
@@ -32,99 +34,103 @@ func (c *VLessInboundConfig) Build() (proto.Message, error) {
 
 	config := new(inbound.Config)
 
+	if len(c.Clients) == 0 {
+		return nil, newError(`VLESS settings: "clients" is empty`)
+	}
+	config.Clients = make([]*protocol.User, len(c.Clients))
+	for idx, rawUser := range c.Clients {
+		user := new(protocol.User)
+		if err := json.Unmarshal(rawUser, user); err != nil {
+			return nil, newError(`VLESS clients: invalid user`).Base(err)
+		}
+		account := new(vless.Account)
+		if err := json.Unmarshal(rawUser, account); err != nil {
+			return nil, newError(`VLESS clients: invalid user`).Base(err)
+		}
+
+		if account.Schedulers != "" {
+			return nil, newError(`VLESS clients: "schedulers" is not available in this version`)
+		}
+		if account.Encryption != "" {
+			return nil, newError(`VLESS clients: "encryption" should not in inbound settings`)
+		}
+
+		user.Account = serial.ToTypedMessage(account)
+		config.Clients[idx] = user
+	}
+
 	if c.Decryption != "none" {
-		return nil, newError(`please add/set "decryption":"none" directly to every VLESS "settings"`)
+		return nil, newError(`VLESS settings: please add/set "decryption":"none" to every settings`)
 	}
 	config.Decryption = c.Decryption
 
 	if c.Fallback != nil {
-		if c.Fallback.Xver > 2 {
-			return nil, newError(`VLESS "fallback": invalid PROXY protocol version, "xver" only accepts 0, 1, 2`)
-		}
-		if c.Fallback.Unix != "" {
-			if c.Fallback.Unix[0] == '@' {
-				c.Fallback.Unix = "\x00" + c.Fallback.Unix[1:]
-			}
-		} else {
-			if c.Fallback.Port == 0 {
-				return nil, newError(`please fill in a valid value for "port" in VLESS "fallback"`)
-			}
-		}
-		if c.Fallback.Addr == nil {
-			c.Fallback.Addr = &Address{
-				Address: net.ParseAddress("127.0.0.1"),
-			}
-		}
-		config.Fallback = &inbound.Fallback{
-			Addr: c.Fallback.Addr.Build(),
-			Port: uint32(c.Fallback.Port),
-			Unix: c.Fallback.Unix,
-			Xver: uint32(c.Fallback.Xver),
-		}
+		return nil, newError(`VLESS settings: please use "fallbacks":[{}] instead of "fallback":{}`)
 	}
-
-	if c.Fallback_h2 != nil {
-		if config.Fallback == nil {
-			return nil, newError(`VLESS "fallback_h2" can't exist alone without "fallback"`)
-		}
-		if c.Fallback_h2.Xver > 2 {
-			return nil, newError(`VLESS "fallback_h2": invalid PROXY protocol version, "xver" only accepts 0, 1, 2`)
-		}
-		if c.Fallback_h2.Unix != "" {
-			if c.Fallback_h2.Unix[0] == '@' {
-				c.Fallback_h2.Unix = "\x00" + c.Fallback_h2.Unix[1:]
-			}
+	for _, fb := range c.Fallbacks {
+		var i uint16
+		var s string
+		if err := json.Unmarshal(fb.Dest, &i); err == nil {
+			s = strconv.Itoa(int(i))
 		} else {
-			if c.Fallback_h2.Port == 0 {
-				return nil, newError(`please fill in a valid value for "port" in VLESS "fallback_h2"`)
-			}
+			_ = json.Unmarshal(fb.Dest, &s)
 		}
-		if c.Fallback_h2.Addr == nil {
-			c.Fallback_h2.Addr = &Address{
-				Address: net.ParseAddress("127.0.0.1"),
-			}
-		}
-		config.FallbackH2 = &inbound.FallbackH2{
-			Addr: c.Fallback_h2.Addr.Build(),
-			Port: uint32(c.Fallback_h2.Port),
-			Unix: c.Fallback_h2.Unix,
-			Xver: uint32(c.Fallback_h2.Xver),
-		}
+		config.Fallbacks = append(config.Fallbacks, &inbound.Fallback{
+			Alpn: fb.Alpn,
+			Path: fb.Path,
+			Type: fb.Type,
+			Dest: s,
+			Xver: fb.Xver,
+		})
 	}
-
-	config.User = make([]*protocol.User, len(c.Users))
-	for idx, rawData := range c.Users {
-		user := new(protocol.User)
-		if err := json.Unmarshal(rawData, user); err != nil {
-			return nil, newError("invalid VLESS user").Base(err)
+	for _, fb := range config.Fallbacks {
+		/*
+			if fb.Alpn == "h2" && fb.Path != "" {
+				return nil, newError(`VLESS fallbacks: "alpn":"h2" doesn't support "path"`)
+			}
+		*/
+		if fb.Path != "" && fb.Path[0] != '/' {
+			return nil, newError(`VLESS fallbacks: "path" must be empty or start with "/"`)
 		}
-		account := new(vless.Account)
-		if err := json.Unmarshal(rawData, account); err != nil {
-			return nil, newError("invalid VLESS user").Base(err)
+		if fb.Type == "" && fb.Dest != "" {
+			if fb.Dest == "serve-ws-none" {
+				fb.Type = "serve"
+			} else {
+				switch fb.Dest[0] {
+				case '@':
+					fb.Dest = "\x00" + fb.Dest[1:]
+					fallthrough
+				case '/':
+					fb.Type = "unix"
+				default:
+					if _, err := strconv.Atoi(fb.Dest); err == nil {
+						fb.Dest = "127.0.0.1:" + fb.Dest
+					}
+					if _, _, err := net.SplitHostPort(fb.Dest); err == nil {
+						fb.Type = "tcp"
+					}
+				}
+			}
 		}
-
-		if account.Schedulers != "" {
-			return nil, newError(`VLESS attr "schedulers" is not available in this version`)
+		if fb.Type == "" {
+			return nil, newError(`VLESS fallbacks: please fill in a valid value for every "dest"`)
 		}
-		if account.Encryption != "" {
-			return nil, newError(`VLESS attr "encryption" should not in inbound settings`)
+		if fb.Xver > 2 {
+			return nil, newError(`VLESS fallbacks: invalid PROXY protocol version, "xver" only accepts 0, 1, 2`)
 		}
-
-		user.Account = serial.ToTypedMessage(account)
-		config.User[idx] = user
 	}
 
 	return config, nil
 }
 
-type VLessOutboundTarget struct {
+type VLessOutboundVnext struct {
 	Address *Address          `json:"address"`
 	Port    uint16            `json:"port"`
 	Users   []json.RawMessage `json:"users"`
 }
 
 type VLessOutboundConfig struct {
-	Receivers []*VLessOutboundTarget `json:"vnext"`
+	Vnext []*VLessOutboundVnext `json:"vnext"`
 }
 
 // Build implements Buildable
@@ -132,44 +138,44 @@ func (c *VLessOutboundConfig) Build() (proto.Message, error) {
 
 	config := new(outbound.Config)
 
-	if len(c.Receivers) == 0 {
-		return nil, newError("0 VLESS receiver configured")
+	if len(c.Vnext) == 0 {
+		return nil, newError(`VLESS settings: "vnext" is empty`)
 	}
-	serverSpecs := make([]*protocol.ServerEndpoint, len(c.Receivers))
-	for idx, rec := range c.Receivers {
-		if len(rec.Users) == 0 {
-			return nil, newError("0 user configured for VLESS outbound")
-		}
+	config.Vnext = make([]*protocol.ServerEndpoint, len(c.Vnext))
+	for idx, rec := range c.Vnext {
 		if rec.Address == nil {
-			return nil, newError("address is not set in VLESS outbound config")
+			return nil, newError(`VLESS vnext: "address" is not set`)
+		}
+		if len(rec.Users) == 0 {
+			return nil, newError(`VLESS vnext: "users" is empty`)
 		}
 		spec := &protocol.ServerEndpoint{
 			Address: rec.Address.Build(),
 			Port:    uint32(rec.Port),
+			User:    make([]*protocol.User, len(rec.Users)),
 		}
-		for _, rawUser := range rec.Users {
+		for idx, rawUser := range rec.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {
-				return nil, newError("invalid VLESS user").Base(err)
+				return nil, newError(`VLESS users: invalid user`).Base(err)
 			}
 			account := new(vless.Account)
 			if err := json.Unmarshal(rawUser, account); err != nil {
-				return nil, newError("invalid VLESS user").Base(err)
+				return nil, newError(`VLESS users: invalid user`).Base(err)
 			}
 
 			if account.Schedulers != "" {
-				return nil, newError(`VLESS attr "schedulers" is not available in this version`)
+				return nil, newError(`VLESS users: "schedulers" is not available in this version`)
 			}
 			if account.Encryption != "none" {
-				return nil, newError(`please add/set "encryption":"none" for every VLESS user in "users"`)
+				return nil, newError(`VLESS users: please add/set "encryption":"none" for every user`)
 			}
 
 			user.Account = serial.ToTypedMessage(account)
-			spec.User = append(spec.User, user)
+			spec.User[idx] = user
 		}
-		serverSpecs[idx] = spec
+		config.Vnext[idx] = spec
 	}
-	config.Receiver = serverSpecs
 
 	return config, nil
 }

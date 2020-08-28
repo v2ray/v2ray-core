@@ -1,4 +1,8 @@
+// +build !confonly
+
 package encoding
+
+//go:generate errorgen
 
 import (
 	"io"
@@ -8,8 +12,6 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy/vless"
 )
-
-//go:generate errorgen
 
 const (
 	Version = byte(0)

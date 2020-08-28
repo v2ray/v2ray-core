@@ -41,7 +41,7 @@ type Handler struct {
 func New(ctx context.Context, config *Config) (*Handler, error) {
 
 	serverList := protocol.NewServerList()
-	for _, rec := range config.Receiver {
+	for _, rec := range config.Vnext {
 		s, err := protocol.NewServerSpecFromPB(rec)
 		if err != nil {
 			return nil, newError("failed to parse server spec").Base(err).AtError()
@@ -109,7 +109,6 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	}
 
 	sessionPolicy := v.policyManager.ForLevel(request.User.Level)
-
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 
