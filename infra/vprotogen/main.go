@@ -81,7 +81,7 @@ func main() {
 		fmt.Println(gmnErr)
 		os.Exit(1)
 	}
-	modulePath := filepath.Join(strings.Split(moduleName, string(os.PathSeparator))...)
+	modulePath := filepath.Join(strings.Split(moduleName, "/")...)
 
 	pbGoFilesMap := make(map[string][]string)
 	walkErr2 := filepath.Walk(modulePath, func(path string, info os.FileInfo, err error) error {
@@ -148,7 +148,7 @@ func main() {
 	}
 
 	if err == nil {
-		err = os.RemoveAll(strings.Split(modulePath, string(os.PathSeparator))[0])
+		err = os.RemoveAll(strings.Split(modulePath, "/")[0])
 		if err != nil {
 			fmt.Println(err)
 		}
