@@ -142,7 +142,7 @@ func (v *TimedUserValidator) Add(u *protocol.MemoryUser) error {
 
 	account := uu.user.Account.(*MemoryAccount)
 	if v.behaviorFused == false {
-		hashkdf := hmac.New(func()hash.Hash{return sha256.New()}, []byte("VMESSBSKDF"))
+		hashkdf := hmac.New(func() hash.Hash { return sha256.New() }, []byte("VMESSBSKDF"))
 		hashkdf.Write(account.ID.Bytes())
 		v.behaviorSeed = crc64.Update(v.behaviorSeed, crc64.MakeTable(crc64.ECMA), hashkdf.Sum(nil))
 	}

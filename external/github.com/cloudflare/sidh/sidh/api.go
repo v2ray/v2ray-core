@@ -2,8 +2,8 @@ package sidh
 
 import (
 	"errors"
-	. "v2ray.com/core/external/github.com/cloudflare/sidh/internal/isogeny"
 	"io"
+	. "v2ray.com/core/external/github.com/cloudflare/sidh/internal/isogeny"
 )
 
 // I keep it bool in order to be able to apply logical NOT
