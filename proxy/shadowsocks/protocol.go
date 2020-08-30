@@ -38,7 +38,7 @@ var addrParser = protocol.NewAddressParser(
 func ReadTCPSession(user *protocol.MemoryUser, reader io.Reader) (*protocol.RequestHeader, buf.Reader, error) {
 	account := user.Account.(*MemoryAccount)
 
-	hashkdf := hmac.New(func()hash.Hash{return sha256.New()}, []byte("SSBSKDF"))
+	hashkdf := hmac.New(func() hash.Hash { return sha256.New() }, []byte("SSBSKDF"))
 	hashkdf.Write(account.Key)
 
 	behaviorSeed := crc32.ChecksumIEEE(hashkdf.Sum(nil))
@@ -50,7 +50,6 @@ func ReadTCPSession(user *protocol.MemoryUser, reader io.Reader) (*protocol.Requ
 	DrainSize := BaseDrainSize + 16 + 38 + RandDrainRolled
 	readSizeRemain := DrainSize
 
-
 	buffer := buf.New()
 	defer buffer.Release()
 
@@ -59,7 +58,7 @@ func ReadTCPSession(user *protocol.MemoryUser, reader io.Reader) (*protocol.Requ
 	if ivLen > 0 {
 		if _, err := buffer.ReadFullFrom(reader, ivLen); err != nil {
 			readSizeRemain -= int(buffer.Len())
-			DrainConnN(reader,readSizeRemain)
+			DrainConnN(reader, readSizeRemain)
 			return nil, nil, newError("failed to read IV").Base(err)
 		}
 
@@ -69,7 +68,7 @@ func ReadTCPSession(user *protocol.MemoryUser, reader io.Reader) (*protocol.Requ
 	r, err := account.Cipher.NewDecryptionReader(account.Key, iv, reader)
 	if err != nil {
 		readSizeRemain -= int(buffer.Len())
-		DrainConnN(reader,readSizeRemain)
+		DrainConnN(reader, readSizeRemain)
 		return nil, nil, newError("failed to initialize decoding stream").Base(err).AtError()
 	}
 	br := &buf.BufferedReader{Reader: r}
@@ -87,7 +86,7 @@ func ReadTCPSession(user *protocol.MemoryUser, reader io.Reader) (*protocol.Requ
 	addr, port, err := addrParser.ReadAddressPort(buffer, br)
 	if err != nil {
 		readSizeRemain -= int(buffer.Len())
-		DrainConnN(reader,readSizeRemain)
+		DrainConnN(reader, readSizeRemain)
 		return nil, nil, newError("failed to read address").Base(err)
 	}
 
@@ -101,13 +100,13 @@ func ReadTCPSession(user *protocol.MemoryUser, reader io.Reader) (*protocol.Requ
 
 		if request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Disabled {
 			readSizeRemain -= int(buffer.Len())
-			DrainConnN(reader,readSizeRemain)
+			DrainConnN(reader, readSizeRemain)
 			return nil, nil, newError("rejecting connection with OTA enabled, while server disables OTA")
 		}
 
 		if !request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Enabled {
 			readSizeRemain -= int(buffer.Len())
-			DrainConnN(reader,readSizeRemain)
+			DrainConnN(reader, readSizeRemain)
 			return nil, nil, newError("rejecting connection with OTA disabled, while server enables OTA")
 		}
 	}
@@ -119,20 +118,20 @@ func ReadTCPSession(user *protocol.MemoryUser, reader io.Reader) (*protocol.Requ
 		_, err := buffer.ReadFullFrom(br, AuthSize)
 		if err != nil {
 			readSizeRemain -= int(buffer.Len())
-			DrainConnN(reader,readSizeRemain)
+			DrainConnN(reader, readSizeRemain)
 			return nil, nil, newError("Failed to read OTA").Base(err)
 		}
 
 		if !bytes.Equal(actualAuth, buffer.BytesFrom(-AuthSize)) {
 			readSizeRemain -= int(buffer.Len())
-			DrainConnN(reader,readSizeRemain)
+			DrainConnN(reader, readSizeRemain)
 			return nil, nil, newError("invalid OTA")
 		}
 	}
 
 	if request.Address == nil {
 		readSizeRemain -= int(buffer.Len())
-		DrainConnN(reader,readSizeRemain)
+		DrainConnN(reader, readSizeRemain)
 		return nil, nil, newError("invalid remote address.")
 	}
 

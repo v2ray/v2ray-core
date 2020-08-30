@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"io"
 	"time"
+
 	"v2ray.com/core/common"
 )
 
@@ -21,8 +22,7 @@ func SealVMessAEADHeader(key [16]byte, data []byte) []byte {
 
 	aeadPayloadLengthSerializeBuffer := bytes.NewBuffer(nil)
 
-	var headerPayloadDataLen uint16
-	headerPayloadDataLen = uint16(len(data))
+	headerPayloadDataLen := uint16(len(data))
 
 	common.Must(binary.Write(aeadPayloadLengthSerializeBuffer, binary.BigEndian, headerPayloadDataLen))
 

@@ -57,7 +57,7 @@ func TestOutboundWithStatCounter(t *testing.T) {
 			serial.ToTypedMessage(&policy.Config{
 				System: &policy.SystemPolicy{
 					Stats: &policy.SystemPolicy_Stats{
-						OutboundUplink: true,
+						OutboundUplink:   true,
 						OutboundDownlink: true,
 					},
 				},

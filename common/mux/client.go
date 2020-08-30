@@ -83,7 +83,7 @@ func (p *IncrementalWorkerPicker) findAvailable() int {
 	return -1
 }
 
-func (p *IncrementalWorkerPicker) pickInternal() (*ClientWorker, error, bool) {
+func (p *IncrementalWorkerPicker) pickInternal() (*ClientWorker, bool, error) {
 	p.access.Lock()
 	defer p.access.Unlock()
 
@@ -93,14 +93,14 @@ func (p *IncrementalWorkerPicker) pickInternal() (*ClientWorker, error, bool) {
 		if n > 1 && idx != n-1 {
 			p.workers[n-1], p.workers[idx] = p.workers[idx], p.workers[n-1]
 		}
-		return p.workers[idx], nil, false
+		return p.workers[idx], false, nil
 	}
 
 	p.cleanup()
 
 	worker, err := p.Factory.Create()
 	if err != nil {
-		return nil, err, false
+		return nil, false, err
 	}
 	p.workers = append(p.workers, worker)
 
@@ -111,11 +111,11 @@ func (p *IncrementalWorkerPicker) pickInternal() (*ClientWorker, error, bool) {
 		}
 	}
 
-	return worker, nil, true
+	return worker, true, nil
 }
 
 func (p *IncrementalWorkerPicker) PickAvailable() (*ClientWorker, error) {
-	worker, err, start := p.pickInternal()
+	worker, start, err := p.pickInternal()
 	if start {
 		common.Must(p.cleanupTask.Start())
 	}

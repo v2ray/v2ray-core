@@ -11,13 +11,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"v2ray.com/core/common/dice"
-	"v2ray.com/core/proxy/vmess/aead"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/proxy/vmess/aead"
 )
 
 const (
@@ -141,8 +141,8 @@ func (v *TimedUserValidator) Add(u *protocol.MemoryUser) error {
 	v.generateNewHashes(protocol.Timestamp(nowSec), uu)
 
 	account := uu.user.Account.(*MemoryAccount)
-	if v.behaviorFused == false {
-		hashkdf := hmac.New(func()hash.Hash{return sha256.New()}, []byte("VMESSBSKDF"))
+	if !v.behaviorFused {
+		hashkdf := hmac.New(func() hash.Hash { return sha256.New() }, []byte("VMESSBSKDF"))
 		hashkdf.Write(account.ID.Bytes())
 		v.behaviorSeed = crc64.Update(v.behaviorSeed, crc64.MakeTable(crc64.ECMA), hashkdf.Sum(nil))
 	}

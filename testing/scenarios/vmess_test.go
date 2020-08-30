@@ -928,8 +928,8 @@ func TestVMessKCPLarge(t *testing.T) {
 		t.Error(err)
 	}
 
-	defer func(){
-		<-time.After(5*time.Second)
+	defer func() {
+		<-time.After(5 * time.Second)
 		CloseAllServers(servers)
 	}()
 }
@@ -1178,8 +1178,8 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 		time.Sleep(time.Second)
 	}
 
-	defer func(){
-		<-time.After(5*time.Second)
+	defer func() {
+		<-time.After(5 * time.Second)
 		CloseAllServers(servers)
 	}()
 }

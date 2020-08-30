@@ -83,7 +83,7 @@ func generateRandomBytes(random []byte, connType [4]byte) {
 			continue
 		}
 
-		if 0x00000000 == (uint32(random[7])<<24)|(uint32(random[6])<<16)|(uint32(random[5])<<8)|uint32(random[4]) {
+		if (uint32(random[7])<<24)|(uint32(random[6])<<16)|(uint32(random[5])<<8)|uint32(random[4]) == 0x00000000 {
 			continue
 		}
 
