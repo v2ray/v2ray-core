@@ -9,16 +9,17 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	http_proto "v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
-
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 type Listener struct {
@@ -80,6 +81,11 @@ func (l *Listener) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 			IP:   dest.Address.IP(),
 			Port: int(dest.Port),
 		}
+	}
+
+	forwardedAddrs := http_proto.ParseXForwardedFor(request.Header)
+	if len(forwardedAddrs) > 0 && forwardedAddrs[0].Family().IsIP() {
+		remoteAddr.(*net.TCPAddr).IP = forwardedAddrs[0].IP()
 	}
 
 	done := done.New()
