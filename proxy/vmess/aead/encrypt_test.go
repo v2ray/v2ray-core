@@ -3,9 +3,10 @@ package aead
 import (
 	"bytes"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOpenVMessAEADHeader(t *testing.T) {
