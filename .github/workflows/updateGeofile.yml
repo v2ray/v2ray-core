@@ -8,7 +8,7 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout default branch
+      - name: Checkout codebase
         uses: actions/checkout@v2
 
       - name: Download
