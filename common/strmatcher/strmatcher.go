@@ -49,7 +49,7 @@ func (t Type) New(pattern string) (Matcher, error) {
 
 // IndexMatcher is the interface for matching with a group of matchers.
 type IndexMatcher interface {
-	// Match returns the the index of a matcher that matches the input. It returns empty array if no such matcher exists.
+	// Match returns the index of a matcher that matches the input. It returns empty array if no such matcher exists.
 	Match(input string) []uint32
 }
 
