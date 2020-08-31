@@ -256,7 +256,10 @@ func (s *Server) IsOwnLink(ctx context.Context) bool {
 
 // Match check dns ip match geoip
 func (s *Server) Match(idx int, client Client, domain string, ips []net.IP) ([]net.IP, error) {
-	matcher := s.ipIndexMap[idx]
+	var matcher *MultiGeoIPMatcher
+	if idx < len(s.ipIndexMap) {
+		matcher = s.ipIndexMap[idx]
+	}
 	if matcher == nil {
 		return ips, nil
 	}
