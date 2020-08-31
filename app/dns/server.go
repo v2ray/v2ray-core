@@ -229,6 +229,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 
 	if len(server.clients) == 0 {
 		server.clients = append(server.clients, NewLocalNameServer())
+		server.ipIndexMap = append(server.ipIndexMap, nil)
 	}
 
 	return server, nil
