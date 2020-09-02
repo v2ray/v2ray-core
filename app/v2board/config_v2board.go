@@ -7,7 +7,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"strings"
+
+	"os"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
@@ -26,7 +29,10 @@ type V2BoardConfigRsp struct {
 
 func (v *V2Board) ConfigLoader(input interface{}) (*core.Config, error) {
 	newError("Start ConfigLoader").AtInfo().WriteToLog()
-	buffer, err := ioutil.ReadFile("v2board.json")
+
+	absPath, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+
+	buffer, err := ioutil.ReadFile(filepath.Join(absPath, "v2board.json"))
 	common.Must(err)
 
 	common.Must(json.Unmarshal(buffer, &v.config))
