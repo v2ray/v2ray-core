@@ -2,14 +2,14 @@ syntax = "proto3";
 
 package v2ray.core.app.proxyman;
 option csharp_namespace = "V2Ray.Core.App.Proxyman";
-option go_package = "proxyman";
+option go_package = "v2ray.com/core/app/proxyman";
 option java_package = "com.v2ray.core.app.proxyman";
 option java_multiple_files = true;
 
-import "v2ray.com/core/common/net/address.proto";
-import "v2ray.com/core/common/net/port.proto";
-import "v2ray.com/core/transport/internet/config.proto";
-import "v2ray.com/core/common/serial/typed_message.proto";
+import "common/net/address.proto";
+import "common/net/port.proto";
+import "transport/internet/config.proto";
+import "common/serial/typed_message.proto";
 
 message InboundConfig {
 }

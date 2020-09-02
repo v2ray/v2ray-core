@@ -23,7 +23,7 @@ import (
 )
 
 type Server struct {
-	config        ServerConfig
+	config        *ServerConfig
 	user          *protocol.MemoryUser
 	policyManager policy.Manager
 }
@@ -41,7 +41,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 
 	v := core.MustFromContext(ctx)
 	s := &Server{
-		config:        *config,
+		config:        config,
 		user:          mUser,
 		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
 	}

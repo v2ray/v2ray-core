@@ -9,23 +9,24 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	http_proto "v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
-
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 type Listener struct {
 	server  *http.Server
 	handler internet.ConnHandler
 	local   net.Addr
-	config  Config
+	config  *Config
 }
 
 func (l *Listener) Addr() net.Addr {
@@ -82,6 +83,11 @@ func (l *Listener) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		}
 	}
 
+	forwardedAddrs := http_proto.ParseXForwardedFor(request.Header)
+	if len(forwardedAddrs) > 0 && forwardedAddrs[0].Family().IsIP() {
+		remoteAddr.(*net.TCPAddr).IP = forwardedAddrs[0].IP()
+	}
+
 	done := done.New()
 	conn := net.NewConnection(
 		net.ConnectionOutput(request.Body),
@@ -102,7 +108,7 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 			IP:   address.IP(),
 			Port: int(port),
 		},
-		config: *httpSettings,
+		config: httpSettings,
 	}
 
 	var server *http.Server

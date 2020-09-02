@@ -50,8 +50,8 @@ func (p *Policy) overrideWith(another *Policy) {
 		p.Timeout.overrideWith(another.Timeout)
 	}
 	if another.Stats != nil && p.Stats == nil {
-		p.Stats = new(Policy_Stats)
-		*p.Stats = *another.Stats
+		p.Stats = &Policy_Stats{}
+		p.Stats = another.Stats
 	}
 	if another.Buffer != nil {
 		p.Buffer = &Policy_Buffer{

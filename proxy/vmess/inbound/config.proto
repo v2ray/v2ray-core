@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package v2ray.core.proxy.vmess.inbound;
 option csharp_namespace = "V2Ray.Core.Proxy.Vmess.Inbound";
-option go_package = "inbound";
+option go_package = "v2ray.com/core/proxy/vmess/inbound";
 option java_package = "com.v2ray.core.proxy.vmess.inbound";
 option java_multiple_files = true;
 
-import "v2ray.com/core/common/protocol/user.proto";
+import "common/protocol/user.proto";
 
 message DetourConfig {
   string to = 1;
