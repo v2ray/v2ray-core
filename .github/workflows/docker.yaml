@@ -9,7 +9,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Checkout
+      - name: Checkout default branch
         uses: actions/checkout@v2
 
       - name: Install Buildx and QEMU
@@ -21,7 +21,7 @@ jobs:
           docker run --rm --privileged multiarch/qemu-user-static:latest --reset -p yes --credential yes
           docker buildx create --use --name build --node build --driver-opt network=host
 
-      - name: Log in to Docker Hub
+      - name: Login to Docker Hub
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}

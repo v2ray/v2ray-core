@@ -104,6 +104,8 @@ func (s *statsServer) GetSysStats(ctx context.Context, request *SysStatsRequest)
 	return response, nil
 }
 
+func (s *statsServer) mustEmbedUnimplementedStatsServiceServer() {}
+
 type service struct {
 	statsManager feature_stats.Manager
 }

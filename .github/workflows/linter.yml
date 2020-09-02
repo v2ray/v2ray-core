@@ -1,24 +1,59 @@
-name: Lint Code Base
+name: Lint
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
-    types: [assigned, opened, synchronize, reopened]
+    branches: [master]
+    types: [opened, synchronize, reopened]
 
 jobs:
-  build:
-    name: Lint Code Base
+  lint:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.14
+
+      - name: Checkout codebase
         uses: actions/checkout@v2
 
-      - name: Lint Code Base
-        uses: github/super-linter@v2.2.0
+      - name: Cache go module
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-go-
+
+      - name: Show if need to format code
+        if: ${{ always() }}
+        run: |
+          filesNeedToFormat=$(go fmt ./...)
+          if [[ $filesNeedToFormat ]]; then
+            echo -e "\033[0;36m[Error] The following Go files need to be formatted:\033[0m"
+            echo -e "\033[0;31m$filesNeedToFormat\033[0m"
+            exit 1
+          fi
+
+      - name: Lint *.go files
+        if: ${{ always() }}
+        run: |
+          go vet $(go list ./... | grep -v /external/)
+          if [[ $? != 0 ]]; then
+            exit 1
+          fi
+
+      - name: Lint other files
+        if: ${{ always() }}
+        uses: github/super-linter@v3.9.2
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: false
+          VALIDATE_BASH: false
+          VALIDATE_DOCKERFILE: false
+          VALIDATE_DOCKERFILE_HADOLINT: false
+          VALIDATE_GO: false
           VALIDATE_JSON: false
-          VALIDATE_ANSIBLE: false
+          VALIDATE_MD: false
+          VALIDATE_PROTOBUF: false

@@ -66,12 +66,6 @@ func getExecutableSubDir(dir string) func() string {
 	}
 }
 
-func GetAssetLocation(file string) string {
-	const name = "v2ray.location.asset"
-	assetPath := NewEnvFlag(name).GetValue(getExecutableDir)
-	return filepath.Join(assetPath, file)
-}
-
 func GetPluginDirectory() string {
 	const name = "v2ray.location.plugin"
 	pluginDir := NewEnvFlag(name).GetValue(getExecutableSubDir("plugins"))

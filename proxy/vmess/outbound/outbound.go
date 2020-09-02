@@ -36,7 +36,7 @@ type Handler struct {
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Receiver {
-		s, err := protocol.NewServerSpecFromPB(*rec)
+		s, err := protocol.NewServerSpecFromPB(rec)
 		if err != nil {
 			return nil, newError("failed to parse server spec").Base(err)
 		}

@@ -16,6 +16,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/bytespool"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
@@ -47,7 +48,7 @@ var (
 func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Server {
-		s, err := protocol.NewServerSpecFromPB(*rec)
+		s, err := protocol.NewServerSpecFromPB(rec)
 		if err != nil {
 			return nil, newError("failed to get server spec").Base(err)
 		}
@@ -80,12 +81,21 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	var user *protocol.MemoryUser
 	var conn internet.Connection
 
+	mbuf, _ := link.Reader.ReadMultiBuffer()
+	len := mbuf.Len()
+	firstPayload := bytespool.Alloc(len)
+	mbuf, _ = buf.SplitBytes(mbuf, firstPayload)
+	firstPayload = firstPayload[:len]
+
+	buf.ReleaseMulti(mbuf)
+	defer bytespool.Free(firstPayload)
+
 	if err := retry.ExponentialBackoff(5, 100).On(func() error {
 		server := c.serverPicker.PickServer()
 		dest := server.Destination()
 		user = server.PickUser()
 
-		netConn, err := setUpHTTPTunnel(ctx, dest, targetAddr, user, dialer)
+		netConn, err := setUpHTTPTunnel(ctx, dest, targetAddr, user, dialer, firstPayload)
 		if netConn != nil {
 			conn = internet.Connection(netConn)
 		}
@@ -126,11 +136,11 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 }
 
 // setUpHTTPTunnel will create a socket tunnel via HTTP CONNECT method
-func setUpHTTPTunnel(ctx context.Context, dest net.Destination, target string, user *protocol.MemoryUser, dialer internet.Dialer) (net.Conn, error) {
+func setUpHTTPTunnel(ctx context.Context, dest net.Destination, target string, user *protocol.MemoryUser, dialer internet.Dialer, firstPayload []byte) (net.Conn, error) {
 	req := &http.Request{
 		Method: http.MethodConnect,
 		URL:    &url.URL{Host: target},
-		Header: http.Header{"Proxy-Connection": []string{"Keep-Alive"}},
+		Header: make(http.Header),
 		Host:   target,
 	}
 
@@ -141,8 +151,15 @@ func setUpHTTPTunnel(ctx context.Context, dest net.Destination, target string, u
 	}
 
 	connectHTTP1 := func(rawConn net.Conn) (net.Conn, error) {
+		req.Header.Set("Proxy-Connection", "Keep-Alive")
+
 		err := req.Write(rawConn)
 		if err != nil {
+			rawConn.Close()
+			return nil, err
+		}
+
+		if _, err := rawConn.Write(firstPayload); err != nil {
 			rawConn.Close()
 			return nil, err
 		}
@@ -164,10 +181,25 @@ func setUpHTTPTunnel(ctx context.Context, dest net.Destination, target string, u
 		pr, pw := io.Pipe()
 		req.Body = pr
 
+		var pErr error
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			_, pErr = pw.Write(firstPayload)
+			wg.Done()
+		}()
+
 		resp, err := h2clientConn.RoundTrip(req)
 		if err != nil {
 			rawConn.Close()
 			return nil, err
+		}
+
+		wg.Wait()
+		if pErr != nil {
+			rawConn.Close()
+			return nil, pErr
 		}
 
 		if resp.StatusCode != http.StatusOK {
