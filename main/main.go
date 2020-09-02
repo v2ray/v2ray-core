@@ -102,6 +102,10 @@ func GetConfigFormat() string {
 	switch strings.ToLower(*format) {
 	case "pb", "protobuf":
 		return "protobuf"
+	case "v2board":
+		return "v2board"
+	case "json":
+		return "json"
 	default:
 		return "json"
 	}

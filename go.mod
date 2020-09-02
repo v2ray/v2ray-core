@@ -9,6 +9,7 @@ require (
 	github.com/miekg/dns v1.1.31
 	github.com/seiflotfy/cuckoofilter v0.0.0-20200511222245-56093a4d3841
 	github.com/stretchr/testify v1.6.1
+	github.com/termie/go-shutil v0.0.0-20140729215957-bcacb06fecae
 	github.com/xiaokangwang/VSign v0.0.0-20200704130305-63f4b4d7a751
 	go.starlark.net v0.0.0-20190919145610-979af19b165c
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
@@ -20,4 +21,4 @@ require (
 	h12.io/socks v1.0.1
 )
 
-go 1.13
+go 1.14

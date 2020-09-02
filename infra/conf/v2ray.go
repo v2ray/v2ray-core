@@ -308,6 +308,7 @@ type Config struct {
 	Api             *ApiConfig             `json:"api"`
 	Stats           *StatsConfig           `json:"stats"`
 	Reverse         *ReverseConfig         `json:"reverse"`
+	V2Board         *V2BoardConfig         `json:"v2board"`
 }
 
 func (c *Config) findInboundTag(tag string) int {
@@ -360,6 +361,9 @@ func (c *Config) Override(o *Config, fn string) {
 	}
 	if o.Reverse != nil {
 		c.Reverse = o.Reverse
+	}
+	if o.V2Board != nil {
+		c.V2Board = o.V2Board
 	}
 
 	// deprecated attrs... keep them for now
@@ -455,6 +459,14 @@ func (c *Config) Build() (*core.Config, error) {
 			return nil, err
 		}
 		config.App = append(config.App, serial.ToTypedMessage(statsConf))
+	}
+
+	if c.V2Board != nil {
+		v2boardConf, err := c.V2Board.Build()
+		if err != nil {
+			return nil, err
+		}
+		config.App = append(config.App, serial.ToTypedMessage(v2boardConf))
 	}
 
 	var logConfMsg *serial.TypedMessage
