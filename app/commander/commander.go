@@ -6,10 +6,14 @@ package commander
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 	"net"
 	"sync"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
@@ -24,12 +28,14 @@ type Commander struct {
 	services []Service
 	ohm      outbound.Manager
 	tag      string
+	cert     *ApiCertTuple
 }
 
 // NewCommander creates a new Commander based on the given config.
 func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
 	c := &Commander{
-		tag: config.Tag,
+		tag:  config.Tag,
+		cert: config.Cert,
 	}
 
 	common.Must(core.RequireFeatures(ctx, func(om outbound.Manager) {
@@ -63,7 +69,29 @@ func (c *Commander) Type() interface{} {
 // Start implements common.Runnable.
 func (c *Commander) Start() error {
 	c.Lock()
-	c.server = grpc.NewServer()
+
+	opts := make([]grpc.ServerOption, 0)
+	if c.cert == nil || c.cert.Ca == "" || c.cert.Key == "" || c.cert.Pub == "" {
+	} else {
+		certpool := x509.NewCertPool()
+		cert, err := tls.LoadX509KeyPair(c.cert.Pub, c.cert.Key)
+		common.Must(err)
+
+		ca, err := ioutil.ReadFile(c.cert.Ca)
+		common.Must(err)
+
+		certpool.AppendCertsFromPEM(ca)
+
+		// certpool.AddCert(cert)
+		credential := credentials.NewTLS(&tls.Config{
+			Certificates: []tls.Certificate{cert},
+			ClientAuth:   tls.RequireAndVerifyClientCert,
+			ClientCAs:    certpool,
+		})
+		opts = append(opts, grpc.Creds(credential))
+	}
+	c.server = grpc.NewServer(opts...)
+
 	for _, service := range c.services {
 		service.Register(c.server)
 	}

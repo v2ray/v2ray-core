@@ -1,3 +1,8 @@
 *.DS_Store
 bazel-*
 .idea
+main/v2board.json
+main/access.log
+main/config.v2board
+main/error.log
+main/__debug_bin

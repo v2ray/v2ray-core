@@ -11,8 +11,9 @@ import (
 )
 
 type ApiConfig struct {
-	Tag      string   `json:"tag"`
-	Services []string `json:"services"`
+	Tag      string                  `json:"tag"`
+	Services []string                `json:"services"`
+	Cert     *commander.ApiCertTuple `json:"cert"`
 }
 
 func (c *ApiConfig) Build() (*commander.Config, error) {
@@ -35,5 +36,6 @@ func (c *ApiConfig) Build() (*commander.Config, error) {
 	return &commander.Config{
 		Tag:     c.Tag,
 		Service: services,
+		Cert:    c.Cert,
 	}, nil
 }
