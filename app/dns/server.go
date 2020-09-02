@@ -114,8 +114,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 				log.Fatalln(newError("DNS config error").Base(err))
 			}
 			server.clients = append(server.clients, NewDoHLocalNameServer(u, server.clientIP))
-		} else if address.Family().IsDomain() &&
-			strings.HasPrefix(address.Domain(), "https://") {
+		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "https://") {
 			// DOH Remote mode
 			u, err := url.Parse(address.Domain())
 			if err != nil {
