@@ -11,7 +11,7 @@
 [9]: https://img.shields.io/github/downloads/v2ray/v2ray-core/total.svg "All releases badge"
 [10]: https://github.com/v2ray/v2ray-core/releases/ "All releases number"
 
-Project V is a set of network tools that help you to build your own computer network. It secures your network connections and thus protects your privacy. See [our website](https://www.v2ray.com/) for more information.
+Project V is a set of network tools that help you to build your own computer network. It secures your network connections and thus protects your privacy. See [our website](https://www.v2fly.org/) for more information.
 
 ## License
 

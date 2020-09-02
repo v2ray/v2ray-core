@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package v2ray.core.transport.internet.quic;
 option csharp_namespace = "V2Ray.Core.Transport.Internet.Quic";
-option go_package = "quic";
+option go_package = "v2ray.com/core/transport/internet/quic";
 option java_package = "com.v2ray.core.transport.internet.quic";
 option java_multiple_files = true;
 
-import "v2ray.com/core/common/serial/typed_message.proto";
-import "v2ray.com/core/common/protocol/headers.proto";
+import "common/serial/typed_message.proto";
+import "common/protocol/headers.proto";
 
 message Config {
   string key = 1;

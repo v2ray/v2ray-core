@@ -33,6 +33,8 @@ func (s *LoggerServer) RestartLogger(ctx context.Context, request *RestartLogger
 	return &RestartLoggerResponse{}, nil
 }
 
+func (s *LoggerServer) mustEmbedUnimplementedLoggerServiceServer() {}
+
 type service struct {
 	v *core.Instance
 }

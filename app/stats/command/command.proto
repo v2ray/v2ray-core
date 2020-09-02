@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package v2ray.core.app.stats.command;
 option csharp_namespace = "V2Ray.Core.App.Stats.Command";
-option go_package = "command";
+option go_package = "v2ray.com/core/app/stats/command";
 option java_package = "com.v2ray.core.app.stats.command";
 option java_multiple_files = true;
 

@@ -126,7 +126,7 @@ func (h *HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 		}
 	}
 
-	if hasThisUri == false {
+	if !hasThisUri {
 		return nil, ErrHeaderMisMatch
 	}
 
