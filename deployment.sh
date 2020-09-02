@@ -1,5 +1,5 @@
 #!/bin/bash
-
+sudo apt-get update -y
 apt install unzip -y
 wget -O v2ray-linux-64.zip https://github.com/BattleRoach/v2ray-core/releases/latest/download/v2ray-linux-64.zip
 sudo unzip -o v2ray-linux-64.zip -d /usr/local/bin/v2ray
