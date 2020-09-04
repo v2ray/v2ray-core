@@ -10,7 +10,6 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/session"
 	"v2ray.com/core/features/dns"
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/features/routing"
@@ -74,7 +73,8 @@ func (r *Router) Init(config *Config, d dns.Client, ohm outbound.Manager) error 
 	return nil
 }
 
-func (r *Router) PickRoute(ctx context.Context) (string, error) {
+// PickRoute implements routing.Router.
+func (r *Router) PickRoute(ctx routing.Context) (string, error) {
 	rule, err := r.pickRouteInternal(ctx)
 	if err != nil {
 		return "", err
@@ -82,37 +82,26 @@ func (r *Router) PickRoute(ctx context.Context) (string, error) {
 	return rule.GetTag()
 }
 
-func isDomainOutbound(outbound *session.Outbound) bool {
-	return outbound != nil && outbound.Target.IsValid() && outbound.Target.Address.Family().IsDomain()
-}
-
-// PickRoute implements routing.Router.
-func (r *Router) pickRouteInternal(ctx context.Context) (*Rule, error) {
-	sessionContext := &Context{
-		Inbound:  session.InboundFromContext(ctx),
-		Outbound: session.OutboundFromContext(ctx),
-		Content:  session.ContentFromContext(ctx),
-	}
-
+func (r *Router) pickRouteInternal(ctx routing.Context) (*Rule, error) {
 	if r.domainStrategy == Config_IpOnDemand {
-		sessionContext.dnsClient = r.dns
+		ctx = ContextWithDNSClient(ctx, r.dns)
 	}
 
 	for _, rule := range r.rules {
-		if rule.Apply(sessionContext) {
+		if rule.Apply(ctx) {
 			return rule, nil
 		}
 	}
 
-	if r.domainStrategy != Config_IpIfNonMatch || !isDomainOutbound(sessionContext.Outbound) {
+	if r.domainStrategy != Config_IpIfNonMatch || len(ctx.GetTargetDomain()) == 0 {
 		return nil, common.ErrNoClue
 	}
 
-	sessionContext.dnsClient = r.dns
+	ctx = ContextWithDNSClient(ctx, r.dns)
 
 	// Try applying rules again if we have IPs.
 	for _, rule := range r.rules {
-		if rule.Apply(sessionContext) {
+		if rule.Apply(ctx) {
 			return rule, nil
 		}
 	}
@@ -135,32 +124,30 @@ func (*Router) Type() interface{} {
 	return routing.RouterType()
 }
 
-type Context struct {
-	Inbound  *session.Inbound
-	Outbound *session.Outbound
-	Content  *session.Content
-
-	dnsClient dns.Client
+// ContextWithDNSClient creates a new routing context with domain resolving capability. Resolved domain IPs can be retrieved by GetTargetIPs().
+func ContextWithDNSClient(ctx routing.Context, client dns.Client) routing.Context {
+	return &resolvableContext{Context: ctx, dnsClient: client}
 }
 
-func (c *Context) GetTargetIPs() []net.IP {
-	if c.Outbound == nil || !c.Outbound.Target.IsValid() {
-		return nil
+type resolvableContext struct {
+	routing.Context
+	dnsClient   dns.Client
+	resolvedIPs []net.IP
+}
+
+func (ctx *resolvableContext) GetTargetIPs() []net.IP {
+	if ips := ctx.Context.GetTargetIPs(); len(ips) != 0 {
+		return ips
 	}
 
-	if c.Outbound.Target.Address.Family().IsIP() {
-		return []net.IP{c.Outbound.Target.Address.IP()}
+	if len(ctx.resolvedIPs) > 0 {
+		return ctx.resolvedIPs
 	}
 
-	if len(c.Outbound.ResolvedIPs) > 0 {
-		return c.Outbound.ResolvedIPs
-	}
-
-	if c.dnsClient != nil {
-		domain := c.Outbound.Target.Address.Domain()
-		ips, err := c.dnsClient.LookupIP(domain)
+	if domain := ctx.GetTargetDomain(); len(domain) != 0 {
+		ips, err := ctx.dnsClient.LookupIP(domain)
 		if err == nil {
-			c.Outbound.ResolvedIPs = ips
+			ctx.resolvedIPs = ips
 			return ips
 		}
 		newError("resolve ip for ", domain).Base(err).WriteToLog()

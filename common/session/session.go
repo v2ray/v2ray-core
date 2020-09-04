@@ -51,8 +51,6 @@ type Outbound struct {
 	Target net.Destination
 	// Gateway address
 	Gateway net.Address
-	// ResolvedIPs is the resolved IP addresses, if the Targe is a domain address.
-	ResolvedIPs []net.IP
 }
 
 type SniffingRequest struct {
