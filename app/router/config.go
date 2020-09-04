@@ -5,6 +5,7 @@ package router
 import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/features/outbound"
+	"v2ray.com/core/features/routing"
 )
 
 // CIDRList is an alias of []*CIDR to provide sort.Interface.
@@ -59,7 +60,8 @@ func (r *Rule) GetTag() (string, error) {
 	return r.Tag, nil
 }
 
-func (r *Rule) Apply(ctx *Context) bool {
+// Apply checks rule matching of current routing context.
+func (r *Rule) Apply(ctx routing.Context) bool {
 	return r.Condition.Apply(ctx)
 }
 

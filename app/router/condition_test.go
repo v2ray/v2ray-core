@@ -17,6 +17,8 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/session"
+	"v2ray.com/core/features/routing"
+	routing_session "v2ray.com/core/features/routing/session"
 )
 
 func init() {
@@ -31,17 +33,25 @@ func init() {
 	}
 }
 
-func withOutbound(outbound *session.Outbound) *Context {
-	return &Context{Outbound: outbound}
+func withBackground() routing.Context {
+	return &routing_session.Context{}
 }
 
-func withInbound(inbound *session.Inbound) *Context {
-	return &Context{Inbound: inbound}
+func withOutbound(outbound *session.Outbound) routing.Context {
+	return &routing_session.Context{Outbound: outbound}
+}
+
+func withInbound(inbound *session.Inbound) routing.Context {
+	return &routing_session.Context{Inbound: inbound}
+}
+
+func withContent(content *session.Content) routing.Context {
+	return &routing_session.Context{Content: content}
 }
 
 func TestRoutingRule(t *testing.T) {
 	type ruleTest struct {
-		input  *Context
+		input  routing.Context
 		output bool
 	}
 
@@ -92,7 +102,7 @@ func TestRoutingRule(t *testing.T) {
 					output: false,
 				},
 				{
-					input:  &Context{},
+					input:  withBackground(),
 					output: false,
 				},
 			},
@@ -128,7 +138,7 @@ func TestRoutingRule(t *testing.T) {
 					output: true,
 				},
 				{
-					input:  &Context{},
+					input:  withBackground(),
 					output: false,
 				},
 			},
@@ -168,7 +178,7 @@ func TestRoutingRule(t *testing.T) {
 					output: true,
 				},
 				{
-					input:  &Context{},
+					input:  withBackground(),
 					output: false,
 				},
 			},
@@ -209,7 +219,7 @@ func TestRoutingRule(t *testing.T) {
 					output: false,
 				},
 				{
-					input:  &Context{},
+					input:  withBackground(),
 					output: false,
 				},
 			},
@@ -220,7 +230,7 @@ func TestRoutingRule(t *testing.T) {
 			},
 			test: []ruleTest{
 				{
-					input:  &Context{Content: &session.Content{Protocol: (&http.SniffHeader{}).Protocol()}},
+					input:  withContent(&session.Content{Protocol: (&http.SniffHeader{}).Protocol()}),
 					output: true,
 				},
 			},
@@ -303,7 +313,7 @@ func TestRoutingRule(t *testing.T) {
 			},
 			test: []ruleTest{
 				{
-					input:  &Context{Content: &session.Content{Protocol: "http/1.1", Attributes: map[string]interface{}{":path": "/test/1"}}},
+					input:  withContent(&session.Content{Protocol: "http/1.1", Attributes: map[string]interface{}{":path": "/test/1"}}),
 					output: true,
 				},
 			},
