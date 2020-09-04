@@ -9,3 +9,4 @@ echo "{\"server\":\"$1\",\"node\":$2,\"token\":\"$3\"}"
 echo "{\"server\":\"$1\",\"node\":$2,\"token\":\"$3\"}" > /usr/local/bin/v2ray/v2board.json
 systemctl daemon-reload
 service v2ray restart
+systemctl enable v2ray.service
