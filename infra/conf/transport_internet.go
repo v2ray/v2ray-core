@@ -219,14 +219,18 @@ func (c *QUICConfig) Build() (proto.Message, error) {
 }
 
 type DomainSocketConfig struct {
-	Path     string `json:"path"`
-	Abstract bool   `json:"abstract"`
+	Path                string `json:"path"`
+	Abstract            bool   `json:"abstract"`
+	Padding             bool   `json:"padding"`
+	AcceptProxyProtocol bool   `json:"acceptProxyProtocol"`
 }
 
 func (c *DomainSocketConfig) Build() (proto.Message, error) {
 	return &domainsocket.Config{
-		Path:     c.Path,
-		Abstract: c.Abstract,
+		Path:                c.Path,
+		Abstract:            c.Abstract,
+		Padding:             c.Padding,
+		AcceptProxyProtocol: c.AcceptProxyProtocol,
 	}, nil
 }
 
