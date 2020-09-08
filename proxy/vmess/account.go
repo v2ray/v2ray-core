@@ -16,8 +16,6 @@ type MemoryAccount struct {
 	AlterIDs []*protocol.ID
 	// Security type of the account. Used for client connections.
 	Security protocol.SecurityType
-
-	TestsEnabled string
 }
 
 // AnyValidID returns an ID that is either the main ID or one of the alternative IDs if any.
@@ -46,9 +44,8 @@ func (a *Account) AsAccount() (protocol.Account, error) {
 	}
 	protoID := protocol.NewID(id)
 	return &MemoryAccount{
-		ID:           protoID,
-		AlterIDs:     protocol.NewAlterIDs(protoID, uint16(a.AlterId)),
-		Security:     a.SecuritySettings.GetSecurityType(),
-		TestsEnabled: a.TestsEnabled,
+		ID:       protoID,
+		AlterIDs: protocol.NewAlterIDs(protoID, uint16(a.AlterId)),
+		Security: a.SecuritySettings.GetSecurityType(),
 	}, nil
 }
