@@ -26,16 +26,6 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go-
 
-      - name: Show if need to format code
-        if: ${{ always() }}
-        run: |
-          filesNeedToFormat=$(go fmt ./...)
-          if [[ $filesNeedToFormat ]]; then
-            echo -e "\033[0;36m[Error] The following Go files need to be formatted:\033[0m"
-            echo -e "\033[0;31m$filesNeedToFormat\033[0m"
-            exit 1
-          fi
-
       - name: Lint *.go files
         if: ${{ always() }}
         run: |
@@ -46,7 +36,7 @@ jobs:
 
       - name: Lint other files
         if: ${{ always() }}
-        uses: github/super-linter@v3.9.2
+        uses: github/super-linter@v3.9.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: false
@@ -57,3 +47,13 @@ jobs:
           VALIDATE_JSON: false
           VALIDATE_MD: false
           VALIDATE_PROTOBUF: false
+
+      - name: Show if need to format code
+        if: ${{ always() }}
+        run: |
+          filesNeedToFormat=$(go fmt ./...)
+          if [[ $filesNeedToFormat ]]; then
+            echo -e "\033[0;36m[Error] The following Go files need to be formatted:\033[0m"
+            echo -e "\033[0;31m$filesNeedToFormat\033[0m"
+            exit 1
+          fi

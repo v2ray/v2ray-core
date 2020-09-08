@@ -63,7 +63,7 @@ func (s *statsServer) QueryStats(ctx context.Context, request *QueryStatsRequest
 		return nil, newError("QueryStats only works its own stats.Manager.")
 	}
 
-	manager.Visit(func(name string, c feature_stats.Counter) bool {
+	manager.VisitCounters(func(name string, c feature_stats.Counter) bool {
 		if matcher.Match(name) {
 			var value int64
 			if request.Reset_ {

@@ -260,11 +260,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 				}
 				return nil
 			}); err != nil {
-				dest := fb.Dest
-				if dest[0] == '\x00' {
-					dest = "@" + dest[1:]
-				}
-				return newError("failed to dial to " + dest).Base(err).AtWarning()
+				return newError("failed to dial to " + fb.Dest).Base(err).AtWarning()
 			}
 			defer conn.Close() // nolint: errcheck
 

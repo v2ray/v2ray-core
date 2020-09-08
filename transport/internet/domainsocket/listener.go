@@ -10,10 +10,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pires/go-proxyproto"
 	"golang.org/x/sys/unix"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
@@ -39,11 +41,23 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 		return nil, newError("failed to listen domain socket").Base(err).AtWarning()
 	}
 
-	ln := &Listener{
-		addr:    addr,
-		ln:      unixListener,
-		config:  settings,
-		addConn: handler,
+	var ln *Listener
+	if settings.AcceptProxyProtocol {
+		policyFunc := func(upstream net.Addr) (proxyproto.Policy, error) { return proxyproto.REQUIRE, nil }
+		ln = &Listener{
+			addr:    addr,
+			ln:      &proxyproto.Listener{Listener: unixListener, Policy: policyFunc},
+			config:  settings,
+			addConn: handler,
+		}
+		newError("accepting PROXY protocol").AtWarning().WriteToLog(session.ExportIDToError(ctx))
+	} else {
+		ln = &Listener{
+			addr:    addr,
+			ln:      unixListener,
+			config:  settings,
+			addConn: handler,
+		}
 	}
 
 	if !settings.Abstract {

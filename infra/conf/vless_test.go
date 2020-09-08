@@ -113,7 +113,7 @@ func TestVLessInbound(t *testing.T) {
 						Alpn: "h2",
 						Path: "",
 						Type: "unix",
-						Dest: "\x00/dev/shm/domain.socket",
+						Dest: "@/dev/shm/domain.socket",
 						Xver: 2,
 					},
 					{

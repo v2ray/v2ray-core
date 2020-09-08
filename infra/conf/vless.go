@@ -97,10 +97,7 @@ func (c *VLessInboundConfig) Build() (proto.Message, error) {
 				fb.Type = "serve"
 			} else {
 				switch fb.Dest[0] {
-				case '@':
-					fb.Dest = "\x00" + fb.Dest[1:]
-					fallthrough
-				case '/':
+				case '@', '/':
 					fb.Type = "unix"
 				default:
 					if _, err := strconv.Atoi(fb.Dest); err == nil {
