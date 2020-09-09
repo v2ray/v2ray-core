@@ -63,5 +63,4 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.31
-          only-new-issues: true
           args: --config=.github/linters/.golangci.yml

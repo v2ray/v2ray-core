@@ -44,3 +44,6 @@ linters:
     - unused
     - varcheck
     - whitespace
+
+issues:
+  new: true
