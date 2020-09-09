@@ -5,11 +5,15 @@ on:
     branches: [master]
     paths:
       - "**/*.go"
+      - "go.mod"
+      - "go.sum"
   pull_request:
     branches: [master]
     types: [opened, synchronize, reopened]
     paths:
       - "**/*.go"
+      - "go.mod"
+      - "go.sum"
 
 jobs:
   test:
