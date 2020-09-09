@@ -1,6 +1,6 @@
 # Project V
 ![](https://github.com/v2fly/v2ray-core/workflows/Test/badge.svg)
-[![codecov.io][3]][4] [![GoDoc][5]][6] [![codebeat][7]][8] [![Downloads][9]][10]
+[![codecov.io][3]][4] [![GoDoc][5]][6] [![codebeat][7]][8] [![Downloads][9]][10] [![Downloads][11]][12]
 
 [3]: https://codecov.io/gh/v2fly/v2ray-core/branch/master/graph/badge.svg?branch=master "Coverage badge"
 [4]: https://codecov.io/gh/v2fly/v2ray-core?branch=master "Codecov Status"
@@ -10,12 +10,14 @@
 [8]: https://codebeat.co/projects/github-com-v2ray-v2ray-core-master "Codebeat"
 [9]: https://img.shields.io/github/downloads/v2ray/v2ray-core/total.svg "All releases badge"
 [10]: https://github.com/v2ray/v2ray-core/releases/ "All releases number"
+[11]: https://img.shields.io/github/downloads/v2fly/v2ray-core/total.svg "All releases badge"
+[12]: https://github.com/v2fly/v2ray-core/releases/ "All releases number"
 
 Project V is a set of network tools that help you to build your own computer network. It secures your network connections and thus protects your privacy. See [our website](https://www.v2fly.org/) for more information.
 
 ## License
 
-[The MIT License (MIT)](https://raw.githubusercontent.com/v2ray/v2ray-core/master/LICENSE)
+[The MIT License (MIT)](https://raw.githubusercontent.com/v2fly/v2ray-core/master/LICENSE)
 
 ## Credits
 
