@@ -14,7 +14,7 @@ variables:
   - name: GOPATH
     value: '$(system.defaultWorkingDirectory)/gopath'
   - name: BAZEL_VER
-    value: '0.23.0'
+    value: '3.5.0'
 
 steps:
   - checkout: self
