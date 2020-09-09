@@ -13,7 +13,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
-          go-version: ^1.14
+          go-version: ^1.15
 
       - name: Checkout codebase
         uses: actions/checkout@v2
