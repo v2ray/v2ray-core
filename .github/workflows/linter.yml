@@ -57,3 +57,11 @@ jobs:
             echo -e "\033[0;31m$filesNeedToFormat\033[0m"
             exit 1
           fi
+
+      - name: golangci-lint
+        if: ${{ always() }}
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.31
+          only-new-issues: true
+          args: --config=.github/linters/.golangci.yml

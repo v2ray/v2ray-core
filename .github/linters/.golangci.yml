@@ -1,8 +1,8 @@
 run:
-  modules-download-mode: vendor
   skip-dirs:
-    - generated.*
     - external
+  skip-files:
+    - generated.*
 
 linters:
   enable:
