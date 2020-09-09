@@ -130,11 +130,11 @@ func (m *Manager) RegisterCounter(name string) (stats.Counter, error) {
 func (m *Manager) UnregisterCounter(name string) error {
 	m.access.Lock()
 	defer m.access.Unlock()
-	if _, found := m.counters[name]; !found {
-		return newError("Counter ", name, " was not found.")
+
+	if _, found := m.counters[name]; found {
+		newError("remove counter ", name).AtDebug().WriteToLog()
+		delete(m.counters, name)
 	}
-	newError("remove counter ", name).AtDebug().WriteToLog()
-	delete(m.counters, name)
 	return nil
 }
 
@@ -174,6 +174,18 @@ func (m *Manager) RegisterChannel(name string) (stats.Channel, error) {
 	m.channels[name] = c
 	go c.Start()
 	return c, nil
+}
+
+// UnregisterChannel implements stats.Manager.
+func (m *Manager) UnregisterChannel(name string) error {
+	m.access.Lock()
+	defer m.access.Unlock()
+
+	if _, found := m.channels[name]; found {
+		newError("remove channel ", name).AtDebug().WriteToLog()
+		delete(m.channels, name)
+	}
+	return nil
 }
 
 // GetChannel implements stats.Manager.
