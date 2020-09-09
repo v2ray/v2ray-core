@@ -38,12 +38,15 @@ type Manager interface {
 
 	// RegisterCounter registers a new counter to the manager. The identifier string must not be empty, and unique among other counters.
 	RegisterCounter(string) (Counter, error)
+	// UnregisterCounter unregisters a counter from the manager by its identifier.
 	UnregisterCounter(string) error
 	// GetCounter returns a counter by its identifier.
 	GetCounter(string) Counter
 
 	// RegisterChannel registers a new channel to the manager. The identifier string must not be empty, and unique among other channels.
 	RegisterChannel(string) (Channel, error)
+	// UnregisterCounter unregisters a channel from the manager by its identifier.
+	UnregisterChannel(string) error
 	// GetChannel returns a channel by its identifier.
 	GetChannel(string) Channel
 }
@@ -90,7 +93,7 @@ func (NoopManager) RegisterCounter(string) (Counter, error) {
 
 // UnregisterCounter implements Manager.
 func (NoopManager) UnregisterCounter(string) error {
-	return newError("not implemented")
+	return nil
 }
 
 // GetCounter implements Manager.
@@ -101,6 +104,11 @@ func (NoopManager) GetCounter(string) Counter {
 // RegisterChannel implements Manager.
 func (NoopManager) RegisterChannel(string) (Channel, error) {
 	return nil, newError("not implemented")
+}
+
+// UnregisterChannel implements Manager.
+func (NoopManager) UnregisterChannel(string) error {
+	return nil
 }
 
 // GetChannel implements Manager.
