@@ -166,7 +166,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		err = newError("fallback directly")
 	} else {
 		request, requestAddons, err, pre = encoding.DecodeRequestHeader(reader, h.validator)
-		if pre == nil {
+		if pre != nil {
 			defer pre.Release()
 		} else {
 			isfb = false
