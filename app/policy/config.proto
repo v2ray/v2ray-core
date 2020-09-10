@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package v2ray.core.app.policy;
 option csharp_namespace = "V2Ray.Core.App.Policy";
-option go_package = "policy";
+option go_package = "v2ray.com/core/app/policy";
 option java_package = "com.v2ray.core.app.policy";
 option java_multiple_files = true;
 
@@ -38,6 +38,8 @@ message SystemPolicy {
   message Stats {
     bool inbound_uplink = 1;
     bool inbound_downlink = 2;
+    bool outbound_uplink = 3;
+    bool outbound_downlink = 4;
   }
 
   Stats stats = 1;

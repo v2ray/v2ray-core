@@ -11,7 +11,7 @@ import (
 // ParseXForwardedFor parses X-Forwarded-For header in http headers, and return the IP list in it.
 func ParseXForwardedFor(header http.Header) []net.Address {
 	xff := header.Get("X-Forwarded-For")
-	if len(xff) == 0 {
+	if xff == "" {
 		return nil
 	}
 	list := strings.Split(xff, ",")
@@ -38,7 +38,7 @@ func RemoveHopByHopHeaders(header http.Header) {
 
 	connections := header.Get("Connection")
 	header.Del("Connection")
-	if len(connections) == 0 {
+	if connections == "" {
 		return
 	}
 	for _, h := range strings.Split(connections, ",") {

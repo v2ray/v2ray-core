@@ -2,15 +2,17 @@ package conf_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-
+	"github.com/google/go-cmp/cmp"
 	"v2ray.com/core"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
+	"v2ray.com/core/common"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -138,9 +140,6 @@ func TestV2RayConfig(t *testing.T) {
 			Parser: createParser(),
 			Output: &core.Config{
 				App: []*serial.TypedMessage{
-					serial.ToTypedMessage(&dispatcher.Config{}),
-					serial.ToTypedMessage(&proxyman.InboundConfig{}),
-					serial.ToTypedMessage(&proxyman.OutboundConfig{}),
 					serial.ToTypedMessage(&log.Config{
 						ErrorLogType:  log.LogType_File,
 						ErrorLogPath:  "/var/log/v2ray/error.log",
@@ -148,6 +147,9 @@ func TestV2RayConfig(t *testing.T) {
 						AccessLogType: log.LogType_File,
 						AccessLogPath: "/var/log/v2ray/access.log",
 					}),
+					serial.ToTypedMessage(&dispatcher.Config{}),
+					serial.ToTypedMessage(&proxyman.InboundConfig{}),
+					serial.ToTypedMessage(&proxyman.OutboundConfig{}),
 					serial.ToTypedMessage(&router.Config{
 						DomainStrategy: router.Config_AsIs,
 						Rule: []*router.RoutingRule{
@@ -336,4 +338,112 @@ func TestV2RayConfig(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestMuxConfig_Build(t *testing.T) {
+	tests := []struct {
+		name   string
+		fields string
+		want   *proxyman.MultiplexingConfig
+	}{
+		{"default", `{"enabled": true, "concurrency": 16}`, &proxyman.MultiplexingConfig{
+			Enabled:     true,
+			Concurrency: 16,
+		}},
+		{"empty def", `{}`, &proxyman.MultiplexingConfig{
+			Enabled:     false,
+			Concurrency: 8,
+		}},
+		{"not enable", `{"enabled": false, "concurrency": 4}`, &proxyman.MultiplexingConfig{
+			Enabled:     false,
+			Concurrency: 4,
+		}},
+		{"forbidden", `{"enabled": false, "concurrency": -1}`, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &MuxConfig{}
+			common.Must(json.Unmarshal([]byte(tt.fields), m))
+			if got := m.Build(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MuxConfig.Build() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestConfig_Override(t *testing.T) {
+	tests := []struct {
+		name string
+		orig *Config
+		over *Config
+		fn   string
+		want *Config
+	}{
+		{"combine/empty",
+			&Config{},
+			&Config{
+				LogConfig:    &LogConfig{},
+				RouterConfig: &RouterConfig{},
+				DNSConfig:    &DnsConfig{},
+				Transport:    &TransportConfig{},
+				Policy:       &PolicyConfig{},
+				Api:          &ApiConfig{},
+				Stats:        &StatsConfig{},
+				Reverse:      &ReverseConfig{},
+			},
+			"",
+			&Config{
+				LogConfig:    &LogConfig{},
+				RouterConfig: &RouterConfig{},
+				DNSConfig:    &DnsConfig{},
+				Transport:    &TransportConfig{},
+				Policy:       &PolicyConfig{},
+				Api:          &ApiConfig{},
+				Stats:        &StatsConfig{},
+				Reverse:      &ReverseConfig{},
+			},
+		},
+		{"combine/newattr",
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "old"}}},
+			&Config{LogConfig: &LogConfig{}}, "",
+			&Config{LogConfig: &LogConfig{}, InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "old"}}}},
+		{"replace/inbounds",
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos0"}, InboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}},
+			"",
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos0"}, InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}}},
+		{"replace/inbounds-replaceall",
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos0"}, InboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, InboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}},
+			"",
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, InboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}}},
+		{"replace/notag-append",
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{}, InboundDetourConfig{Protocol: "vmess"}}},
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}},
+			"",
+			&Config{InboundConfigs: []InboundDetourConfig{InboundDetourConfig{}, InboundDetourConfig{Protocol: "vmess"}, InboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}}},
+		{"replace/outbounds",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}},
+			"",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}}}},
+		{"replace/outbounds-prepend",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, OutboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}},
+			"config.json",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos1", Protocol: "kcp"}, OutboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}}},
+		{"replace/outbounds-append",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Protocol: "vmess", Tag: "pos1"}}},
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}},
+			"config_tail.json",
+			&Config{OutboundConfigs: []OutboundDetourConfig{OutboundDetourConfig{Tag: "pos0"}, OutboundDetourConfig{Protocol: "vmess", Tag: "pos1"}, OutboundDetourConfig{Tag: "pos2", Protocol: "kcp"}}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.orig.Override(tt.over, tt.fn)
+			if r := cmp.Diff(tt.orig, tt.want); r != "" {
+				t.Error(r)
+			}
+		})
+	}
 }

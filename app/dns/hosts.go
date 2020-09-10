@@ -106,11 +106,14 @@ func filterIP(ips []net.Address, option IPOption) []net.Address {
 
 // LookupIP returns IP address for the given domain, if exists in this StaticHosts.
 func (h *StaticHosts) LookupIP(domain string, option IPOption) []net.Address {
-	id := h.matchers.Match(domain)
-	if id == 0 {
+	indices := h.matchers.Match(domain)
+	if len(indices) == 0 {
 		return nil
 	}
-	ips := h.ips[id]
+	ips := []net.Address{}
+	for _, id := range indices {
+		ips = append(ips, h.ips[id]...)
+	}
 	if len(ips) == 1 && ips[0].Family().IsDomain() {
 		return ips
 	}

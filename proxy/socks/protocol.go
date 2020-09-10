@@ -94,12 +94,12 @@ func (s *ServerSession) handshake4(cmd byte, reader io.Reader, writer io.Writer)
 	}
 }
 
-func (s *ServerSession) auth5(nMethod byte, reader io.Reader, writer io.Writer) error {
+func (s *ServerSession) auth5(nMethod byte, reader io.Reader, writer io.Writer) (username string, err error) {
 	buffer := buf.StackNew()
 	defer buffer.Release()
 
-	if _, err := buffer.ReadFullFrom(reader, int32(nMethod)); err != nil {
-		return newError("failed to read auth methods").Base(err)
+	if _, err = buffer.ReadFullFrom(reader, int32(nMethod)); err != nil {
+		return "", newError("failed to read auth methods").Base(err)
 	}
 
 	var expectedAuth byte = authNotRequired
@@ -109,34 +109,39 @@ func (s *ServerSession) auth5(nMethod byte, reader io.Reader, writer io.Writer) 
 
 	if !hasAuthMethod(expectedAuth, buffer.BytesRange(0, int32(nMethod))) {
 		writeSocks5AuthenticationResponse(writer, socks5Version, authNoMatchingMethod) // nolint: errcheck
-		return newError("no matching auth method")
+		return "", newError("no matching auth method")
 	}
 
 	if err := writeSocks5AuthenticationResponse(writer, socks5Version, expectedAuth); err != nil {
-		return newError("failed to write auth response").Base(err)
+		return "", newError("failed to write auth response").Base(err)
 	}
 
 	if expectedAuth == authPassword {
 		username, password, err := ReadUsernamePassword(reader)
 		if err != nil {
-			return newError("failed to read username and password for authentication").Base(err)
+			return "", newError("failed to read username and password for authentication").Base(err)
 		}
 
 		if !s.config.HasAccount(username, password) {
 			writeSocks5AuthenticationResponse(writer, 0x01, 0xFF) // nolint: errcheck
-			return newError("invalid username or password")
+			return "", newError("invalid username or password")
 		}
 
 		if err := writeSocks5AuthenticationResponse(writer, 0x01, 0x00); err != nil {
-			return newError("failed to write auth response").Base(err)
+			return "", newError("failed to write auth response").Base(err)
 		}
+		return username, nil
 	}
 
-	return nil
+	return "", nil
 }
 
 func (s *ServerSession) handshake5(nMethod byte, reader io.Reader, writer io.Writer) (*protocol.RequestHeader, error) {
-	if err := s.auth5(nMethod, reader, writer); err != nil {
+	var (
+		username string
+		err      error
+	)
+	if username, err = s.auth5(nMethod, reader, writer); err != nil {
 		return nil, err
 	}
 
@@ -152,6 +157,9 @@ func (s *ServerSession) handshake5(nMethod byte, reader io.Reader, writer io.Wri
 	}
 
 	request := new(protocol.RequestHeader)
+	if username != "" {
+		request.User = &protocol.MemoryUser{Email: username}
+	}
 	switch cmd {
 	case cmdTCPConnect, cmdTorResolve, cmdTorResolvePTR:
 		// We don't have a solution for Tor case now. Simply treat it as connect command.

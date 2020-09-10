@@ -6,6 +6,8 @@ package command
 
 import (
 	"context"
+	"runtime"
+	"time"
 
 	grpc "google.golang.org/grpc"
 
@@ -18,11 +20,15 @@ import (
 
 // statsServer is an implementation of StatsService.
 type statsServer struct {
-	stats feature_stats.Manager
+	stats     feature_stats.Manager
+	startTime time.Time
 }
 
 func NewStatsServer(manager feature_stats.Manager) StatsServiceServer {
-	return &statsServer{stats: manager}
+	return &statsServer{
+		stats:     manager,
+		startTime: time.Now(),
+	}
 }
 
 func (s *statsServer) GetStats(ctx context.Context, request *GetStatsRequest) (*GetStatsResponse, error) {
@@ -57,7 +63,7 @@ func (s *statsServer) QueryStats(ctx context.Context, request *QueryStatsRequest
 		return nil, newError("QueryStats only works its own stats.Manager.")
 	}
 
-	manager.Visit(func(name string, c feature_stats.Counter) bool {
+	manager.VisitCounters(func(name string, c feature_stats.Counter) bool {
 		if matcher.Match(name) {
 			var value int64
 			if request.Reset_ {
@@ -75,6 +81,30 @@ func (s *statsServer) QueryStats(ctx context.Context, request *QueryStatsRequest
 
 	return response, nil
 }
+
+func (s *statsServer) GetSysStats(ctx context.Context, request *SysStatsRequest) (*SysStatsResponse, error) {
+	var rtm runtime.MemStats
+	runtime.ReadMemStats(&rtm)
+
+	uptime := time.Since(s.startTime)
+
+	response := &SysStatsResponse{
+		Uptime:       uint32(uptime.Seconds()),
+		NumGoroutine: uint32(runtime.NumGoroutine()),
+		Alloc:        rtm.Alloc,
+		TotalAlloc:   rtm.TotalAlloc,
+		Sys:          rtm.Sys,
+		Mallocs:      rtm.Mallocs,
+		Frees:        rtm.Frees,
+		LiveObjects:  rtm.Mallocs - rtm.Frees,
+		NumGC:        rtm.NumGC,
+		PauseTotalNs: rtm.PauseTotalNs,
+	}
+
+	return response, nil
+}
+
+func (s *statsServer) mustEmbedUnimplementedStatsServiceServer() {}
 
 type service struct {
 	statsManager feature_stats.Manager

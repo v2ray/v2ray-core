@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package v2ray.core.proxy.mtproto;
 option csharp_namespace = "V2Ray.Core.Proxy.Mtproto";
-option go_package = "mtproto";
+option go_package = "v2ray.com/core/proxy/mtproto";
 option java_package = "com.v2ray.core.proxy.mtproto";
 option java_multiple_files = true;
 
-import "v2ray.com/core/common/protocol/user.proto";
+import "common/protocol/user.proto";
 
 message Account {
   bytes secret = 1;

@@ -27,10 +27,10 @@ type Bridge struct {
 
 // NewBridge creates a new Bridge instance.
 func NewBridge(config *BridgeConfig, dispatcher routing.Dispatcher) (*Bridge, error) {
-	if len(config.Tag) == 0 {
+	if config.Tag == "" {
 		return nil, newError("bridge tag is empty")
 	}
-	if len(config.Domain) == 0 {
+	if config.Domain == "" {
 		return nil, newError("bridge domain is empty")
 	}
 

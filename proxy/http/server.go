@@ -85,7 +85,8 @@ type readerOnly struct {
 }
 
 func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher routing.Dispatcher) error {
-	if inbound := session.InboundFromContext(ctx); inbound != nil {
+	inbound := session.InboundFromContext(ctx)
+	if inbound != nil {
 		inbound.User = &protocol.MemoryUser{
 			Level: s.config.UserLevel,
 		}
@@ -110,7 +111,10 @@ Start:
 	if len(s.config.Accounts) > 0 {
 		user, pass, ok := parseBasicAuth(request.Header.Get("Proxy-Authorization"))
 		if !ok || !s.config.HasAccount(user, pass) {
-			return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n")))
+			return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\nConnection: close\r\n\r\n")))
+		}
+		if inbound != nil {
+			inbound.User.Email = user
 		}
 	}
 
@@ -120,24 +124,25 @@ Start:
 	}
 
 	defaultPort := net.Port(80)
-	if strings.ToLower(request.URL.Scheme) == "https" {
+	if strings.EqualFold(request.URL.Scheme, "https") {
 		defaultPort = net.Port(443)
 	}
 	host := request.Host
-	if len(host) == 0 {
+	if host == "" {
 		host = request.URL.Host
 	}
 	dest, err := http_proto.ParseHost(host, defaultPort)
 	if err != nil {
 		return newError("malformed proxy host: ", host).AtWarning().Base(err)
 	}
-	log.Record(&log.AccessMessage{
+	ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 		From:   conn.RemoteAddr(),
 		To:     request.URL,
 		Status: log.AccessAccepted,
+		Reason: "",
 	})
 
-	if strings.ToUpper(request.Method) == "CONNECT" {
+	if strings.EqualFold(request.Method, "CONNECT") {
 		return s.handleConnect(ctx, request, reader, conn, dest, dispatcher)
 	}
 
@@ -211,7 +216,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 var errWaitAnother = newError("keep alive")
 
 func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, writer io.Writer, dest net.Destination, dispatcher routing.Dispatcher) error {
-	if !s.config.AllowTransparent && len(request.URL.Host) <= 0 {
+	if !s.config.AllowTransparent && request.URL.Host == "" {
 		// RFC 2068 (HTTP/1.1) requires URL to be absolute URL in HTTP proxy.
 		response := &http.Response{
 			Status:        "Bad Request",
@@ -235,7 +240,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 	http_proto.RemoveHopByHopHeaders(request.Header)
 
 	// Prevent UA from being set to golang's default ones
-	if len(request.Header.Get("User-Agent")) == 0 {
+	if request.Header.Get("User-Agent") == "" {
 		request.Header.Set("User-Agent", "")
 	}
 

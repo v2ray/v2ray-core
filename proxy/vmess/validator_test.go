@@ -39,7 +39,7 @@ func TestUserValidator(t *testing.T) {
 			common.Must2(serial.WriteUint64(idHash, uint64(ts)))
 			userHash := idHash.Sum(nil)
 
-			euser, ets, found := v.Get(userHash)
+			euser, ets, found, _ := v.Get(userHash)
 			if !found {
 				t.Fatal("user not found")
 			}
@@ -67,7 +67,7 @@ func TestUserValidator(t *testing.T) {
 			common.Must2(serial.WriteUint64(idHash, uint64(ts)))
 			userHash := idHash.Sum(nil)
 
-			euser, _, found := v.Get(userHash)
+			euser, _, found, _ := v.Get(userHash)
 			if found || euser != nil {
 				t.Error("unexpected user")
 			}

@@ -54,7 +54,7 @@ func TestGetStats(t *testing.T) {
 			}
 		} else {
 			common.Must(err)
-			if r := cmp.Diff(resp.Stat, &Stat{Name: tc.name, Value: tc.value}); r != "" {
+			if r := cmp.Diff(resp.Stat, &Stat{Name: tc.name, Value: tc.value}, cmpopts.IgnoreUnexported(Stat{})); r != "" {
 				t.Error(r)
 			}
 		}
@@ -85,7 +85,8 @@ func TestQueryStats(t *testing.T) {
 	if r := cmp.Diff(resp.Stat, []*Stat{
 		{Name: "test_counter_2", Value: 2},
 		{Name: "test_counter_3", Value: 3},
-	}, cmpopts.SortSlices(func(s1, s2 *Stat) bool { return s1.Name < s2.Name })); r != "" {
+	}, cmpopts.SortSlices(func(s1, s2 *Stat) bool { return s1.Name < s2.Name }),
+		cmpopts.IgnoreUnexported(Stat{})); r != "" {
 		t.Error(r)
 	}
 }

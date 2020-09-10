@@ -123,14 +123,14 @@ func (m *Manager) AddHandler(ctx context.Context, handler outbound.Handler) erro
 
 // RemoveHandler implements outbound.Manager.
 func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
-	if len(tag) == 0 {
+	if tag == "" {
 		return common.ErrNoClue
 	}
 	m.access.Lock()
 	defer m.access.Unlock()
 
 	delete(m.taggedHandler, tag)
-	if m.defaultHandler.Tag() == tag {
+	if m.defaultHandler != nil && m.defaultHandler.Tag() == tag {
 		m.defaultHandler = nil
 	}
 

@@ -135,7 +135,7 @@ func TestUDPDNSTunnel(t *testing.T) {
 		m1.Id = dns.Id()
 		m1.RecursionDesired = true
 		m1.Question = make([]dns.Question, 1)
-		m1.Question[0] = dns.Question{"google.com.", dns.TypeA, dns.ClassINET}
+		m1.Question[0] = dns.Question{Name: "google.com.", Qtype: dns.TypeA, Qclass: dns.ClassINET}
 
 		c := new(dns.Client)
 		in, _, err := c.Exchange(m1, "127.0.0.1:"+strconv.Itoa(int(serverPort)))
@@ -159,9 +159,10 @@ func TestUDPDNSTunnel(t *testing.T) {
 		m1.Id = dns.Id()
 		m1.RecursionDesired = true
 		m1.Question = make([]dns.Question, 1)
-		m1.Question[0] = dns.Question{"ipv4only.google.com.", dns.TypeAAAA, dns.ClassINET}
+		m1.Question[0] = dns.Question{Name: "ipv4only.google.com.", Qtype: dns.TypeAAAA, Qclass: dns.ClassINET}
 
 		c := new(dns.Client)
+		c.Timeout = 10 * time.Second
 		in, _, err := c.Exchange(m1, "127.0.0.1:"+strconv.Itoa(int(serverPort)))
 		common.Must(err)
 
@@ -175,7 +176,7 @@ func TestUDPDNSTunnel(t *testing.T) {
 		m1.Id = dns.Id()
 		m1.RecursionDesired = true
 		m1.Question = make([]dns.Question, 1)
-		m1.Question[0] = dns.Question{"notexist.google.com.", dns.TypeAAAA, dns.ClassINET}
+		m1.Question[0] = dns.Question{Name: "notexist.google.com.", Qtype: dns.TypeAAAA, Qclass: dns.ClassINET}
 
 		c := new(dns.Client)
 		in, _, err := c.Exchange(m1, "127.0.0.1:"+strconv.Itoa(int(serverPort)))
@@ -252,7 +253,7 @@ func TestTCPDNSTunnel(t *testing.T) {
 	m1.Id = dns.Id()
 	m1.RecursionDesired = true
 	m1.Question = make([]dns.Question, 1)
-	m1.Question[0] = dns.Question{"google.com.", dns.TypeA, dns.ClassINET}
+	m1.Question[0] = dns.Question{Name: "google.com.", Qtype: dns.TypeA, Qclass: dns.ClassINET}
 
 	c := &dns.Client{
 		Net: "tcp",
@@ -342,7 +343,7 @@ func TestUDP2TCPDNSTunnel(t *testing.T) {
 	m1.Id = dns.Id()
 	m1.RecursionDesired = true
 	m1.Question = make([]dns.Question, 1)
-	m1.Question[0] = dns.Question{"google.com.", dns.TypeA, dns.ClassINET}
+	m1.Question[0] = dns.Question{Name: "google.com.", Qtype: dns.TypeA, Qclass: dns.ClassINET}
 
 	c := &dns.Client{
 		Net: "tcp",

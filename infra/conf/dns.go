@@ -11,28 +11,30 @@ import (
 )
 
 type NameServerConfig struct {
-	Address *Address
-	Port    uint16
-	Domains []string
+	Address   *Address
+	Port      uint16
+	Domains   []string
+	ExpectIPs StringList
 }
 
 func (c *NameServerConfig) UnmarshalJSON(data []byte) error {
 	var address Address
 	if err := json.Unmarshal(data, &address); err == nil {
 		c.Address = &address
-		c.Port = 53
 		return nil
 	}
 
 	var advanced struct {
-		Address *Address `json:"address"`
-		Port    uint16   `json:"port"`
-		Domains []string `json:"domains"`
+		Address   *Address   `json:"address"`
+		Port      uint16     `json:"port"`
+		Domains   []string   `json:"domains"`
+		ExpectIPs StringList `json:"expectIps"`
 	}
 	if err := json.Unmarshal(data, &advanced); err == nil {
 		c.Address = advanced.Address
 		c.Port = advanced.Port
 		c.Domains = advanced.Domains
+		c.ExpectIPs = advanced.ExpectIPs
 		return nil
 	}
 
@@ -60,11 +62,12 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 	}
 
 	var domains []*dns.NameServer_PriorityDomain
+	var originalRules []*dns.NameServer_OriginalRule
 
-	for _, d := range c.Domains {
-		parsedDomain, err := parseDomainRule(d)
+	for _, rule := range c.Domains {
+		parsedDomain, err := parseDomainRule(rule)
 		if err != nil {
-			return nil, newError("invalid domain rule: ", d).Base(err)
+			return nil, newError("invalid domain rule: ", rule).Base(err)
 		}
 
 		for _, pd := range parsedDomain {
@@ -73,6 +76,15 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 				Domain: pd.Value,
 			})
 		}
+		originalRules = append(originalRules, &dns.NameServer_OriginalRule{
+			Rule: rule,
+			Size: uint32(len(parsedDomain)),
+		})
+	}
+
+	geoipList, err := toCidrList(c.ExpectIPs)
+	if err != nil {
+		return nil, newError("invalid ip rule: ", c.ExpectIPs).Base(err)
 	}
 
 	return &dns.NameServer{
@@ -82,6 +94,8 @@ func (c *NameServerConfig) Build() (*dns.NameServer, error) {
 			Port:    uint32(c.Port),
 		},
 		PrioritizedDomain: domains,
+		Geoip:             geoipList,
+		OriginalRules:     originalRules,
 	}, nil
 }
 
@@ -178,6 +192,37 @@ func (c *DnsConfig) Build() (*dns.Config, error) {
 				mapping.Domain = domain[5:]
 
 				mappings = append(mappings, mapping)
+			} else if strings.HasPrefix(domain, "dotless:") {
+				mapping := getHostMapping(addr)
+				mapping.Type = dns.DomainMatchingType_Regex
+				switch substr := domain[8:]; {
+				case substr == "":
+					mapping.Domain = "^[^.]*$"
+				case !strings.Contains(substr, "."):
+					mapping.Domain = "^[^.]*" + substr + "[^.]*$"
+				default:
+					return nil, newError("substr in dotless rule should not contain a dot: ", substr)
+				}
+
+				mappings = append(mappings, mapping)
+			} else if strings.HasPrefix(domain, "ext:") {
+				kv := strings.Split(domain[4:], ":")
+				if len(kv) != 2 {
+					return nil, newError("invalid external resource: ", domain)
+				}
+				filename := kv[0]
+				country := kv[1]
+				domains, err := loadGeositeWithAttr(filename, country)
+				if err != nil {
+					return nil, newError("failed to load domains: ", country, " from ", filename).Base(err)
+				}
+				for _, d := range domains {
+					mapping := getHostMapping(addr)
+					mapping.Type = typeMap[d.Type]
+					mapping.Domain = d.Value
+
+					mappings = append(mappings, mapping)
+				}
 			} else {
 				mapping := getHostMapping(addr)
 				mapping.Type = dns.DomainMatchingType_Full

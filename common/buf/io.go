@@ -3,6 +3,7 @@ package buf
 import (
 	"io"
 	"net"
+	"os"
 	"syscall"
 	"time"
 )
@@ -57,19 +58,14 @@ func NewReader(reader io.Reader) Reader {
 		}
 	}
 
-	if useReadv {
+	_, isFile := reader.(*os.File)
+	if !isFile && useReadv {
 		if sc, ok := reader.(syscall.Conn); ok {
 			rawConn, err := sc.SyscallConn()
 			if err != nil {
 				newError("failed to get sysconn").Base(err).WriteToLog()
 			} else {
-				/*
-					Check if ReadVReader Can be used on this reader first
-					Fix https://github.com/v2ray/v2ray-core/issues/1666
-				*/
-				if ok, _ := checkReadVConstraint(rawConn); ok {
-					return NewReadVReader(reader, rawConn)
-				}
+				return NewReadVReader(reader, rawConn)
 			}
 		}
 	}

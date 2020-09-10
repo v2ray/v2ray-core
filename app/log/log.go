@@ -29,6 +29,13 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 	}
 	log.RegisterHandler(g)
 
+	// start logger instantly on inited
+	// other modules would log during init
+	if err := g.startInternal(); err != nil {
+		return nil, err
+	}
+
+	newError("Logger started").AtDebug().WriteToLog()
 	return g, nil
 }
 
@@ -81,13 +88,7 @@ func (g *Instance) startInternal() error {
 
 // Start implements common.Runnable.Start().
 func (g *Instance) Start() error {
-	if err := g.startInternal(); err != nil {
-		return err
-	}
-
-	newError("Logger started").AtDebug().WriteToLog()
-
-	return nil
+	return g.startInternal()
 }
 
 // Handle implements log.Handler.

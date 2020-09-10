@@ -2,6 +2,7 @@ package conf_test
 
 import (
 	"encoding/json"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"os"
 	"testing"
 
@@ -48,6 +49,25 @@ func TestDomainParsing(t *testing.T) {
 	common.Must(json.Unmarshal([]byte(rawJson), &address))
 	if address.Domain() != "v2ray.com" {
 		t.Error("domain: ", address.Domain())
+	}
+}
+
+func TestURLParsing(t *testing.T) {
+	{
+		rawJson := "\"https://dns.google/dns-query\""
+		var address Address
+		common.Must(json.Unmarshal([]byte(rawJson), &address))
+		if address.Domain() != "https://dns.google/dns-query" {
+			t.Error("URL: ", address.Domain())
+		}
+	}
+	{
+		rawJson := "\"https+local://dns.google/dns-query\""
+		var address Address
+		common.Must(json.Unmarshal([]byte(rawJson), &address))
+		if address.Domain() != "https+local://dns.google/dns-query" {
+			t.Error("URL: ", address.Domain())
+		}
 	}
 }
 
@@ -197,7 +217,7 @@ func TestUserParsing(t *testing.T) {
 	if r := cmp.Diff(nUser, &protocol.User{
 		Level: 1,
 		Email: "love@v2ray.com",
-	}); r != "" {
+	}, cmpopts.IgnoreUnexported(protocol.User{})); r != "" {
 		t.Error(r)
 	}
 }

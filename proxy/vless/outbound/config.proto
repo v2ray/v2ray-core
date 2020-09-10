@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package v2ray.core.proxy.vless.outbound;
+option csharp_namespace = "V2Ray.Core.Proxy.Vless.Outbound";
+option go_package = "v2ray.com/core/proxy/vless/outbound";
+option java_package = "com.v2ray.core.proxy.vless.outbound";
+option java_multiple_files = true;
+
+import "common/protocol/server_spec.proto";
+
+message Config {
+  repeated v2ray.core.common.protocol.ServerEndpoint vnext = 1;
+}
