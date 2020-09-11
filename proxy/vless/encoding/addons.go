@@ -13,7 +13,7 @@ import (
 
 func EncodeHeaderAddons(buffer *buf.Buffer, addons *Addons) error {
 
-	switch addons.Scheduler {
+	switch addons.Flow {
 	default:
 
 		if err := buffer.WriteByte(0); err != nil {
@@ -47,7 +47,7 @@ func DecodeHeaderAddons(buffer *buf.Buffer, reader io.Reader) (*Addons, error) {
 		}
 
 		// Verification.
-		switch addons.Scheduler {
+		switch addons.Flow {
 		default:
 
 		}
@@ -61,7 +61,7 @@ func DecodeHeaderAddons(buffer *buf.Buffer, reader io.Reader) (*Addons, error) {
 // EncodeBodyAddons returns a Writer that auto-encrypt content written by caller.
 func EncodeBodyAddons(writer io.Writer, request *protocol.RequestHeader, addons *Addons) buf.Writer {
 
-	switch addons.Scheduler {
+	switch addons.Flow {
 	default:
 
 		return buf.NewWriter(writer)
@@ -73,7 +73,7 @@ func EncodeBodyAddons(writer io.Writer, request *protocol.RequestHeader, addons 
 // DecodeBodyAddons returns a Reader from which caller can fetch decrypted body.
 func DecodeBodyAddons(reader io.Reader, request *protocol.RequestHeader, addons *Addons) buf.Reader {
 
-	switch addons.Scheduler {
+	switch addons.Flow {
 	default:
 
 		return buf.NewReader(reader)

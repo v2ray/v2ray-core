@@ -1,4 +1,4 @@
-name: Lint
+name: Linter
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
-          go-version: ^1.14
+          go-version: ^1.15
 
       - name: Checkout codebase
         uses: actions/checkout@v2
@@ -26,17 +26,9 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go-
 
-      - name: Lint *.go files
-        if: ${{ always() }}
-        run: |
-          go vet $(go list ./... | grep -v /external/)
-          if [[ $? != 0 ]]; then
-            exit 1
-          fi
-
       - name: Lint other files
         if: ${{ always() }}
-        uses: github/super-linter@v3.9.4
+        uses: github/super-linter@v3.10.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: false
@@ -48,12 +40,8 @@ jobs:
           VALIDATE_MD: false
           VALIDATE_PROTOBUF: false
 
-      - name: Show if need to format code
-        if: ${{ always() }}
-        run: |
-          filesNeedToFormat=$(go fmt ./...)
-          if [[ $filesNeedToFormat ]]; then
-            echo -e "\033[0;36m[Error] The following Go files need to be formatted:\033[0m"
-            echo -e "\033[0;31m$filesNeedToFormat\033[0m"
-            exit 1
-          fi
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.31
+          args: --config=.github/linters/.golangci.yml

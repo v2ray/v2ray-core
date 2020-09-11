@@ -1,3 +1,3 @@
 package vmess
 
-const TestsEnabled = "VMessCtxInterface_TestsEnabled"
+const AlterID = "VMessCtxInterface_AlterID"

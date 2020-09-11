@@ -48,8 +48,8 @@ func (c *VLessInboundConfig) Build() (proto.Message, error) {
 			return nil, newError(`VLESS clients: invalid user`).Base(err)
 		}
 
-		if account.Schedulers != "" {
-			return nil, newError(`VLESS clients: "schedulers" is not available in this version`)
+		if account.Flow != "" {
+			return nil, newError(`VLESS clients: "flow" is not available in this version`)
 		}
 		if account.Encryption != "" {
 			return nil, newError(`VLESS clients: "encryption" should not in inbound settings`)
@@ -161,8 +161,8 @@ func (c *VLessOutboundConfig) Build() (proto.Message, error) {
 				return nil, newError(`VLESS users: invalid user`).Base(err)
 			}
 
-			if account.Schedulers != "" {
-				return nil, newError(`VLESS users: "schedulers" is not available in this version`)
+			if account.Flow != "" {
+				return nil, newError(`VLESS users: "flow" is not available in this version`)
 			}
 			if account.Encryption != "none" {
 				return nil, newError(`VLESS users: please add/set "encryption":"none" for every user`)

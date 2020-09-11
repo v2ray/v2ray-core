@@ -105,7 +105,7 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	account := request.User.Account.(*vless.MemoryAccount)
 
 	requestAddons := &encoding.Addons{
-		Scheduler: account.Schedulers,
+		Flow: account.Flow,
 	}
 
 	sessionPolicy := v.policyManager.ForLevel(request.User.Level)
@@ -140,7 +140,7 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		}
 
 		// Indicates the end of request payload.
-		switch requestAddons.Scheduler {
+		switch requestAddons.Flow {
 		default:
 
 		}
