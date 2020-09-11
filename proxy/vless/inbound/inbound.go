@@ -417,7 +417,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 		responseAddons := &encoding.Addons{
-			Scheduler: requestAddons.Scheduler,
+			Flow: requestAddons.Flow,
 		}
 
 		bufferWriter := buf.NewBufferedWriter(buf.NewWriter(connection))
@@ -448,7 +448,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		}
 
 		// Indicates the end of response payload.
-		switch responseAddons.Scheduler {
+		switch responseAddons.Flow {
 		default:
 
 		}
