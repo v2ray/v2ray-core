@@ -71,7 +71,7 @@ func NewClientSession(idHash protocol.IDHash, ctx context.Context) *ClientSessio
 	} else {
 		BodyKey := sha256.Sum256(session.requestBodyKey[:])
 		copy(session.responseBodyKey[:], BodyKey[:16])
-		BodyIV := sha256.Sum256(session.requestBodyKey[:])
+		BodyIV := sha256.Sum256(session.requestBodyIV[:])
 		copy(session.responseBodyIV[:], BodyIV[:16])
 	}
 
