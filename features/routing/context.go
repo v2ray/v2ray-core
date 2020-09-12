@@ -6,7 +6,7 @@ import (
 
 // Context is a feature to store connection information for routing.
 //
-// v2ray:api:beta
+// v2ray:api:stable
 type Context interface {
 	// GetInboundTag returns the tag of the inbound the connection was from.
 	GetInboundTag() string
@@ -36,5 +36,5 @@ type Context interface {
 	GetUser() string
 
 	// GetAttributes returns extra attributes from the conneciont content.
-	GetAttributes() map[string]interface{}
+	GetAttributes() map[string]string
 }

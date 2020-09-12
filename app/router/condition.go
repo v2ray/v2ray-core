@@ -288,17 +288,11 @@ func NewAttributeMatcher(code string) (*AttributeMatcher, error) {
 	}, nil
 }
 
-func (m *AttributeMatcher) Match(attrs map[string]interface{}) bool {
+// Match implements attributes matching.
+func (m *AttributeMatcher) Match(attrs map[string]string) bool {
 	attrsDict := new(starlark.Dict)
 	for key, value := range attrs {
-		var starValue starlark.Value
-		switch value := value.(type) {
-		case string:
-			starValue = starlark.String(value)
-		}
-		if starValue != nil {
-			attrsDict.SetKey(starlark.String(key), starValue)
-		}
+		attrsDict.SetKey(starlark.String(key), starlark.String(value))
 	}
 
 	predefined := make(starlark.StringDict)
