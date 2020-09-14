@@ -12,6 +12,7 @@ import (
 	"hash"
 	"hash/fnv"
 	"io"
+	"os"
 	vmessaead "v2ray.com/core/proxy/vmess/aead"
 
 	"golang.org/x/crypto/chacha20poly1305"
@@ -59,6 +60,12 @@ func NewClientSession(idHash protocol.IDHash, ctx context.Context) *ClientSessio
 	if ctxValueAlterID := ctx.Value(vmess.AlterID); ctxValueAlterID != nil {
 		if ctxValueAlterID == 0 {
 			session.isAEADRequest = true
+		}
+	}
+
+	if vmessAeadDisable, vmessAeadDisableFound := os.LookupEnv("V2RAY_VMESS_AEAD_DISABLED"); vmessAeadDisableFound {
+		if vmessAeadDisable == "true" {
+			session.isAEADRequest = false
 		}
 	}
 
