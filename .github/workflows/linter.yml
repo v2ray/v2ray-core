@@ -32,6 +32,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: false
+          VALIDATE_ANSIBLE: false
           VALIDATE_BASH: false
           VALIDATE_DOCKERFILE: false
           VALIDATE_DOCKERFILE_HADOLINT: false
