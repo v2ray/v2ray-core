@@ -3,9 +3,13 @@ name: Linter
 on:
   push:
     branches: [master]
+    paths:
+      - "**/*.go"
   pull_request:
     branches: [master]
     types: [opened, synchronize, reopened]
+    paths:
+      - "**/*.go"
 
 jobs:
   lint:
