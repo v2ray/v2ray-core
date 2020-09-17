@@ -28,7 +28,7 @@ jobs:
 
       - name: Lint other files
         if: ${{ always() }}
-        uses: github/super-linter@v3.10.0
+        uses: github/super-linter@v3.10.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: false
