@@ -313,7 +313,7 @@ func TestRoutingRule(t *testing.T) {
 			},
 			test: []ruleTest{
 				{
-					input:  withContent(&session.Content{Protocol: "http/1.1", Attributes: map[string]interface{}{":path": "/test/1"}}),
+					input:  withContent(&session.Content{Protocol: "http/1.1", Attributes: map[string]string{":path": "/test/1"}}),
 					output: true,
 				},
 			},

@@ -53,6 +53,7 @@ type Outbound struct {
 	Gateway net.Address
 }
 
+// SniffingRequest controls the behavior of content sniffing.
 type SniffingRequest struct {
 	OverrideDestinationForProtocol []string
 	Enabled                        bool
@@ -65,7 +66,7 @@ type Content struct {
 
 	SniffingRequest SniffingRequest
 
-	Attributes map[string]interface{}
+	Attributes map[string]string
 
 	SkipRoutePick bool
 }
@@ -76,16 +77,18 @@ type Sockopt struct {
 	Mark int32
 }
 
-func (c *Content) SetAttribute(name string, value interface{}) {
+// SetAttribute attachs additional string attributes to content.
+func (c *Content) SetAttribute(name string, value string) {
 	if c.Attributes == nil {
-		c.Attributes = make(map[string]interface{})
+		c.Attributes = make(map[string]string)
 	}
 	c.Attributes[name] = value
 }
 
-func (c *Content) Attribute(name string) interface{} {
+// Attribute retrieves additional string attributes from content.
+func (c *Content) Attribute(name string) string {
 	if c.Attributes == nil {
-		return nil
+		return ""
 	}
 	return c.Attributes[name]
 }

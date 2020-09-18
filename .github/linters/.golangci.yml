@@ -4,6 +4,19 @@ run:
   skip-files:
     - generated.*
 
+issues:
+  new: true
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - goconst
+        - funlen
+        - lll
+
 linters:
   enable:
     - bodyclose
@@ -14,7 +27,6 @@ linters:
     - errcheck
     - exhaustive
     - funlen
-    - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
@@ -44,6 +56,3 @@ linters:
     - unused
     - varcheck
     - whitespace
-
-issues:
-  new: true

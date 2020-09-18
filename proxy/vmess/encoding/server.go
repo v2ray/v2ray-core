@@ -374,7 +374,7 @@ func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, wr
 	} else {
 		BodyKey := sha256.Sum256(s.requestBodyKey[:])
 		copy(s.responseBodyKey[:], BodyKey[:16])
-		BodyIV := sha256.Sum256(s.requestBodyKey[:])
+		BodyIV := sha256.Sum256(s.requestBodyIV[:])
 		copy(s.responseBodyIV[:], BodyIV[:16])
 	}
 
