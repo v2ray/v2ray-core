@@ -3,9 +3,13 @@ name: Linter
 on:
   push:
     branches: [master]
+    paths:
+      - "**/*.go"
   pull_request:
     branches: [master]
     types: [opened, synchronize, reopened]
+    paths:
+      - "**/*.go"
 
 jobs:
   lint:
@@ -18,27 +22,6 @@ jobs:
 
       - name: Checkout codebase
         uses: actions/checkout@v2
-
-      - name: Cache go module
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
-
-      - name: Lint other files
-        if: ${{ always() }}
-        uses: github/super-linter@v3.10.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_ALL_CODEBASE: false
-          VALIDATE_BASH: false
-          VALIDATE_DOCKERFILE: false
-          VALIDATE_DOCKERFILE_HADOLINT: false
-          VALIDATE_GO: false
-          VALIDATE_JSON: false
-          VALIDATE_MD: false
-          VALIDATE_PROTOBUF: false
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
