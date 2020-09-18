@@ -7,12 +7,26 @@ import (
 
 // Router is a feature to choose an outbound tag for the given request.
 //
-// v2ray:api:beta
+// v2ray:api:stable
 type Router interface {
 	features.Feature
 
-	// PickRoute returns a tag of an OutboundHandler based on the given context.
-	PickRoute(ctx Context) (string, error)
+	// PickRoute returns a route decision based on the given routing context.
+	PickRoute(ctx Context) (Route, error)
+}
+
+// Route is the routing result of Router feature.
+//
+// v2ray:api:stable
+type Route interface {
+	// A Route is also a routing context.
+	Context
+
+	// GetOutboundGroupTags returns the detoured outbound group tags in sequence before a final outbound is chosen.
+	GetOutboundGroupTags() []string
+
+	// GetOutboundTag returns the tag of the outbound the connection was dispatched to.
+	GetOutboundTag() string
 }
 
 // RouterType return the type of Router interface. Can be used to implement common.HasType.
@@ -31,8 +45,8 @@ func (DefaultRouter) Type() interface{} {
 }
 
 // PickRoute implements Router.
-func (DefaultRouter) PickRoute(ctx Context) (string, error) {
-	return "", common.ErrNoClue
+func (DefaultRouter) PickRoute(ctx Context) (Route, error) {
+	return nil, common.ErrNoClue
 }
 
 // Start implements common.Runnable.
