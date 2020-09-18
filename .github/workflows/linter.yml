@@ -28,3 +28,4 @@ jobs:
         with:
           version: v1.31
           args: --config=.github/linters/.golangci.yml
+          only-new-issues: true
