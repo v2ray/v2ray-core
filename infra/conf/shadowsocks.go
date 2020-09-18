@@ -28,6 +28,8 @@ func cipherFromString(c string) shadowsocks.CipherType {
 		return shadowsocks.CipherType_CHACHA20_POLY1305
 	case "none", "plain":
 		return shadowsocks.CipherType_NONE
+	case "rc4-md5":
+		return shadowsocks.CipherType_RC4_MD5
 	default:
 		return shadowsocks.CipherType_UNKNOWN
 	}

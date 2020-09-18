@@ -5,6 +5,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/md5"
+	"crypto/rc4"
 	"crypto/sha1"
 	"io"
 
@@ -74,6 +75,8 @@ func (a *Account) getCipher() (Cipher, error) {
 			IVBytes:         32,
 			AEADAuthCreator: createChacha20Poly1305,
 		}, nil
+	case CipherType_RC4_MD5:
+		return &RC4MD5{}, nil
 	case CipherType_NONE:
 		return NoneCipher{}, nil
 	default:
@@ -261,6 +264,58 @@ func (v *ChaCha20) DecodePacket(key []byte, b *buf.Buffer) error {
 	stream := crypto.NewChaCha20Stream(key, iv)
 	stream.XORKeyStream(b.BytesFrom(v.IVSize()), b.BytesFrom(v.IVSize()))
 	b.Advance(v.IVSize())
+	return nil
+}
+
+type RC4MD5 struct {
+}
+
+func (rm *RC4MD5) KeySize() int32 {
+	return 16
+}
+
+func (rm *RC4MD5) IVSize() int32 {
+	return 16
+}
+
+func (rm *RC4MD5) newCipherStream(key []byte, iv []byte) cipher.Stream {
+	h := md5.New()
+	h.Write(key)
+	h.Write(iv)
+	rc4key := h.Sum(nil)
+	c, _ := rc4.NewCipher(rc4key)
+	return c
+}
+
+func (rm *RC4MD5) NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) (buf.Writer, error) {
+	stream := rm.newCipherStream(key, iv)
+	return &buf.SequentialWriter{Writer: crypto.NewCryptionWriter(stream, writer)}, nil
+}
+
+func (rm *RC4MD5) NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error) {
+	stream := rm.newCipherStream(key, iv)
+	return &buf.SingleReader{Reader: crypto.NewCryptionReader(stream, reader)}, nil
+}
+
+func (rm *RC4MD5) IsAEAD() bool {
+	return false
+}
+
+func (rm *RC4MD5) EncodePacket(key []byte, b *buf.Buffer) error {
+	iv := b.BytesTo(rm.IVSize())
+	stream := rm.newCipherStream(key, iv)
+	stream.XORKeyStream(b.BytesFrom(rm.IVSize()), b.BytesFrom(rm.IVSize()))
+	return nil
+}
+
+func (rm *RC4MD5) DecodePacket(key []byte, b *buf.Buffer) error {
+	if b.Len() <= rm.IVSize() {
+		return newError("insufficient data: ", b.Len())
+	}
+	iv := b.BytesTo(rm.IVSize())
+	stream := rm.newCipherStream(key, iv)
+	stream.XORKeyStream(b.BytesFrom(rm.IVSize()), b.BytesFrom(rm.IVSize()))
+	b.Advance(rm.IVSize())
 	return nil
 }
 
