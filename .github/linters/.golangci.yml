@@ -1,4 +1,5 @@
 run:
+  timeout: 5m
   skip-dirs:
     - external
   skip-files:
