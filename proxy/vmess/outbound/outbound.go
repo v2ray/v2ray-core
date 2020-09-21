@@ -6,6 +6,7 @@ package outbound
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"v2ray.com/core"
@@ -30,6 +31,7 @@ type Handler struct {
 	serverList    *protocol.ServerList
 	serverPicker  protocol.ServerPicker
 	policyManager policy.Manager
+	aead_disabled bool
 }
 
 // New creates a new VMess outbound handler.
@@ -50,16 +52,20 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
 	}
 
+	if disabled, _ := os.LookupEnv("V2RAY_VMESS_AEAD_DISABLED"); disabled == "true" {
+		handler.aead_disabled = true
+	}
+
 	return handler, nil
 }
 
 // Process implements proxy.Outbound.Process().
-func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
+func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
 	err := retry.ExponentialBackoff(5, 200).On(func() error {
-		rec = v.serverPicker.PickServer()
+		rec = h.serverPicker.PickServer()
 		rawConn, err := dialer.Dial(ctx, rec.Destination())
 		if err != nil {
 			return err
@@ -113,10 +119,13 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	input := link.Reader
 	output := link.Writer
 
-	ctx = context.WithValue(ctx, vmess.AlterID, len(account.AlterIDs))
+	isAEAD := false
+	if !h.aead_disabled && len(account.AlterIDs) == 0 {
+		isAEAD = true
+	}
 
-	session := encoding.NewClientSession(protocol.DefaultIDHash, ctx)
-	sessionPolicy := v.policyManager.ForLevel(request.User.Level)
+	session := encoding.NewClientSession(isAEAD, protocol.DefaultIDHash, ctx)
+	sessionPolicy := h.policyManager.ForLevel(request.User.Level)
 
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
@@ -159,7 +168,7 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		if err != nil {
 			return newError("failed to read header").Base(err)
 		}
-		v.handleCommand(rec.Destination(), header.Command)
+		h.handleCommand(rec.Destination(), header.Command)
 
 		bodyReader := session.DecodeResponseBody(request, reader)
 
