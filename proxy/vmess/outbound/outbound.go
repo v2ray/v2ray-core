@@ -6,7 +6,6 @@ package outbound
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"v2ray.com/core"
@@ -31,7 +30,6 @@ type Handler struct {
 	serverList    *protocol.ServerList
 	serverPicker  protocol.ServerPicker
 	policyManager policy.Manager
-	aead_disabled bool
 }
 
 // New creates a new VMess outbound handler.
@@ -50,10 +48,6 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		serverList:    serverList,
 		serverPicker:  protocol.NewRoundRobinServerPicker(serverList),
 		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
-	}
-
-	if disabled, _ := os.LookupEnv("V2RAY_VMESS_AEAD_DISABLED"); disabled == "true" {
-		handler.aead_disabled = true
 	}
 
 	return handler, nil
@@ -120,7 +114,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	output := link.Writer
 
 	isAEAD := false
-	if !h.aead_disabled && len(account.AlterIDs) == 0 {
+	if !aead_disabled && len(account.AlterIDs) == 0 {
 		isAEAD = true
 	}
 
@@ -185,6 +179,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 
 var (
 	enablePadding = false
+	aead_disabled = false
 )
 
 func shouldEnablePadding(s protocol.SecurityType) bool {
@@ -197,8 +192,14 @@ func init() {
 	}))
 
 	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+
 	paddingValue := platform.NewEnvFlag("v2ray.vmess.padding").GetValue(func() string { return defaultFlagValue })
 	if paddingValue != defaultFlagValue {
 		enablePadding = true
+	}
+
+	aeadDisabled := platform.NewEnvFlag("v2ray.vmess.aead.disabled").GetValue(func() string { return defaultFlagValue })
+	if aeadDisabled == "true" {
+		aead_disabled = true
 	}
 }
