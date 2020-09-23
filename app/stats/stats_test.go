@@ -42,7 +42,8 @@ func TestStatsChannelRunnable(t *testing.T) {
 		t.Fatalf("unexpected non-running channel: test.channel.%d", 2)
 	}
 
-	s1 := c1.Subscribe()
+	s1, err := c1.Subscribe()
+	common.Must(err)
 	common.Must(c1.Close())
 
 	if c1.Running() {
