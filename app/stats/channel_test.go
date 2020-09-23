@@ -1,7 +1,6 @@
 package stats_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -12,25 +11,30 @@ import (
 )
 
 func TestStatsChannel(t *testing.T) {
-	raw, err := common.CreateObject(context.Background(), &Config{})
+	// At most 2 subscribers could be registered
+	c := NewChannel(&ChannelConfig{SubscriberLimit: 2})
+	source := c.Channel()
+
+	a, err := stats.SubscribeRunnableChannel(c)
+	common.Must(err)
+	if !c.Running() {
+		t.Fatal("unexpected failure in running channel after first subscription")
+	}
+
+	b, err := c.Subscribe()
 	common.Must(err)
 
-	m := raw.(stats.Manager)
-	c, err := m.RegisterChannel("test.channel")
-	common.Must(err)
-	common.Must(m.Start())
-	defer m.Close()
-
-	source := c.(*Channel).Channel()
-	a := c.Subscribe()
-	b := c.Subscribe()
-	defer c.Unsubscribe(a)
-	defer c.Unsubscribe(b)
+	// Test that third subscriber is forbidden
+	_, err = c.Subscribe()
+	if err == nil {
+		t.Fatal("unexpected successful subscription")
+	}
+	t.Log("expected error: ", err)
 
 	stopCh := make(chan struct{})
 	errCh := make(chan string)
 
-	go func() {
+	go func() { // Blocking publish
 		source <- 1
 		source <- 2
 		source <- "3"
@@ -84,21 +88,30 @@ func TestStatsChannel(t *testing.T) {
 		t.Fatal(e)
 	case <-stopCh:
 	}
+
+	// Test the unsubscription of channel
+	common.Must(c.Unsubscribe(b))
+
+	// Test the last subscriber will close channel with `UnsubscribeClosableChannel`
+	common.Must(stats.UnsubscribeClosableChannel(c, a))
+	if c.Running() {
+		t.Fatal("unexpected running channel after unsubscribing the last subscriber")
+	}
 }
 
 func TestStatsChannelUnsubcribe(t *testing.T) {
-	raw, err := common.CreateObject(context.Background(), &Config{})
-	common.Must(err)
+	c := NewChannel(&ChannelConfig{})
+	common.Must(c.Start())
+	defer c.Close()
 
-	m := raw.(stats.Manager)
-	c, err := m.RegisterChannel("test.channel")
-	common.Must(err)
-	common.Must(m.Start())
-	defer m.Close()
+	source := c.Channel()
 
-	a := c.Subscribe()
-	b := c.Subscribe()
+	a, err := c.Subscribe()
+	common.Must(err)
 	defer c.Unsubscribe(a)
+
+	b, err := c.Subscribe()
+	common.Must(err)
 
 	pauseCh := make(chan struct{})
 	stopCh := make(chan struct{})
@@ -119,10 +132,10 @@ func TestStatsChannelUnsubcribe(t *testing.T) {
 		}
 	}
 
-	go func() {
-		c.Publish(1)
+	go func() { // Blocking publish
+		source <- 1
 		<-pauseCh // Wait for `b` goroutine to resume sending message
-		c.Publish(2)
+		source <- 2
 	}()
 
 	go func() {
@@ -179,26 +192,27 @@ func TestStatsChannelUnsubcribe(t *testing.T) {
 }
 
 func TestStatsChannelTimeout(t *testing.T) {
-	raw, err := common.CreateObject(context.Background(), &Config{})
-	common.Must(err)
+	// Do not use buffer so as to create blocking scenario
+	c := NewChannel(&ChannelConfig{BufferSize: 0, BroadcastTimeout: 50})
+	common.Must(c.Start())
+	defer c.Close()
 
-	m := raw.(stats.Manager)
-	c, err := m.RegisterChannel("test.channel")
-	common.Must(err)
-	common.Must(m.Start())
-	defer m.Close()
+	source := c.Channel()
 
-	a := c.Subscribe()
-	b := c.Subscribe()
+	a, err := c.Subscribe()
+	common.Must(err)
 	defer c.Unsubscribe(a)
+
+	b, err := c.Subscribe()
+	common.Must(err)
 	defer c.Unsubscribe(b)
 
 	stopCh := make(chan struct{})
 	errCh := make(chan string)
 
-	go func() {
-		c.Publish(1)
-		c.Publish(2)
+	go func() { // Blocking publish
+		source <- 1
+		source <- 2
 	}()
 
 	go func() {
@@ -229,7 +243,7 @@ func TestStatsChannelTimeout(t *testing.T) {
 			errCh <- fmt.Sprint("unexpected receiving: ", v, ", wanted ", 1)
 		}
 		// Block `b` channel for a time longer than `source`'s timeout
-		<-time.After(150 * time.Millisecond)
+		<-time.After(200 * time.Millisecond)
 		{ // Test `b` has been unsubscribed by source
 			var aSet, bSet bool
 			for _, s := range c.Subscribers() {
@@ -264,25 +278,27 @@ func TestStatsChannelTimeout(t *testing.T) {
 }
 
 func TestStatsChannelConcurrency(t *testing.T) {
-	raw, err := common.CreateObject(context.Background(), &Config{})
-	common.Must(err)
+	// Do not use buffer so as to create blocking scenario
+	c := NewChannel(&ChannelConfig{BufferSize: 0, BroadcastTimeout: 100})
+	common.Must(c.Start())
+	defer c.Close()
 
-	m := raw.(stats.Manager)
-	c, err := m.RegisterChannel("test.channel")
-	common.Must(err)
-	common.Must(m.Start())
-	defer m.Close()
+	source := c.Channel()
 
-	a := c.Subscribe()
-	b := c.Subscribe()
+	a, err := c.Subscribe()
+	common.Must(err)
 	defer c.Unsubscribe(a)
+
+	b, err := c.Subscribe()
+	common.Must(err)
+	defer c.Unsubscribe(b)
 
 	stopCh := make(chan struct{})
 	errCh := make(chan string)
 
-	go func() {
-		c.Publish(1)
-		c.Publish(2)
+	go func() { // Blocking publish
+		source <- 1
+		source <- 2
 	}()
 
 	go func() {

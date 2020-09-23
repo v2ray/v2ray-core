@@ -8,6 +8,8 @@ import (
 	"context"
 	"sync"
 
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/features/stats"
 )
 
@@ -92,10 +94,10 @@ func (m *Manager) RegisterChannel(name string) (stats.Channel, error) {
 		return nil, newError("Channel ", name, " already registered.")
 	}
 	newError("create new channel ", name).AtDebug().WriteToLog()
-	c := new(Channel)
+	c := NewChannel(&ChannelConfig{BufferSize: 16, BroadcastTimeout: 100})
 	m.channels[name] = c
 	if m.running {
-		c.Start()
+		return c, c.Start()
 	}
 	return c, nil
 }
@@ -108,7 +110,7 @@ func (m *Manager) UnregisterChannel(name string) error {
 	if c, found := m.channels[name]; found {
 		newError("remove channel ", name).AtDebug().WriteToLog()
 		delete(m.channels, name)
-		c.Close()
+		return c.Close()
 	}
 	return nil
 }
@@ -129,8 +131,14 @@ func (m *Manager) Start() error {
 	m.access.Lock()
 	defer m.access.Unlock()
 	m.running = true
+	errs := []error{}
 	for _, channel := range m.channels {
-		channel.Start()
+		if err := channel.Start(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) != 0 {
+		return errors.Combine(errs...)
 	}
 	return nil
 }
@@ -140,10 +148,22 @@ func (m *Manager) Close() error {
 	m.access.Lock()
 	defer m.access.Unlock()
 	m.running = false
+	errs := []error{}
 	for name, channel := range m.channels {
 		newError("remove channel ", name).AtDebug().WriteToLog()
 		delete(m.channels, name)
-		channel.Close()
+		if err := channel.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) != 0 {
+		return errors.Combine(errs...)
 	}
 	return nil
+}
+
+func init() {
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewManager(ctx, config.(*Config))
+	}))
 }
