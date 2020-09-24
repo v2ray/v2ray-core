@@ -19,13 +19,12 @@ func EncodeHeaderAddons(buffer *buf.Buffer, addons *Addons) error {
 
 		if bytes, err := proto.Marshal(addons); err != nil {
 			return newError("failed to marshal addons protobuf value").Base(err)
-		} else {
-			if err := buffer.WriteByte(byte(len(bytes))); err != nil {
-				return newError("failed to write addons protobuf length").Base(err)
-			}
-			if _, err := buffer.Write(bytes); err != nil {
-				return newError("failed to write addons protobuf value").Base(err)
-			}
+		}
+		if err := buffer.WriteByte(byte(len(bytes))); err != nil {
+			return newError("failed to write addons protobuf length").Base(err)
+		}
+		if _, err := buffer.Write(bytes); err != nil {
+			return newError("failed to write addons protobuf value").Base(err)
 		}
 
 	default:
