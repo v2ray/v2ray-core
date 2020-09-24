@@ -153,23 +153,23 @@ func EncodeResponseHeader(writer io.Writer, request *protocol.RequestHeader, res
 }
 
 // DecodeResponseHeader decodes and returns (if successful) a ResponseHeader from an input stream.
-func DecodeResponseHeader(reader io.Reader, request *protocol.RequestHeader, responseAddons *Addons) error {
+func DecodeResponseHeader(reader io.Reader, request *protocol.RequestHeader) (*Addons, error) {
 
 	buffer := buf.StackNew()
 	defer buffer.Release()
 
 	if _, err := buffer.ReadFullFrom(reader, 1); err != nil {
-		return newError("failed to read response version").Base(err)
+		return nil, newError("failed to read response version").Base(err)
 	}
 
 	if buffer.Byte(0) != request.Version {
-		return newError("unexpected response version. Expecting ", int(request.Version), " but actually ", int(buffer.Byte(0)))
+		return nil, newError("unexpected response version. Expecting ", int(request.Version), " but actually ", int(buffer.Byte(0)))
 	}
 
 	responseAddons, err := DecodeHeaderAddons(&buffer, reader)
 	if err != nil {
-		return newError("failed to decode response header addons").Base(err)
+		return nil, newError("failed to decode response header addons").Base(err)
 	}
 
-	return nil
+	return responseAddons, nil
 }

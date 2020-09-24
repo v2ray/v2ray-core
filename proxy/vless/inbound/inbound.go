@@ -6,7 +6,6 @@ package inbound
 
 import (
 	"context"
-	"encoding/hex"
 	"io"
 	"strconv"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/platform"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/session"
@@ -30,6 +30,11 @@ import (
 	"v2ray.com/core/proxy/vless/encoding"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
+	"v2ray.com/core/transport/internet/xtls"
+)
+
+var (
+	xtls_show = false
 )
 
 func init() {
@@ -43,6 +48,13 @@ func init() {
 		}
 		return New(ctx, config.(*Config), dc)
 	}))
+
+	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+
+	xtlsShow := platform.NewEnvFlag("v2ray.vless.xtls.show").GetValue(func() string { return defaultFlagValue })
+	if xtlsShow == "true" {
+		xtls_show = true
+	}
 }
 
 // Handler is an inbound connection handler that handles messages in VLess protocol.
@@ -135,6 +147,11 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 
 	sid := session.ExportIDToError(ctx)
 
+	iConn := connection
+	if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
+		iConn = statConn.Connection
+	}
+
 	sessionPolicy := h.policyManager.ForLevel(0)
 	if err := connection.SetReadDeadline(time.Now().Add(sessionPolicy.Timeouts.Handshake)); err != nil {
 		return newError("unable to set read deadline").Base(err).AtWarning()
@@ -183,16 +200,15 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 
 			alpn := ""
 			if len(apfb) > 1 || apfb[""] == nil {
-				iConn := connection
-				if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
-					iConn = statConn.Connection
-				}
 				if tlsConn, ok := iConn.(*tls.Conn); ok {
 					alpn = tlsConn.ConnectionState().NegotiatedProtocol
 					newError("realAlpn = " + alpn).AtInfo().WriteToLog(sid)
-					if apfb[alpn] == nil {
-						alpn = ""
-					}
+				} else if xtlsConn, ok := iConn.(*xtls.Conn); ok {
+					alpn = xtlsConn.ConnectionState().NegotiatedProtocol
+					newError("realAlpn = " + alpn).AtInfo().WriteToLog(sid)
+				}
+				if apfb[alpn] == nil {
+					alpn = ""
 				}
 			}
 			pfb := apfb[alpn]
@@ -307,18 +323,9 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 							pro.Write(net.ParseIP(remoteAddr).To16())
 							pro.Write(net.ParseIP(localAddr).To16())
 						}
-						p1, _ := strconv.ParseInt(remotePort, 10, 64)
-						b1, _ := hex.DecodeString(strconv.FormatInt(p1, 16))
-						p2, _ := strconv.ParseInt(localPort, 10, 64)
-						b2, _ := hex.DecodeString(strconv.FormatInt(p2, 16))
-						if len(b1) == 1 {
-							pro.WriteByte(0)
-						}
-						pro.Write(b1)
-						if len(b2) == 1 {
-							pro.WriteByte(0)
-						}
-						pro.Write(b2)
+						p1, _ := strconv.ParseUint(remotePort, 10, 16)
+						p2, _ := strconv.ParseUint(localPort, 10, 16)
+						pro.Write([]byte{byte(p1 >> 8), byte(p1), byte(p2 >> 8), byte(p2)})
 					}
 					if err := serverWriter.WriteMultiBuffer(buf.MultiBuffer{pro}); err != nil {
 						return newError("failed to set PROXY protocol v", fb.Xver).Base(err).AtWarning()
@@ -376,6 +383,34 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	}
 	inbound.User = request.User
 
+	account := request.User.Account.(*vless.MemoryAccount)
+
+	responseAddons := &encoding.Addons{
+		Flow: requestAddons.Flow,
+	}
+
+	switch requestAddons.Flow {
+	case vless.XRO:
+		if account.Flow == vless.XRO {
+			switch request.Command {
+			case protocol.RequestCommandMux:
+				return newError(vless.XRO + " doesn't support Mux").AtWarning()
+			case protocol.RequestCommandUDP:
+				//return newError(vless.XRO + " doesn't support UDP").AtWarning()
+			case protocol.RequestCommandTCP:
+				if xtlsConn, ok := iConn.(*xtls.Conn); ok {
+					xtlsConn.RPRX = true
+					xtlsConn.SHOW = xtls_show
+					xtlsConn.MARK = "XTLS"
+				} else {
+					return newError(`failed to use ` + vless.XRO + `, maybe "security" is not "xtls"`).AtWarning()
+				}
+			}
+		} else {
+			return newError(account.ID.String() + " is not able to use " + vless.XRO).AtWarning()
+		}
+	}
+
 	if request.Command != protocol.RequestCommandMux {
 		ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 			From:   connection.RemoteAddr(),
@@ -396,8 +431,8 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		return newError("failed to dispatch request to ", request.Destination()).Base(err).AtWarning()
 	}
 
-	serverReader := link.Reader
-	serverWriter := link.Writer
+	serverReader := link.Reader // .(*pipe.Reader)
+	serverWriter := link.Writer // .(*pipe.Writer)
 
 	postRequest := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
@@ -415,10 +450,6 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 
 	getResponse := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
-
-		responseAddons := &encoding.Addons{
-			Flow: requestAddons.Flow,
-		}
 
 		bufferWriter := buf.NewBufferedWriter(buf.NewWriter(connection))
 		if err := encoding.EncodeResponseHeader(bufferWriter, request, responseAddons); err != nil {
