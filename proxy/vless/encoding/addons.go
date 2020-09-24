@@ -192,7 +192,7 @@ func (r *LengthPacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	if _, err := io.ReadFull(r.Reader, r.cache); err != nil { // maybe EOF
 		return nil, newError("failed to read packet length").Base(err)
 	}
-	length := int(r.cache[0])<<8 | int(r.cache[1])
+	length := int32(r.cache[0])<<8 | int32(r.cache[1])
 	//fmt.Println("Read", length)
 	mb := make(buf.MultiBuffer, 0, length/buf.Size+1)
 	for length > 0 {
@@ -202,7 +202,7 @@ func (r *LengthPacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		}
 		length -= size
 		b := buf.New()
-		if _, err := b.ReadFullFrom(r.Reader, int32(size)); err != nil {
+		if _, err := b.ReadFullFrom(r.Reader, size); err != nil {
 			return nil, newError("failed to read packet payload").Base(err)
 		}
 		mb = append(mb, b)
