@@ -17,7 +17,8 @@ func EncodeHeaderAddons(buffer *buf.Buffer, addons *Addons) error {
 	switch addons.Flow {
 	case vless.XRO:
 
-		if bytes, err := proto.Marshal(addons); err != nil {
+		bytes, err := proto.Marshal(addons)
+		if err != nil {
 			return newError("failed to marshal addons protobuf value").Base(err)
 		}
 		if err := buffer.WriteByte(byte(len(bytes))); err != nil {
