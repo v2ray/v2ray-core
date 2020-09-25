@@ -50,10 +50,10 @@ build_v2() {
 
 build_dat() {
 	echo ">>> Downloading newest geoip ..."
-	curl -s -L -o "$TMP"/geoip.dat "https://github.com/v2ray/geoip/raw/release/geoip.dat"
+	curl -s -L -o "$TMP"/geoip.dat "https://github.com/v2fly/geoip/raw/release/geoip.dat"
 
 	echo ">>> Downloading newest geosite ..."
-	curl -s -L -o "$TMP"/geosite.dat "https://github.com/v2ray/domain-list-community/raw/release/dlc.dat"
+	curl -s -L -o "$TMP"/geosite.dat "https://github.com/v2fly/domain-list-community/raw/release/dlc.dat"
 }
 
 copyconf() {
