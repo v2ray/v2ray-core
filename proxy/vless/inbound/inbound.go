@@ -386,7 +386,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	account := request.User.Account.(*vless.MemoryAccount)
 
 	responseAddons := &encoding.Addons{
-		Flow: requestAddons.Flow,
+		//Flow: requestAddons.Flow,
 	}
 
 	switch requestAddons.Flow {
@@ -396,7 +396,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 			case protocol.RequestCommandMux:
 				return newError(vless.XRO + " doesn't support Mux").AtWarning()
 			case protocol.RequestCommandUDP:
-				//return newError(vless.XRO + " doesn't support UDP").AtWarning()
+				return newError(vless.XRO + " doesn't support UDP").AtWarning()
 			case protocol.RequestCommandTCP:
 				if xtlsConn, ok := iConn.(*xtls.Conn); ok {
 					xtlsConn.RPRX = true

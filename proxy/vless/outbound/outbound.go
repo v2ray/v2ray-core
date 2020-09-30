@@ -135,7 +135,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 			if requestAddons.Flow == vless.XRO && request.Port == 443 {
 				return newError(vless.XRO + " stopped UDP/443").AtWarning()
 			}
-			requestAddons.Flow = vless.XRO
+			requestAddons.Flow = ""
 		case protocol.RequestCommandTCP:
 			if xtlsConn, ok := iConn.(*xtls.Conn); ok {
 				xtlsConn.RPRX = true

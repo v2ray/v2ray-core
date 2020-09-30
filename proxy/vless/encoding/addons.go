@@ -76,7 +76,7 @@ func DecodeHeaderAddons(buffer *buf.Buffer, reader io.Reader) (*Addons, error) {
 func EncodeBodyAddons(writer io.Writer, request *protocol.RequestHeader, addons *Addons) buf.Writer {
 
 	switch addons.Flow {
-	case vless.XRO:
+	default:
 
 		if request.Command == protocol.RequestCommandUDP {
 			return NewMultiLengthPacketWriter(writer.(buf.Writer))
@@ -92,7 +92,7 @@ func EncodeBodyAddons(writer io.Writer, request *protocol.RequestHeader, addons 
 func DecodeBodyAddons(reader io.Reader, request *protocol.RequestHeader, addons *Addons) buf.Reader {
 
 	switch addons.Flow {
-	case vless.XRO:
+	default:
 
 		if request.Command == protocol.RequestCommandUDP {
 			return NewLengthPacketReader(reader)
@@ -197,7 +197,7 @@ func (r *LengthPacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	mb := make(buf.MultiBuffer, 0, length/buf.Size+1)
 	for length > 0 {
 		size := length
-		if length > buf.Size {
+		if size > buf.Size {
 			size = buf.Size
 		}
 		length -= size
