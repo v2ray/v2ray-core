@@ -15,6 +15,7 @@ on:
 
 jobs:
   analyze:
+    if: github.repository != 'v2ray/v2ray-core'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
