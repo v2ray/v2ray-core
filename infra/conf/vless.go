@@ -48,9 +48,12 @@ func (c *VLessInboundConfig) Build() (proto.Message, error) {
 			return nil, newError(`VLESS clients: invalid user`).Base(err)
 		}
 
-		if account.Flow != "" {
-			return nil, newError(`VLESS clients: "flow" is not available in this version`)
+		switch account.Flow {
+		case "", "xtls-rprx-origin":
+		default:
+			return nil, newError(`VLESS clients: "flow" only accepts "", "xtls-rprx-origin" in this version`)
 		}
+
 		if account.Encryption != "" {
 			return nil, newError(`VLESS clients: "encryption" should not in inbound settings`)
 		}
@@ -161,9 +164,12 @@ func (c *VLessOutboundConfig) Build() (proto.Message, error) {
 				return nil, newError(`VLESS users: invalid user`).Base(err)
 			}
 
-			if account.Flow != "" {
-				return nil, newError(`VLESS users: "flow" is not available in this version`)
+			switch account.Flow {
+			case "", "xtls-rprx-origin", "xtls-rprx-origin-udp443":
+			default:
+				return nil, newError(`VLESS users: "flow" only accepts "", "xtls-rprx-origin", "xtls-rprx-origin-udp443" in this version`)
 			}
+
 			if account.Encryption != "none" {
 				return nil, newError(`VLESS users: please add/set "encryption":"none" for every user`)
 			}

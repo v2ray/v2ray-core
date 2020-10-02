@@ -99,13 +99,22 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		address := endpoint.Address.AsAddress()
 		if address.Family().IsDomain() && address.Domain() == "localhost" {
 			server.clients = append(server.clients, NewLocalNameServer())
-			if len(ns.PrioritizedDomain) == 0 { // Priotize local domain with .local domain or without any dot to local DNS
-				ns.PrioritizedDomain = []*NameServer_PriorityDomain{
-					{Type: DomainMatchingType_Regex, Domain: "^[^.]*$"}, // This will only match domain without any dot
-					{Type: DomainMatchingType_Subdomain, Domain: "local"},
-					{Type: DomainMatchingType_Subdomain, Domain: "localdomain"},
-				}
+			// Priotize local domains with specific TLDs or without any dot to local DNS
+			// References:
+			// https://www.iana.org/assignments/special-use-domain-names/special-use-domain-names.xhtml
+			// https://unix.stackexchange.com/questions/92441/whats-the-difference-between-local-home-and-lan
+			localTLDsAndDotlessDomains := []*NameServer_PriorityDomain{
+				{Type: DomainMatchingType_Regex, Domain: "^[^.]+$"}, // This will only match domains without any dot
+				{Type: DomainMatchingType_Subdomain, Domain: "local"},
+				{Type: DomainMatchingType_Subdomain, Domain: "localdomain"},
+				{Type: DomainMatchingType_Subdomain, Domain: "localhost"},
+				{Type: DomainMatchingType_Subdomain, Domain: "lan"},
+				{Type: DomainMatchingType_Subdomain, Domain: "home.arpa"},
+				{Type: DomainMatchingType_Subdomain, Domain: "example"},
+				{Type: DomainMatchingType_Subdomain, Domain: "invalid"},
+				{Type: DomainMatchingType_Subdomain, Domain: "test"},
 			}
+			ns.PrioritizedDomain = append(ns.PrioritizedDomain, localTLDsAndDotlessDomains...)
 		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "https+local://") {
 			// URI schemed string treated as domain
 			// DOH Local mode

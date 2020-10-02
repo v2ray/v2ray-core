@@ -6,3 +6,7 @@
 package vless
 
 //go:generate errorgen
+
+const (
+	XRO = "xtls-rprx-origin"
+)

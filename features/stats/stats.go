@@ -2,7 +2,10 @@ package stats
 
 //go:generate errorgen
 
-import "v2ray.com/core/features"
+import (
+	"v2ray.com/core/common"
+	"v2ray.com/core/features"
+)
 
 // Counter is the interface for stats counters.
 //
@@ -16,18 +19,41 @@ type Counter interface {
 	Add(int64) int64
 }
 
-// Channel is the interface for stats channel
+// Channel is the interface for stats channel.
 //
 // v2ray:api:stable
 type Channel interface {
-	// Channel returns the underlying go channel.
-	Channel() chan interface{}
+	// Channel is a runnable unit.
+	common.Runnable
+	// Publish broadcasts a message through the channel.
+	Publish(interface{})
 	// SubscriberCount returns the number of the subscribers.
 	Subscribers() []chan interface{}
 	// Subscribe registers for listening to channel stream and returns a new listener channel.
-	Subscribe() chan interface{}
+	Subscribe() (chan interface{}, error)
 	// Unsubscribe unregisters a listener channel from current Channel object.
-	Unsubscribe(chan interface{})
+	Unsubscribe(chan interface{}) error
+}
+
+// SubscribeRunnableChannel subscribes the channel and starts it if there is first subscriber coming.
+func SubscribeRunnableChannel(c Channel) (chan interface{}, error) {
+	if len(c.Subscribers()) == 0 {
+		if err := c.Start(); err != nil {
+			return nil, err
+		}
+	}
+	return c.Subscribe()
+}
+
+// UnsubscribeClosableChannel unsubcribes the channel and close it if there is no more subscriber.
+func UnsubscribeClosableChannel(c Channel, sub chan interface{}) error {
+	if err := c.Unsubscribe(sub); err != nil {
+		return err
+	}
+	if len(c.Subscribers()) == 0 {
+		return c.Close()
+	}
+	return nil
 }
 
 // Manager is the interface for stats manager.

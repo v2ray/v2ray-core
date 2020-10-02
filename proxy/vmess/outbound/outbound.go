@@ -54,12 +54,12 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 }
 
 // Process implements proxy.Outbound.Process().
-func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
+func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
 	err := retry.ExponentialBackoff(5, 200).On(func() error {
-		rec = v.serverPicker.PickServer()
+		rec = h.serverPicker.PickServer()
 		rawConn, err := dialer.Dial(ctx, rec.Destination())
 		if err != nil {
 			return err
@@ -113,10 +113,13 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	input := link.Reader
 	output := link.Writer
 
-	ctx = context.WithValue(ctx, vmess.AlterID, len(account.AlterIDs))
+	isAEAD := false
+	if !aead_disabled && len(account.AlterIDs) == 0 {
+		isAEAD = true
+	}
 
-	session := encoding.NewClientSession(protocol.DefaultIDHash, ctx)
-	sessionPolicy := v.policyManager.ForLevel(request.User.Level)
+	session := encoding.NewClientSession(isAEAD, protocol.DefaultIDHash, ctx)
+	sessionPolicy := h.policyManager.ForLevel(request.User.Level)
 
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
@@ -159,7 +162,7 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		if err != nil {
 			return newError("failed to read header").Base(err)
 		}
-		v.handleCommand(rec.Destination(), header.Command)
+		h.handleCommand(rec.Destination(), header.Command)
 
 		bodyReader := session.DecodeResponseBody(request, reader)
 
@@ -176,6 +179,7 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 
 var (
 	enablePadding = false
+	aead_disabled = false
 )
 
 func shouldEnablePadding(s protocol.SecurityType) bool {
@@ -188,8 +192,14 @@ func init() {
 	}))
 
 	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+
 	paddingValue := platform.NewEnvFlag("v2ray.vmess.padding").GetValue(func() string { return defaultFlagValue })
 	if paddingValue != defaultFlagValue {
 		enablePadding = true
+	}
+
+	aeadDisabled := platform.NewEnvFlag("v2ray.vmess.aead.disabled").GetValue(func() string { return defaultFlagValue })
+	if aeadDisabled == "true" {
+		aead_disabled = true
 	}
 }

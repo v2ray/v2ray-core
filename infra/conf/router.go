@@ -162,7 +162,7 @@ func loadIP(filename, country string) ([]*router.CIDR, error) {
 		}
 	}
 
-	return nil, newError("country not found: " + country)
+	return nil, newError("country not found in ", filename, ": ", country)
 }
 
 func loadSite(filename, country string) ([]*router.Domain, error) {
@@ -181,7 +181,7 @@ func loadSite(filename, country string) ([]*router.Domain, error) {
 		}
 	}
 
-	return nil, newError("country not found: " + country)
+	return nil, newError("list not found in ", filename, ": ", country)
 }
 
 type AttributeMatcher interface {

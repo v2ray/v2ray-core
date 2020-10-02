@@ -1,4 +1,4 @@
-name: "CodeQL"
+name: CodeQL
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
     paths:
       - "**/*.go"
   pull_request:
-    # The branches below must be a subset of the branches above
     branches: [master]
+    types: [opened, synchronize, reopened]
     paths:
       - "**/*.go"
   schedule:
@@ -15,9 +15,7 @@ on:
 
 jobs:
   analyze:
-    name: Analyze
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
