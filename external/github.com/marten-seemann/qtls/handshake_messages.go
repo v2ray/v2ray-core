@@ -1526,7 +1526,7 @@ func (m *certificateMsg13) equal(i interface{}) bool {
 	if len(m.certificates) != len(m1.certificates) {
 		return false
 	}
-	for i, _ := range m.certificates {
+	for i := range m.certificates {
 		ok := bytes.Equal(m.certificates[i].data, m1.certificates[i].data)
 		ok = ok && bytes.Equal(m.certificates[i].ocspStaple, m1.certificates[i].ocspStaple)
 		ok = ok && eqByteSlices(m.certificates[i].sctList, m1.certificates[i].sctList)
