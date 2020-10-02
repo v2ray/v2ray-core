@@ -3,6 +3,8 @@ package stats
 //go:generate errorgen
 
 import (
+	"context"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/features"
 )
@@ -25,8 +27,8 @@ type Counter interface {
 type Channel interface {
 	// Channel is a runnable unit.
 	common.Runnable
-	// Publish broadcasts a message through the channel.
-	Publish(interface{})
+	// Publish broadcasts a message through the channel with a controlling context.
+	Publish(context.Context, interface{})
 	// SubscriberCount returns the number of the subscribers.
 	Subscribers() []chan interface{}
 	// Subscribe registers for listening to channel stream and returns a new listener channel.

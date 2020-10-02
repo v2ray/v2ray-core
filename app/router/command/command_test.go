@@ -21,9 +21,9 @@ import (
 
 func TestServiceSubscribeRoutingStats(t *testing.T) {
 	c := stats.NewChannel(&stats.ChannelConfig{
-		SubscriberLimit:  1,
-		BufferSize:       16,
-		BroadcastTimeout: 100,
+		SubscriberLimit: 1,
+		BufferSize:      0,
+		Blocking:        true,
 	})
 	common.Must(c.Start())
 	defer c.Close()
@@ -55,122 +55,138 @@ func TestServiceSubscribeRoutingStats(t *testing.T) {
 
 	// Publisher goroutine
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		for { // Wait until there's one subscriber in routing stats channel
-			if len(c.Subscribers()) > 0 {
-				break
+		publishTestCases := func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			for { // Wait until there's one subscriber in routing stats channel
+				if len(c.Subscribers()) > 0 {
+					break
+				}
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
 			}
-			if ctx.Err() != nil {
-				errCh <- ctx.Err()
+			for _, tc := range testCases {
+				c.Publish(context.Background(), AsRoutingRoute(tc))
+				time.Sleep(time.Millisecond)
 			}
+			return nil
 		}
-		for _, tc := range testCases {
-			c.Publish(AsRoutingRoute(tc))
+
+		if err := publishTestCases(); err != nil {
+			errCh <- err
 		}
 
 		// Wait for next round of publishing
 		<-nextPub
 
-		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		for { // Wait until there's one subscriber in routing stats channel
-			if len(c.Subscribers()) > 0 {
-				break
-			}
-			if ctx.Err() != nil {
-				errCh <- ctx.Err()
-			}
-		}
-		for _, tc := range testCases {
-			c.Publish(AsRoutingRoute(tc))
+		if err := publishTestCases(); err != nil {
+			errCh <- err
 		}
 	}()
 
 	// Client goroutine
 	go func() {
+		defer lis.Close()
 		conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(bufDialer), grpc.WithInsecure())
 		if err != nil {
 			errCh <- err
+			return
 		}
-		defer lis.Close()
 		defer conn.Close()
 		client := NewRoutingServiceClient(conn)
 
 		// Test retrieving all fields
-		streamCtx, streamClose := context.WithCancel(context.Background())
-		stream, err := client.SubscribeRoutingStats(streamCtx, &SubscribeRoutingStatsRequest{})
-		if err != nil {
-			errCh <- err
-		}
+		testRetrievingAllFields := func() error {
+			streamCtx, streamClose := context.WithCancel(context.Background())
 
-		for _, tc := range testCases {
-			msg, err := stream.Recv()
+			// Test the unsubscription of stream works well
+			defer func() {
+				streamClose()
+				timeOutCtx, timeout := context.WithTimeout(context.Background(), time.Second)
+				defer timeout()
+				for { // Wait until there's no subscriber in routing stats channel
+					if len(c.Subscribers()) == 0 {
+						break
+					}
+					if timeOutCtx.Err() != nil {
+						t.Error("unexpected subscribers not decreased in channel", timeOutCtx.Err())
+					}
+				}
+			}()
+
+			stream, err := client.SubscribeRoutingStats(streamCtx, &SubscribeRoutingStatsRequest{})
 			if err != nil {
-				errCh <- err
+				return err
 			}
-			if r := cmp.Diff(msg, tc, cmpopts.IgnoreUnexported(RoutingContext{})); r != "" {
-				t.Error(r)
-			}
-		}
 
-		// Test that double subscription will fail
-		errStream, err := client.SubscribeRoutingStats(context.Background(), &SubscribeRoutingStatsRequest{
-			FieldSelectors: []string{"ip", "port", "domain", "outbound"},
-		})
-		if err != nil {
-			errCh <- err
-		}
-		if _, err := errStream.Recv(); err == nil {
-			t.Error("unexpected successful subscription")
-		}
+			for _, tc := range testCases {
+				msg, err := stream.Recv()
+				if err != nil {
+					return err
+				}
+				if r := cmp.Diff(msg, tc, cmpopts.IgnoreUnexported(RoutingContext{})); r != "" {
+					t.Error(r)
+				}
+			}
 
-		// Test the unsubscription of stream works well
-		streamClose()
-		timeOutCtx, timeout := context.WithTimeout(context.Background(), time.Second)
-		defer timeout()
-		for { // Wait until there's no subscriber in routing stats channel
-			if len(c.Subscribers()) == 0 {
-				break
+			// Test that double subscription will fail
+			errStream, err := client.SubscribeRoutingStats(context.Background(), &SubscribeRoutingStatsRequest{
+				FieldSelectors: []string{"ip", "port", "domain", "outbound"},
+			})
+			if err != nil {
+				return err
 			}
-			if timeOutCtx.Err() != nil {
-				t.Error("unexpected subscribers not decreased in channel")
-				errCh <- timeOutCtx.Err()
+			if _, err := errStream.Recv(); err == nil {
+				t.Error("unexpected successful subscription")
 			}
+
+			return nil
 		}
 
 		// Test retrieving only a subset of fields
-		streamCtx, streamClose = context.WithCancel(context.Background())
-		stream, err = client.SubscribeRoutingStats(streamCtx, &SubscribeRoutingStatsRequest{
-			FieldSelectors: []string{"ip", "port", "domain", "outbound"},
-		})
-		if err != nil {
+		testRetrievingSubsetOfFields := func() error {
+			streamCtx, streamClose := context.WithCancel(context.Background())
+			defer streamClose()
+			stream, err := client.SubscribeRoutingStats(streamCtx, &SubscribeRoutingStatsRequest{
+				FieldSelectors: []string{"ip", "port", "domain", "outbound"},
+			})
+			if err != nil {
+				return err
+			}
+
+			// Send nextPub signal to start next round of publishing
+			close(nextPub)
+
+			for _, tc := range testCases {
+				msg, err := stream.Recv()
+				if err != nil {
+					return err
+				}
+				stat := &RoutingContext{ // Only a subset of stats is retrieved
+					SourceIPs:         tc.SourceIPs,
+					TargetIPs:         tc.TargetIPs,
+					SourcePort:        tc.SourcePort,
+					TargetPort:        tc.TargetPort,
+					TargetDomain:      tc.TargetDomain,
+					OutboundGroupTags: tc.OutboundGroupTags,
+					OutboundTag:       tc.OutboundTag,
+				}
+				if r := cmp.Diff(msg, stat, cmpopts.IgnoreUnexported(RoutingContext{})); r != "" {
+					t.Error(r)
+				}
+			}
+
+			return nil
+		}
+
+		if err := testRetrievingAllFields(); err != nil {
 			errCh <- err
 		}
-
-		close(nextPub) // Send nextPub signal to start next round of publishing
-		for _, tc := range testCases {
-			msg, err := stream.Recv()
-			stat := &RoutingContext{ // Only a subset of stats is retrieved
-				SourceIPs:         tc.SourceIPs,
-				TargetIPs:         tc.TargetIPs,
-				SourcePort:        tc.SourcePort,
-				TargetPort:        tc.TargetPort,
-				TargetDomain:      tc.TargetDomain,
-				OutboundGroupTags: tc.OutboundGroupTags,
-				OutboundTag:       tc.OutboundTag,
-			}
-			if err != nil {
-				errCh <- err
-			}
-			if r := cmp.Diff(msg, stat, cmpopts.IgnoreUnexported(RoutingContext{})); r != "" {
-				t.Error(r)
-			}
+		if err := testRetrievingSubsetOfFields(); err != nil {
+			errCh <- err
 		}
-		streamClose()
-
-		// Client passed all tests successfully
-		errCh <- nil
+		errCh <- nil // Client passed all tests successfully
 	}()
 
 	// Wait for goroutines to complete
@@ -186,9 +202,9 @@ func TestServiceSubscribeRoutingStats(t *testing.T) {
 
 func TestSerivceTestRoute(t *testing.T) {
 	c := stats.NewChannel(&stats.ChannelConfig{
-		SubscriberLimit:  1,
-		BufferSize:       16,
-		BroadcastTimeout: 100,
+		SubscriberLimit: 1,
+		BufferSize:      16,
+		Blocking:        true,
 	})
 	common.Must(c.Start())
 	defer c.Close()
@@ -249,11 +265,11 @@ func TestSerivceTestRoute(t *testing.T) {
 
 	// Client goroutine
 	go func() {
+		defer lis.Close()
 		conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(bufDialer), grpc.WithInsecure())
 		if err != nil {
 			errCh <- err
 		}
-		defer lis.Close()
 		defer conn.Close()
 		client := NewRoutingServiceClient(conn)
 
@@ -268,58 +284,69 @@ func TestSerivceTestRoute(t *testing.T) {
 		}
 
 		// Test simple TestRoute
-		for _, tc := range testCases {
-			route, err := client.TestRoute(context.Background(), &TestRouteRequest{RoutingContext: tc})
-			if err != nil {
-				errCh <- err
+		testSimple := func() error {
+			for _, tc := range testCases {
+				route, err := client.TestRoute(context.Background(), &TestRouteRequest{RoutingContext: tc})
+				if err != nil {
+					return err
+				}
+				if r := cmp.Diff(route, tc, cmpopts.IgnoreUnexported(RoutingContext{})); r != "" {
+					t.Error(r)
+				}
 			}
-			if r := cmp.Diff(route, tc, cmpopts.IgnoreUnexported(RoutingContext{})); r != "" {
-				t.Error(r)
-			}
+			return nil
 		}
 
 		// Test TestRoute with special options
-		sub, err := c.Subscribe()
-		if err != nil {
-			errCh <- err
-		}
-		for _, tc := range testCases {
-			route, err := client.TestRoute(context.Background(), &TestRouteRequest{
-				RoutingContext: tc,
-				FieldSelectors: []string{"ip", "port", "domain", "outbound"},
-				PublishResult:  true,
-			})
-			stat := &RoutingContext{ // Only a subset of stats is retrieved
-				SourceIPs:         tc.SourceIPs,
-				TargetIPs:         tc.TargetIPs,
-				SourcePort:        tc.SourcePort,
-				TargetPort:        tc.TargetPort,
-				TargetDomain:      tc.TargetDomain,
-				OutboundGroupTags: tc.OutboundGroupTags,
-				OutboundTag:       tc.OutboundTag,
-			}
+		testOptions := func() error {
+			sub, err := c.Subscribe()
 			if err != nil {
-				errCh <- err
+				return err
 			}
-			if r := cmp.Diff(route, stat, cmpopts.IgnoreUnexported(RoutingContext{})); r != "" {
-				t.Error(r)
-			}
-			select { // Check that routing result has been published to statistics channel
-			case msg, received := <-sub:
-				if route, ok := msg.(routing.Route); received && ok {
-					if r := cmp.Diff(AsProtobufMessage(nil)(route), tc, cmpopts.IgnoreUnexported(RoutingContext{})); r != "" {
-						t.Error(r)
-					}
-				} else {
-					t.Error("unexpected failure in receiving published routing result")
+			for _, tc := range testCases {
+				route, err := client.TestRoute(context.Background(), &TestRouteRequest{
+					RoutingContext: tc,
+					FieldSelectors: []string{"ip", "port", "domain", "outbound"},
+					PublishResult:  true,
+				})
+				if err != nil {
+					return err
 				}
-			case <-time.After(100 * time.Millisecond):
-				t.Error("unexpected failure in receiving published routing result")
+				stat := &RoutingContext{ // Only a subset of stats is retrieved
+					SourceIPs:         tc.SourceIPs,
+					TargetIPs:         tc.TargetIPs,
+					SourcePort:        tc.SourcePort,
+					TargetPort:        tc.TargetPort,
+					TargetDomain:      tc.TargetDomain,
+					OutboundGroupTags: tc.OutboundGroupTags,
+					OutboundTag:       tc.OutboundTag,
+				}
+				if r := cmp.Diff(route, stat, cmpopts.IgnoreUnexported(RoutingContext{})); r != "" {
+					t.Error(r)
+				}
+				select { // Check that routing result has been published to statistics channel
+				case msg, received := <-sub:
+					if route, ok := msg.(routing.Route); received && ok {
+						if r := cmp.Diff(AsProtobufMessage(nil)(route), tc, cmpopts.IgnoreUnexported(RoutingContext{})); r != "" {
+							t.Error(r)
+						}
+					} else {
+						t.Error("unexpected failure in receiving published routing result for testcase", tc)
+					}
+				case <-time.After(100 * time.Millisecond):
+					t.Error("unexpected failure in receiving published routing result", tc)
+				}
 			}
+			return nil
 		}
 
-		// Client passed all tests successfully
-		errCh <- nil
+		if err := testSimple(); err != nil {
+			errCh <- err
+		}
+		if err := testOptions(); err != nil {
+			errCh <- err
+		}
+		errCh <- nil // Client passed all tests successfully
 	}()
 
 	// Wait for goroutines to complete

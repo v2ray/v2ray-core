@@ -94,7 +94,7 @@ func (m *Manager) RegisterChannel(name string) (stats.Channel, error) {
 		return nil, newError("Channel ", name, " already registered.")
 	}
 	newError("create new channel ", name).AtDebug().WriteToLog()
-	c := NewChannel(&ChannelConfig{BufferSize: 16, BroadcastTimeout: 100})
+	c := NewChannel(&ChannelConfig{BufferSize: 64, Blocking: false})
 	m.channels[name] = c
 	if m.running {
 		return c, c.Start()

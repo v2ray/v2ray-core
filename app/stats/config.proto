@@ -11,7 +11,7 @@ message Config {
 }
 
 message ChannelConfig {
-    int32 SubscriberLimit = 1;
-    int32 BufferSize = 2;
-    int32 BroadcastTimeout = 3;
+  bool  Blocking = 1;
+  int32 SubscriberLimit = 2;
+  int32 BufferSize = 3;
 }
