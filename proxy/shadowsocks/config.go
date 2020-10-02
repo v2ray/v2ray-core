@@ -21,7 +21,6 @@ import (
 type MemoryAccount struct {
 	Cipher      Cipher
 	Key         []byte
-	OneTimeAuth Account_OneTimeAuth
 }
 
 // Equals implements protocol.Account.Equals().
@@ -90,7 +89,6 @@ func (a *Account) AsAccount() (protocol.Account, error) {
 	return &MemoryAccount{
 		Cipher:      cipher,
 		Key:         passwordToCipherKey([]byte(a.Password), cipher.KeySize()),
-		OneTimeAuth: a.Ota,
 	}, nil
 }
 
