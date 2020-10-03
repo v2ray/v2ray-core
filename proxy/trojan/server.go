@@ -187,7 +187,7 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 
 	// handle tcp request
 
-	log.ContextWithAccessMessage(ctx, &log.AccessMessage{
+	ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 		From:   conn.RemoteAddr(),
 		To:     destination,
 		Status: log.AccessAccepted,
@@ -220,7 +220,7 @@ func (s *Server) handleUDPPayload(ctx context.Context, clientReader *PacketReade
 				return nil
 			}
 
-			log.ContextWithAccessMessage(ctx, &log.AccessMessage{
+			ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 				From:   inbound.Source,
 				To:     p.Target,
 				Status: log.AccessAccepted,
