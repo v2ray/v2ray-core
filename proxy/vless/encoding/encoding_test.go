@@ -46,7 +46,7 @@ func TestRequestSerialization(t *testing.T) {
 	Validator := new(vless.Validator)
 	Validator.Add(user)
 
-	actualRequest, actualAddons, err, _ := DecodeRequestHeader(&buffer, Validator)
+	actualRequest, actualAddons, err, _ := DecodeRequestHeader(false, nil, &buffer, Validator)
 	common.Must(err)
 
 	if r := cmp.Diff(actualRequest, expectedRequest, cmp.AllowUnexported(protocol.ID{})); r != "" {
@@ -83,7 +83,7 @@ func TestInvalidRequest(t *testing.T) {
 	Validator := new(vless.Validator)
 	Validator.Add(user)
 
-	_, _, err, _ := DecodeRequestHeader(&buffer, Validator)
+	_, _, err, _ := DecodeRequestHeader(false, nil, &buffer, Validator)
 	if err == nil {
 		t.Error("nil error")
 	}
@@ -114,7 +114,7 @@ func TestMuxRequest(t *testing.T) {
 	Validator := new(vless.Validator)
 	Validator.Add(user)
 
-	actualRequest, actualAddons, err, _ := DecodeRequestHeader(&buffer, Validator)
+	actualRequest, actualAddons, err, _ := DecodeRequestHeader(false, nil, &buffer, Validator)
 	common.Must(err)
 
 	if r := cmp.Diff(actualRequest, expectedRequest, cmp.AllowUnexported(protocol.ID{})); r != "" {
