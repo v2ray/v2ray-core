@@ -39,7 +39,7 @@ func (s *routingServer) TestRoute(ctx context.Context, request *TestRouteRequest
 		return nil, err
 	}
 	if request.PublishResult && s.routingStats != nil {
-		ctx, _ := context.WithTimeout(context.Background(), 4*time.Second) // nolint: lostcancel
+		ctx, _ := context.WithTimeout(context.Background(), 4*time.Second) // nolint: govet
 		s.routingStats.Publish(ctx, route)
 	}
 	return AsProtobufMessage(request.FieldSelectors)(route), nil

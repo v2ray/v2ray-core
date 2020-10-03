@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	Version                               = 1
+	Version = 1
 )
 
 var addrParser = protocol.NewAddressParser(
