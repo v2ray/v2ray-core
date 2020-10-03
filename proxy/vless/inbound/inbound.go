@@ -171,7 +171,6 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	var request *protocol.RequestHeader
 	var requestAddons *encoding.Addons
 	var err error
-	var pre *buf.Buffer
 
 	isfb := false
 	apfb := h.fallbacks
@@ -182,12 +181,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	if isfb && firstLen < 18 {
 		err = newError("fallback directly")
 	} else {
-		request, requestAddons, err, pre = encoding.DecodeRequestHeader(reader, h.validator)
-		if pre != nil {
-			defer pre.Release()
-		} else {
-			isfb = false
-		}
+		request, requestAddons, err, isfb = encoding.DecodeRequestHeader(isfb, first, reader, h.validator)
 	}
 
 	if err != nil {
@@ -233,13 +227,13 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 						}
 					}
 				*/
-				if pre != nil && pre.Len() == 1 && first.Byte(3) != '*' { // firstLen >= 18 && invalid request version && not h2c
+				if firstLen >= 18 && first.Byte(4) != '*' { // not h2c
 					firstBytes := first.Bytes()
-					for i := 3; i <= 7; i++ { // 5 -> 9
+					for i := 4; i <= 8; i++ { // 5 -> 9
 						if firstBytes[i] == '/' && firstBytes[i-1] == ' ' {
 							search := len(firstBytes)
 							if search > 64 {
-								search = 64 // up to 60
+								search = 64 // up to about 60
 							}
 							for j := i + 1; j < search; j++ {
 								k := firstBytes[j]
@@ -329,11 +323,6 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 					}
 					if err := serverWriter.WriteMultiBuffer(buf.MultiBuffer{pro}); err != nil {
 						return newError("failed to set PROXY protocol v", fb.Xver).Base(err).AtWarning()
-					}
-				}
-				if pre != nil && pre.Len() > 0 {
-					if err := serverWriter.WriteMultiBuffer(buf.MultiBuffer{pre}); err != nil {
-						return newError("failed to fallback request pre").Base(err).AtWarning()
 					}
 				}
 				if err := buf.Copy(reader, serverWriter, buf.UpdateActivity(timer)); err != nil {

@@ -35,7 +35,7 @@ func (c *VLessInboundConfig) Build() (proto.Message, error) {
 	config := new(inbound.Config)
 
 	if len(c.Clients) == 0 {
-		return nil, newError(`VLESS settings: "clients" is empty`)
+		//return nil, newError(`VLESS settings: "clients" is empty`)
 	}
 	config.Clients = make([]*protocol.User, len(c.Clients))
 	for idx, rawUser := range c.Clients {

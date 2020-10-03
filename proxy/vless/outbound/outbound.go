@@ -133,7 +133,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 			return newError(vless.XRO + " doesn't support Mux").AtWarning()
 		case protocol.RequestCommandUDP:
 			if requestAddons.Flow == vless.XRO && request.Port == 443 {
-				return newError(vless.XRO + " stopped UDP/443").AtWarning()
+				return newError(vless.XRO + " stopped UDP/443").AtInfo()
 			}
 			requestAddons.Flow = ""
 		case protocol.RequestCommandTCP:
