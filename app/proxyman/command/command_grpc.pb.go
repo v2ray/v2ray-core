@@ -11,7 +11,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+const _ = grpc.SupportPackageIsVersion7
 
 // HandlerServiceClient is the client API for HandlerService service.
 //
@@ -104,25 +104,32 @@ type HandlerServiceServer interface {
 type UnimplementedHandlerServiceServer struct {
 }
 
-func (*UnimplementedHandlerServiceServer) AddInbound(context.Context, *AddInboundRequest) (*AddInboundResponse, error) {
+func (UnimplementedHandlerServiceServer) AddInbound(context.Context, *AddInboundRequest) (*AddInboundResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddInbound not implemented")
 }
-func (*UnimplementedHandlerServiceServer) RemoveInbound(context.Context, *RemoveInboundRequest) (*RemoveInboundResponse, error) {
+func (UnimplementedHandlerServiceServer) RemoveInbound(context.Context, *RemoveInboundRequest) (*RemoveInboundResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveInbound not implemented")
 }
-func (*UnimplementedHandlerServiceServer) AlterInbound(context.Context, *AlterInboundRequest) (*AlterInboundResponse, error) {
+func (UnimplementedHandlerServiceServer) AlterInbound(context.Context, *AlterInboundRequest) (*AlterInboundResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AlterInbound not implemented")
 }
-func (*UnimplementedHandlerServiceServer) AddOutbound(context.Context, *AddOutboundRequest) (*AddOutboundResponse, error) {
+func (UnimplementedHandlerServiceServer) AddOutbound(context.Context, *AddOutboundRequest) (*AddOutboundResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddOutbound not implemented")
 }
-func (*UnimplementedHandlerServiceServer) RemoveOutbound(context.Context, *RemoveOutboundRequest) (*RemoveOutboundResponse, error) {
+func (UnimplementedHandlerServiceServer) RemoveOutbound(context.Context, *RemoveOutboundRequest) (*RemoveOutboundResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveOutbound not implemented")
 }
-func (*UnimplementedHandlerServiceServer) AlterOutbound(context.Context, *AlterOutboundRequest) (*AlterOutboundResponse, error) {
+func (UnimplementedHandlerServiceServer) AlterOutbound(context.Context, *AlterOutboundRequest) (*AlterOutboundResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AlterOutbound not implemented")
 }
-func (*UnimplementedHandlerServiceServer) mustEmbedUnimplementedHandlerServiceServer() {}
+func (UnimplementedHandlerServiceServer) mustEmbedUnimplementedHandlerServiceServer() {}
+
+// UnsafeHandlerServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to HandlerServiceServer will
+// result in compilation errors.
+type UnsafeHandlerServiceServer interface {
+	mustEmbedUnimplementedHandlerServiceServer()
+}
 
 func RegisterHandlerServiceServer(s *grpc.Server, srv HandlerServiceServer) {
 	s.RegisterService(&_HandlerService_serviceDesc, srv)
