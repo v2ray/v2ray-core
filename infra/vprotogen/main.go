@@ -8,16 +8,9 @@ import (
 	"runtime"
 	"strings"
 
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 )
-
-var protoFilesUsingProtocGenGoFast = map[string]bool{"proxy/vless/encoding/addons.proto": true}
-
-var protocMap = map[string]string{
-	"windows": filepath.Join(".dev", "protoc", "windows", "protoc.exe"),
-	"darwin":  filepath.Join(".dev", "protoc", "macos", "protoc"),
-	"linux":   filepath.Join(".dev", "protoc", "linux", "protoc"),
-}
 
 func main() {
 	pwd, wdErr := os.Getwd()
@@ -27,7 +20,7 @@ func main() {
 	}
 
 	GOBIN := common.GetGOBIN()
-	protoc := protocMap[runtime.GOOS]
+	protoc := core.ProtocMap[runtime.GOOS]
 
 	protoFilesMap := make(map[string][]string)
 	walkErr := filepath.Walk("./", func(path string, info os.FileInfo, err error) error {
@@ -56,7 +49,7 @@ func main() {
 	for _, files := range protoFilesMap {
 		for _, relProtoFile := range files {
 			var args []string
-			if protoFilesUsingProtocGenGoFast[relProtoFile] {
+			if core.ProtoFilesUsingProtocGenGoFast[relProtoFile] {
 				args = []string{"--gofast_out", pwd, "--plugin", "protoc-gen-gofast=" + GOBIN + "/protoc-gen-gofast"}
 			} else {
 				args = []string{"--go_out", pwd, "--go-grpc_out", pwd, "--plugin", "protoc-gen-go=" + GOBIN + "/protoc-gen-go", "--plugin", "protoc-gen-go-grpc=" + GOBIN + "/protoc-gen-go-grpc"}
