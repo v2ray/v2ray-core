@@ -9,4 +9,5 @@ package vless
 
 const (
 	XRO = "xtls-rprx-origin"
+	XRD = "xtls-rprx-direct"
 )
