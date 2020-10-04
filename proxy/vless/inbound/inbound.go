@@ -377,7 +377,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 
 	switch requestAddons.Flow {
 	case vless.XRO, vless.XRD:
-		if account.Flow == vless.XRO || account.Flow == vless.XRD {
+		if account.Flow == requestAddons.Flow {
 			switch request.Command {
 			case protocol.RequestCommandMux:
 				return newError(requestAddons.Flow + " doesn't support Mux").AtWarning()
