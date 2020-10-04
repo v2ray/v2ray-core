@@ -13,7 +13,7 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 var (
 	// ErrNoClue is for the situation that existing information is not enough to make a decision. For example, Router may return this error when there is no suitable route.
@@ -126,25 +126,33 @@ func GetGOPATH() string {
 
 // GetModuleName returns the value of module in `go.mod` file.
 func GetModuleName(pathToProjectRoot string) (string, error) {
-	gomodPath := filepath.Join(pathToProjectRoot, "go.mod")
-	gomodBytes, err := ioutil.ReadFile(gomodPath)
-	if err != nil {
-		return "", err
-	}
-	gomodContent := string(gomodBytes)
-	moduleIdx := strings.Index(gomodContent, "module ")
-	newLineIdx := strings.Index(gomodContent, "\n")
-
 	var moduleName string
-	if moduleIdx >= 0 {
-		if newLineIdx >= 0 {
-			moduleName = strings.TrimSpace(gomodContent[moduleIdx+6 : newLineIdx])
-			moduleName = strings.TrimSuffix(moduleName, "\r")
-		} else {
-			moduleName = strings.TrimSpace(gomodContent[moduleIdx+6:])
+	loopPath := pathToProjectRoot
+	for {
+		if idx := strings.LastIndex(loopPath, string(filepath.Separator)); idx >= 0 {
+			gomodPath := filepath.Join(loopPath, "go.mod")
+			gomodBytes, err := ioutil.ReadFile(gomodPath)
+			if err != nil {
+				loopPath = loopPath[:idx]
+				continue
+			}
+
+			gomodContent := string(gomodBytes)
+			moduleIdx := strings.Index(gomodContent, "module ")
+			newLineIdx := strings.Index(gomodContent, "\n")
+
+			if moduleIdx >= 0 {
+				if newLineIdx >= 0 {
+					moduleName = strings.TrimSpace(gomodContent[moduleIdx+6 : newLineIdx])
+					moduleName = strings.TrimSuffix(moduleName, "\r")
+				} else {
+					moduleName = strings.TrimSpace(gomodContent[moduleIdx+6:])
+				}
+				return moduleName, nil
+			}
+			return "", fmt.Errorf("can not get module path in `%s`", gomodPath)
 		}
-	} else {
-		return "", fmt.Errorf("can not get module path in `%s`", gomodPath)
+		break
 	}
-	return moduleName, nil
+	return moduleName, fmt.Errorf("no `go.mod` file in every parent directory of `%s`", pathToProjectRoot)
 }
