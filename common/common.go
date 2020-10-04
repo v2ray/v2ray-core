@@ -125,26 +125,26 @@ func GetGOPATH() string {
 }
 
 // GetModuleName returns the value of module in `go.mod` file.
-func GetModuleName(path string) (string, error) {
-	gomodPath := filepath.Join(path, "go.mod")
+func GetModuleName(pathToProjectRoot string) (string, error) {
+	gomodPath := filepath.Join(pathToProjectRoot, "go.mod")
 	gomodBytes, err := ioutil.ReadFile(gomodPath)
 	if err != nil {
 		return "", err
 	}
 	gomodContent := string(gomodBytes)
-	moduleIdx := strings.Index(gomodContent, "module") + 6
+	moduleIdx := strings.Index(gomodContent, "module ")
 	newLineIdx := strings.Index(gomodContent, "\n")
 
 	var moduleName string
 	if moduleIdx >= 0 {
 		if newLineIdx >= 0 {
-			moduleName = strings.TrimSpace(gomodContent[moduleIdx:newLineIdx])
+			moduleName = strings.TrimSpace(gomodContent[moduleIdx+6 : newLineIdx])
 			moduleName = strings.TrimSuffix(moduleName, "\r")
 		} else {
-			moduleName = strings.TrimSpace(gomodContent[moduleIdx:])
+			moduleName = strings.TrimSpace(gomodContent[moduleIdx+6:])
 		}
 	} else {
-		return "", fmt.Errorf("can not get the value of `module` in path `%s`", gomodPath)
+		return "", fmt.Errorf("can not get module path in `%s`", gomodPath)
 	}
 	return moduleName, nil
 }
