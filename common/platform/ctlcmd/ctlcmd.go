@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/common/platform"
 )
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 func Run(args []string, input io.Reader) (buf.MultiBuffer, error) {
 	v2ctl := platform.GetToolLocation("v2ctl")

@@ -9,7 +9,7 @@ import (
 	"v2ray.com/core/common/net"
 )
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 var (
 	_ buf.Writer = (*Conn)(nil)
