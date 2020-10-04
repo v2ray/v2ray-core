@@ -158,9 +158,9 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	}
 
 	first := buf.New()
-	first.ReadFrom(connection)
+	defer first.Release()
 
-	firstLen := first.Len()
+	firstLen, _ := first.ReadFrom(connection)
 	newError("firstLen = ", firstLen).AtInfo().WriteToLog(sid)
 
 	reader := &buf.BufferedReader{
@@ -172,11 +172,8 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	var requestAddons *encoding.Addons
 	var err error
 
-	isfb := false
 	apfb := h.fallbacks
-	if apfb != nil {
-		isfb = true
-	}
+	isfb := apfb != nil
 
 	if isfb && firstLen < 18 {
 		err = newError("fallback directly")
@@ -379,25 +376,31 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	}
 
 	switch requestAddons.Flow {
-	case vless.XRO:
-		if account.Flow == vless.XRO {
+	case vless.XRO, vless.XRD:
+		if account.Flow == vless.XRO || account.Flow == vless.XRD {
 			switch request.Command {
 			case protocol.RequestCommandMux:
-				return newError(vless.XRO + " doesn't support Mux").AtWarning()
+				return newError(requestAddons.Flow + " doesn't support Mux").AtWarning()
 			case protocol.RequestCommandUDP:
-				return newError(vless.XRO + " doesn't support UDP").AtWarning()
+				return newError(requestAddons.Flow + " doesn't support UDP").AtWarning()
 			case protocol.RequestCommandTCP:
 				if xtlsConn, ok := iConn.(*xtls.Conn); ok {
 					xtlsConn.RPRX = true
 					xtlsConn.SHOW = xtls_show
 					xtlsConn.MARK = "XTLS"
+					if requestAddons.Flow == vless.XRD {
+						xtlsConn.DirectMode = true
+					}
 				} else {
-					return newError(`failed to use ` + vless.XRO + `, maybe "security" is not "xtls"`).AtWarning()
+					return newError(`failed to use ` + requestAddons.Flow + `, maybe "security" is not "xtls"`).AtWarning()
 				}
 			}
 		} else {
-			return newError(account.ID.String() + " is not able to use " + vless.XRO).AtWarning()
+			return newError(account.ID.String() + " is not able to use " + requestAddons.Flow).AtWarning()
 		}
+	case "":
+	default:
+		return newError("unknown request flow " + requestAddons.Flow).AtWarning()
 	}
 
 	if request.Command != protocol.RequestCommandMux {
