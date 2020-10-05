@@ -6,12 +6,11 @@ option go_package = "v2ray.com/core/app/log/command";
 option java_package = "com.v2ray.core.app.log.command";
 option java_multiple_files = true;
 
-message Config {
-}
+message Config {}
 
 message RestartLoggerRequest {}
 
-message RestartLoggerResponse{}
+message RestartLoggerResponse {}
 
 service LoggerService {
   rpc RestartLogger(RestartLoggerRequest) returns (RestartLoggerResponse) {}

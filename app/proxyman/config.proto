@@ -11,8 +11,7 @@ import "common/net/port.proto";
 import "transport/internet/config.proto";
 import "common/serial/typed_message.proto";
 
-message InboundConfig {
-}
+message InboundConfig {}
 
 message AllocationStrategy {
   enum Type {
@@ -35,7 +34,6 @@ message AllocationStrategy {
   // Number of handlers (ports) running in parallel.
   // Default value is 3 if unset.
   AllocationStrategyConcurrency concurrency = 2;
-
 
   message AllocationStrategyRefresh {
     uint32 value = 1;
@@ -81,9 +79,7 @@ message InboundHandlerConfig {
   v2ray.core.common.serial.TypedMessage proxy_settings = 3;
 }
 
-message OutboundConfig {
-
-}
+message OutboundConfig {}
 
 message SenderConfig {
   // Send traffic through the given IP. Only IP is allowed.

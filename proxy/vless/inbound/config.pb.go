@@ -111,7 +111,8 @@ type Config struct {
 	unknownFields protoimpl.UnknownFields
 
 	Clients []*protocol.User `protobuf:"bytes,1,rep,name=clients,proto3" json:"clients,omitempty"`
-	// Decryption settings. Only applies to server side, and only accepts "none" for now.
+	// Decryption settings. Only applies to server side, and only accepts "none"
+	// for now.
 	Decryption string      `protobuf:"bytes,2,opt,name=decryption,proto3" json:"decryption,omitempty"`
 	Fallbacks  []*Fallback `protobuf:"bytes,3,rep,name=fallbacks,proto3" json:"fallbacks,omitempty"`
 }

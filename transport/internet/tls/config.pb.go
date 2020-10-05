@@ -156,7 +156,8 @@ type Config struct {
 	NextProtocol []string `protobuf:"bytes,4,rep,name=next_protocol,json=nextProtocol,proto3" json:"next_protocol,omitempty"`
 	// Whether or not to disable session (ticket) resumption.
 	DisableSessionResumption bool `protobuf:"varint,6,opt,name=disable_session_resumption,json=disableSessionResumption,proto3" json:"disable_session_resumption,omitempty"`
-	// If true, root certificates on the system will not be loaded for verification.
+	// If true, root certificates on the system will not be loaded for
+	// verification.
 	DisableSystemRoot bool `protobuf:"varint,7,opt,name=disable_system_root,json=disableSystemRoot,proto3" json:"disable_system_root,omitempty"`
 }
 

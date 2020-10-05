@@ -27,7 +27,8 @@ const (
 const _ = proto.ProtoPackageIsVersion4
 
 // RoutingContext is the context with information relative to routing process.
-// It conforms to the structure of v2ray.core.features.routing.Context and v2ray.core.features.routing.Route.
+// It conforms to the structure of v2ray.core.features.routing.Context and
+// v2ray.core.features.routing.Route.
 type RoutingContext struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -163,17 +164,22 @@ func (x *RoutingContext) GetOutboundTag() string {
 	return ""
 }
 
-// SubscribeRoutingStatsRequest subscribes to routing statistics channel if opened by v2ray-core.
-// * FieldSelectors selects a subset of fields in routing statistics to return. Valid selectors:
+// SubscribeRoutingStatsRequest subscribes to routing statistics channel if
+// opened by v2ray-core.
+// * FieldSelectors selects a subset of fields in routing statistics to return.
+// Valid selectors:
 //  - inbound: Selects connection's inbound tag.
 //  - network: Selects connection's network.
-//  - ip: Equivalent as "ip_source" and "ip_target", selects both source and target IP.
-//  - port: Equivalent as "port_source" and "port_target", selects both source and target port.
+//  - ip: Equivalent as "ip_source" and "ip_target", selects both source and
+//  target IP.
+//  - port: Equivalent as "port_source" and "port_target", selects both source
+//  and target port.
 //  - domain: Selects target domain.
 //  - protocol: Select connection's protocol.
 //  - user: Select connection's inbound user email.
 //  - attributes: Select connection's additional attributes.
-//  - outbound: Equivalent as "outbound" and "outbound_group", select both outbound tag and outbound group tags.
+//  - outbound: Equivalent as "outbound" and "outbound_group", select both
+//  outbound tag and outbound group tags.
 // * If FieldSelectors is left empty, all fields will be returned.
 type SubscribeRoutingStatsRequest struct {
 	state         protoimpl.MessageState
@@ -222,10 +228,13 @@ func (x *SubscribeRoutingStatsRequest) GetFieldSelectors() []string {
 	return nil
 }
 
-// TestRouteRequest manually tests a routing result according to the routing context message.
+// TestRouteRequest manually tests a routing result according to the routing
+// context message.
 // * RoutingContext is the routing message without outbound information.
-// * FieldSelectors selects the fields to return in the routing result. All fields are returned if left empty.
-// * PublishResult broadcasts the routing result to routing statistics channel if set true.
+// * FieldSelectors selects the fields to return in the routing result. All
+// fields are returned if left empty.
+// * PublishResult broadcasts the routing result to routing statistics channel
+// if set true.
 type TestRouteRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

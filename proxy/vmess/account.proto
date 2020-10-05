@@ -9,7 +9,8 @@ option java_multiple_files = true;
 import "common/protocol/headers.proto";
 
 message Account {
-  // ID of the account, in the form of a UUID, e.g., "66ad4540-b58c-4ad2-9926-ea63445a9b57".
+  // ID of the account, in the form of a UUID, e.g.,
+  // "66ad4540-b58c-4ad2-9926-ea63445a9b57".
   string id = 1;
   // Number of alternative IDs. Client and server must share the same number.
   uint32 alter_id = 2;

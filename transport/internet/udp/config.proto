@@ -6,5 +6,4 @@ option go_package = "v2ray.com/core/transport/internet/udp";
 option java_package = "com.v2ray.core.transport.internet.udp";
 option java_multiple_files = true;
 
-message Config {
-}
+message Config {}

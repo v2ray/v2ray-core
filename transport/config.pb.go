@@ -26,8 +26,8 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-// Global transport settings. This affects all type of connections that go through V2Ray.
-// Deprecated. Use each settings in StreamConfig.
+// Global transport settings. This affects all type of connections that go
+// through V2Ray. Deprecated. Use each settings in StreamConfig.
 type Config struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
