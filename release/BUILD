@@ -21,11 +21,6 @@ filegroup(
 )
 
 filegroup(
-    name = "doc",
-    srcs = glob(["doc/*.md"]),
-)
-
-filegroup(
     name = "geodata",
     srcs = [
         "config/geoip.dat",
@@ -37,7 +32,6 @@ pkg_zip(
     name = "v2ray_darwin_amd64_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         "//infra/control/main:v2ctl_darwin_amd64",
         "//main:v2ray_darwin_amd64",
@@ -50,7 +44,6 @@ pkg_zip(
     name = "v2ray_windows_amd64_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         "//infra/control/main:v2ctl_windows_amd64",
         "//main:v2ray_windows_amd64",
@@ -64,7 +57,6 @@ pkg_zip(
     name = "v2ray_windows_x86_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         "//infra/control/main:v2ctl_windows_386",
         "//main:v2ray_windows_386",
@@ -78,7 +70,6 @@ pkg_zip(
     name = "v2ray_windows_armv7_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         "//infra/control/main:v2ctl_windows_arm_7",
         "//main:v2ray_windows_arm_7",
@@ -92,7 +83,6 @@ pkg_zip(
     name = "v2ray_freebsd_amd64_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         "//infra/control/main:v2ctl_freebsd_amd64",
         "//main:v2ray_freebsd_amd64",
@@ -105,7 +95,6 @@ pkg_zip(
     name = "v2ray_freebsd_x86_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         "//infra/control/main:v2ctl_freebsd_386",
         "//main:v2ray_freebsd_386",
@@ -118,7 +107,6 @@ pkg_zip(
     name = "v2ray_openbsd_amd64_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         "//infra/control/main:v2ctl_openbsd_amd64",
         "//main:v2ray_openbsd_amd64",
@@ -131,7 +119,6 @@ pkg_zip(
     name = "v2ray_openbsd_x86_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         "//infra/control/main:v2ctl_openbsd_386",
         "//main:v2ray_openbsd_386",
@@ -144,7 +131,6 @@ pkg_zip(
     name = "v2ray_dragonfly_amd64_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         "//infra/control/main:v2ctl_dragonfly_amd64",
         "//main:v2ray_dragonfly_amd64",
@@ -157,7 +143,6 @@ pkg_zip(
     name = "v2ray_linux_amd64_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_amd64",
@@ -171,7 +156,6 @@ pkg_zip(
     name = "v2ray_linux_x86_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_386",
@@ -185,7 +169,6 @@ pkg_zip(
     name = "v2ray_linux_arm64_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_arm64",
@@ -199,7 +182,6 @@ pkg_zip(
     name = "v2ray_linux_armv7_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_arm_7",
@@ -213,7 +195,6 @@ pkg_zip(
     name = "v2ray_linux_armv6_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_arm_6",
@@ -227,7 +208,6 @@ pkg_zip(
     name = "v2ray_linux_armv5_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_arm_5",
@@ -241,7 +221,6 @@ pkg_zip(
     name = "v2ray_linux_mips32_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_mips",
@@ -257,7 +236,6 @@ pkg_zip(
     name = "v2ray_linux_mips32le_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_mipsle",
@@ -273,7 +251,6 @@ pkg_zip(
     name = "v2ray_linux_mips64_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_mips64",
@@ -287,7 +264,6 @@ pkg_zip(
     name = "v2ray_linux_mips64le_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_mips64le",
@@ -301,7 +277,6 @@ pkg_zip(
     name = "v2ray_linux_riscv64_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_riscv64",
@@ -315,7 +290,6 @@ pkg_zip(
     name = "v2ray_linux_s390x_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_s390x",
@@ -329,7 +303,6 @@ pkg_zip(
     name = "v2ray_linux_ppc64_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_ppc64",
@@ -343,7 +316,6 @@ pkg_zip(
     name = "v2ray_linux_ppc64le_package",
     srcs = [
         ":config_json",
-        ":doc",
         ":geodata",
         ":systemd",
         "//infra/control/main:v2ctl_linux_ppc64le",
