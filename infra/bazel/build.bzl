@@ -19,6 +19,7 @@ def _go_command(ctx):
     "-asmflags", '"all=-trimpath=${GOPATH}/src"',
     "-ldflags", "'%s'" % ld_flags,
     "-tags", "'%s'" % ctx.attr.gotags,
+    "-trimpath",
     pkg,
   ]
 
@@ -28,7 +29,6 @@ def _go_command(ctx):
     "CGO_ENABLED=0",
     "GOOS="+ctx.attr.os,
     "GOARCH="+ctx.attr.arch,
-    #"GOROOT_FINAL=/go",
     "GO111MODULE=on",
     "GOCACHE=${TMPDIR}/gocache"
   ]
