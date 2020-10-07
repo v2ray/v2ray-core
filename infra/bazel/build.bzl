@@ -13,13 +13,10 @@ def _go_command(ctx):
   options = [
     "go",
     "build",
-    "-o", output_file.path,
-    "-compiler", "gc",
-    "-gcflags", '"all=-trimpath=${GOPATH}/src"',
-    "-asmflags", '"all=-trimpath=${GOPATH}/src"',
+    "-trimpath",
+    "-o", output_file.path, 
     "-ldflags", "'%s'" % ld_flags,
     "-tags", "'%s'" % ctx.attr.gotags,
-    "-trimpath",
     pkg,
   ]
 
