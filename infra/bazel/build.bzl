@@ -6,7 +6,7 @@ def _go_command(ctx):
   output_file = ctx.actions.declare_file(ctx.attr.os + "/" + ctx.attr.arch + "/" + ctx.attr.ver + "/" + output)
   pkg = ctx.attr.pkg
 
-  ld_flags = "-s -w"
+  ld_flags = "-s -w -buildid="
   if ctx.attr.ld:
     ld_flags = ld_flags + " " + ctx.attr.ld
 
