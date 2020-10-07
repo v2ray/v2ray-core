@@ -18,15 +18,15 @@ cleanup() { rm -rf "$TMP"; }
 trap cleanup INT TERM ERR
 
 get_source() {
-	echo ">>> Getting v2ray sources..."
+	echo ">>> Clone v2fly/v2ray-core repo..."
 	git clone https://github.com/v2fly/v2ray-core.git
-	pushd v2ray-core
+	cd v2ray-core
 	go mod download
 }
 
 build_v2() {
 	if [[ $nosource != 1 ]]; then
-		pushd ${SRCDIR}/v2ray-core
+		cd ${SRCDIR}/v2ray-core
 		local VERSIONTAG=$(git describe --abbrev=0 --tags)
 	else
 		echo ">>> Use current directory as WORKDIR"
@@ -55,13 +55,13 @@ build_dat() {
 
 copyconf() {
 	echo ">>> Copying config..."
-	pushd ./release/config
+	cd ./release/config
 	tar c --exclude "*.dat" --exclude "systemd/**" . | tar x -C "$TMP"
 }
 
 packzip() {
 	echo ">>> Generating zip package"
-	pushd "$TMP"
+	cd "$TMP"
 	local PKG=${SRCDIR}/v2ray-custom-${GOARCH}-${GOOS}-${PKGSUFFIX}${NOW}.zip
 	zip -r "$PKG" .
 	echo ">>> Generated: $(basename "$PKG") at $(dirname "$PKG")"
@@ -69,7 +69,7 @@ packzip() {
 
 packtgz() {
 	echo ">>> Generating tgz package"
-	pushd "$TMP"
+	cd "$TMP"
 	local PKG=${SRCDIR}/v2ray-custom-${GOARCH}-${GOOS}-${PKGSUFFIX}${NOW}.tar.gz
 	tar cvfz "$PKG" .
 	echo ">>> Generated: $(basename "$PKG") at $(dirname "$PKG")"
@@ -78,7 +78,7 @@ packtgz() {
 packtgzAbPath() {
 	local ABPATH="$1"
 	echo ">>> Generating tgz package at $ABPATH"
-	pushd "$TMP"
+	cd "$TMP"
 	tar cvfz "$ABPATH" .
 	echo ">>> Generated: $ABPATH"
 }
