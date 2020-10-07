@@ -1,7 +1,7 @@
 load("//infra/bazel:build.bzl", "foreign_go_binary")
 
 def gen_targets(matrix):
-  pkg = "v2ray.com/core/infra/control/main"
+  pkg = "./infra/control/main"
   output = "v2ctl"
 
   for (os, arch, ver) in matrix:
