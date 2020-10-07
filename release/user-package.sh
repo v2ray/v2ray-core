@@ -33,7 +33,7 @@ build_v2() {
 		local VERSIONTAG=$(git describe --abbrev=0 --tags)
 	fi
 
-	LDFLAGS="-s -w -buildid= -X v2ray.com/core.codename=${CODENAME} -X v2ray.com/core.build=${BUILDNAME} -X v2ray.com/core.version=${VERSIONTAG}"
+	LDFLAGS="-s -w -buildid= -X v2ray.codename=${CODENAME} -X v2ray.build=${BUILDNAME} -X v2ray.version=${VERSIONTAG}"
 
 	echo ">>> Compile v2ray ..."
 	env CGO_ENABLED=0 go build -o "$TMP"/v2ray"${EXESUFFIX}" -ldflags "$LDFLAGS" ./main

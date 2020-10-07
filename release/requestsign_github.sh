@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 export SIGN_VERSION=$(cat $GITHUB_EVENT_PATH| jq -r ".release.tag_name")
 
