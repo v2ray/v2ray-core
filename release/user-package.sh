@@ -56,7 +56,11 @@ build_dat() {
 copyconf() {
 	echo ">>> Copying config..."
 	cd ./release/config
-	tar c --exclude "*.dat" --exclude "systemd/**" . | tar x -C "$TMP"
+	if [[ $GOOS == "linux" ]]; then
+		tar c --exclude "*.dat" . | tar x -C "$TMP"
+	else
+		tar c --exclude "*.dat" --exclude "systemd/**" . | tar x -C "$TMP"
+	fi
 }
 
 packzip() {
@@ -94,20 +98,14 @@ PKGSUFFIX=
 
 for arg in "$@"; do
 	case $arg in
-	arm*)
+	386 | arm* | mips* | ppc64* | riscv64 | s390x)
 		GOARCH=$arg
-		;;
-	mips*)
-		GOARCH=$arg
-		;;
-	386)
-		GOARCH=386
 		;;
 	windows)
-		GOOS=windows
+		GOOS=$arg
 		EXESUFFIX=.exe
 		;;
-	darwin)
+	darwin | dragonfly | freebsd | openbsd)
 		GOOS=$arg
 		;;
 	nodat)
