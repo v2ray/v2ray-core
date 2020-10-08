@@ -382,11 +382,11 @@ func TestStatsChannelConcurrency(t *testing.T) {
 			errCh <- fmt.Sprint("unexpected block from receiving data: ", 1)
 		}
 		// Test `b` is not closed but cannot receive data 2:
-		// Becuase in a new round of messaging, `b` has been unsubscribed.
+		// Because in a new round of messaging, `b` has been unsubscribed.
 		select {
 		case v, ok := <-b:
 			if ok {
-				errCh <- fmt.Sprint("unexpected receving: ", v)
+				errCh <- fmt.Sprint("unexpected receiving: ", v)
 			} else {
 				errCh <- fmt.Sprint("unexpected closing of channel")
 			}

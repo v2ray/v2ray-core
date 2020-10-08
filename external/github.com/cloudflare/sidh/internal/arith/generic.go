@@ -16,7 +16,7 @@ func Addc64(cin, a, b uint64) (ret, cout uint64) {
 	return
 }
 
-// Substracts 2 64bit digits in constant time.
+// Subtracts 2 64bit digits in constant time.
 // Returns result and borrow (1 or 0)
 func Subc64(bIn, a, b uint64) (ret, bOut uint64) {
 	var tmp1 = a - b

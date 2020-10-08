@@ -69,7 +69,7 @@ func fp751MontgomeryReduce(z *FpElement, x *FpElementX2) {
 	var uv Uint128
 	var count int
 
-	count = 5 // number of 0 digits in the least significat part of p751 + 1
+	count = 5 // number of 0 digits in the least significant part of p751 + 1
 
 	for i := 0; i < NumWords; i++ {
 		for j := 0; j < i; j++ {

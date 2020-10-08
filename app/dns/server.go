@@ -209,7 +209,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 						ruleIter = 0
 						ruleCurr++
 					}
-				} else { // No original rule, generate one according to current domain matcher (majorly for compability with tests)
+				} else { // No original rule, generate one according to current domain matcher (majorly for compatibility with tests)
 					info.domainRuleIdx = uint16(len(rules))
 					rules = append(rules, matcher.String())
 				}

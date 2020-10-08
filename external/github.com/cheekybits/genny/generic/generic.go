@@ -6,7 +6,7 @@ package generic
 //      var GenericType generic.Type
 type Type interface{}
 
-// Number is the placehoder type that indiccates a generic numerical value.
+// Number is the placeholder type that indiccates a generic numerical value.
 // When genny is executed, variables of this type will be replaced with
 // references to the specific types.
 //      var GenericType generic.Number

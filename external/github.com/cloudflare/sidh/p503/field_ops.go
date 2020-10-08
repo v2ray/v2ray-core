@@ -219,7 +219,7 @@ func (dest *primeFieldElement) Pow2k(x *primeFieldElement, k uint8) *primeFieldE
 //
 // Returns dest to allow chaining operations.
 func (dest *primeFieldElement) P34(x *primeFieldElement) *primeFieldElement {
-	// Sliding-window strategy computed with etc/scripts/sliding_window_strat_calc.py
+	// Sliding-window strategy computed with etc/scripts/sliding_window_start_calc.py
 	//
 	// This performs sum(powStrategy) + 1 squarings and len(lookup) + len(mulStrategy)
 	// multiplications.

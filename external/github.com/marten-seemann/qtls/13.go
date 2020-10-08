@@ -1019,7 +1019,7 @@ func (hs *clientHandshakeState) doTLS13Handshake() error {
 	serverHandshakeSecret := hs.keySchedule.deriveSecret(secretHandshakeServer)
 	c.in.exportKey(hs.keySchedule.suite, serverHandshakeSecret)
 	// Already the sender key yet, when using an alternative record layer.
-	// QUIC needs the handshake write key in order to acknowlege Handshake packets.
+	// QUIC needs the handshake write key in order to acknowledge Handshake packets.
 	c.out.exportKey(hs.keySchedule.suite, clientHandshakeSecret)
 	// Do not change the sender key yet, the server must authenticate first.
 	c.in.setKey(c.vers, hs.keySchedule.suite, serverHandshakeSecret)

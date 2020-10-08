@@ -429,7 +429,7 @@ func (point *ProjectivePoint) ToAffine(c *CurveOperations) *Fp2Element {
 
 // Cleans data in fp
 func (fp *Fp2Element) Zeroize() {
-	// Zeroizing in 2 seperated loops tells compiler to
+	// Zeroizing in 2 separated loops tells compiler to
 	// use fast runtime.memclr()
 	for i := range fp.A {
 		fp.A[i] = 0

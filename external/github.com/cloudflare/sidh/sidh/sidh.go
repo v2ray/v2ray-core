@@ -18,15 +18,15 @@ func traverseTreePublicKeyA(curve *ProjectiveCurveParameters, xR, phiP, phiQ, ph
 
 	cparam := op.CalcCurveParamsEquiv4(curve)
 	phi := Newisogeny4(op.Params.Op)
-	strat := pub.params.A.IsogenyStrategy
-	stratSz := len(strat)
+	strategy := pub.params.A.IsogenyStrategy
+	stratSz := len(strategy)
 
 	for j := 1; j <= stratSz; j++ {
 		for i <= stratSz-j {
 			points = append(points, *xR)
 			indices = append(indices, i)
 
-			k := strat[sidx]
+			k := strategy[sidx]
 			sidx++
 			op.Pow2k(xR, &cparam, 2*k)
 			i += int(k)
@@ -57,15 +57,15 @@ func traverseTreeSharedKeyA(curve *ProjectiveCurveParameters, xR *ProjectivePoin
 
 	cparam := op.CalcCurveParamsEquiv4(curve)
 	phi := Newisogeny4(op.Params.Op)
-	strat := pub.params.A.IsogenyStrategy
-	stratSz := len(strat)
+	strategy := pub.params.A.IsogenyStrategy
+	stratSz := len(strategy)
 
 	for j := 1; j <= stratSz; j++ {
 		for i <= stratSz-j {
 			points = append(points, *xR)
 			indices = append(indices, i)
 
-			k := strat[sidx]
+			k := strategy[sidx]
 			sidx++
 			op.Pow2k(xR, &cparam, 2*k)
 			i += int(k)
@@ -92,15 +92,15 @@ func traverseTreePublicKeyB(curve *ProjectiveCurveParameters, xR, phiP, phiQ, ph
 
 	cparam := op.CalcCurveParamsEquiv3(curve)
 	phi := Newisogeny3(op.Params.Op)
-	strat := pub.params.B.IsogenyStrategy
-	stratSz := len(strat)
+	strategy := pub.params.B.IsogenyStrategy
+	stratSz := len(strategy)
 
 	for j := 1; j <= stratSz; j++ {
 		for i <= stratSz-j {
 			points = append(points, *xR)
 			indices = append(indices, i)
 
-			k := strat[sidx]
+			k := strategy[sidx]
 			sidx++
 			op.Pow3k(xR, &cparam, k)
 			i += int(k)
@@ -131,15 +131,15 @@ func traverseTreeSharedKeyB(curve *ProjectiveCurveParameters, xR *ProjectivePoin
 
 	cparam := op.CalcCurveParamsEquiv3(curve)
 	phi := Newisogeny3(op.Params.Op)
-	strat := pub.params.B.IsogenyStrategy
-	stratSz := len(strat)
+	strategy := pub.params.B.IsogenyStrategy
+	stratSz := len(strategy)
 
 	for j := 1; j <= stratSz; j++ {
 		for i <= stratSz-j {
 			points = append(points, *xR)
 			indices = append(indices, i)
 
-			k := strat[sidx]
+			k := strategy[sidx]
 			sidx++
 			op.Pow3k(xR, &cparam, k)
 			i += int(k)
