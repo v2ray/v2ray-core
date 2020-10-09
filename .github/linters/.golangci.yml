@@ -5,28 +5,19 @@ run:
 
 issues:
   new: true
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - gosec
 
 linters:
   enable:
     - bodyclose
     - depguard
-    - errcheck
-    - exhaustive
     - gocritic
     - gofmt
     - goimports
     - golint
     - goprintffuncname
-    - gosec
     - gosimple
     - govet
     - ineffassign
-    - interfacer
     - misspell
     - nakedret
     - noctx
@@ -39,8 +30,9 @@ linters:
     - typecheck
     - unconvert
     - unparam
-    - unused
     - varcheck
     - whitespace
   disable:
     - deadcode
+    - errcheck
+    - unused
