@@ -2,7 +2,9 @@ package conf
 
 import (
 	"encoding/json"
+	"runtime"
 	"strconv"
+	"syscall"
 
 	"github.com/golang/protobuf/proto"
 
@@ -35,7 +37,7 @@ func (c *VLessInboundConfig) Build() (proto.Message, error) {
 	config := new(inbound.Config)
 
 	if len(c.Clients) == 0 {
-		return nil, newError(`VLESS settings: "clients" is empty`)
+		//return nil, newError(`VLESS settings: "clients" is empty`)
 	}
 	config.Clients = make([]*protocol.User, len(c.Clients))
 	for idx, rawUser := range c.Clients {
@@ -49,9 +51,9 @@ func (c *VLessInboundConfig) Build() (proto.Message, error) {
 		}
 
 		switch account.Flow {
-		case "", "xtls-rprx-origin":
+		case "", "xtls-rprx-origin", "xtls-rprx-direct":
 		default:
-			return nil, newError(`VLESS clients: "flow" only accepts "", "xtls-rprx-origin" in this version`)
+			return nil, newError(`VLESS clients: "flow" doesn't support "` + account.Flow + `" in this version`)
 		}
 
 		if account.Encryption != "" {
@@ -102,6 +104,11 @@ func (c *VLessInboundConfig) Build() (proto.Message, error) {
 				switch fb.Dest[0] {
 				case '@', '/':
 					fb.Type = "unix"
+					if fb.Dest[0] == '@' && len(fb.Dest) > 1 && fb.Dest[1] == '@' && runtime.GOOS == "linux" {
+						fullAddr := make([]byte, len(syscall.RawSockaddrUnix{}.Path)) // may need padding to work in front of haproxy
+						copy(fullAddr, fb.Dest[1:])
+						fb.Dest = string(fullAddr)
+					}
 				default:
 					if _, err := strconv.Atoi(fb.Dest); err == nil {
 						fb.Dest = "127.0.0.1:" + fb.Dest
@@ -165,9 +172,9 @@ func (c *VLessOutboundConfig) Build() (proto.Message, error) {
 			}
 
 			switch account.Flow {
-			case "", "xtls-rprx-origin", "xtls-rprx-origin-udp443":
+			case "", "xtls-rprx-origin", "xtls-rprx-origin-udp443", "xtls-rprx-direct", "xtls-rprx-direct-udp443":
 			default:
-				return nil, newError(`VLESS users: "flow" only accepts "", "xtls-rprx-origin", "xtls-rprx-origin-udp443" in this version`)
+				return nil, newError(`VLESS users: "flow" doesn't support "` + account.Flow + `" in this version`)
 			}
 
 			if account.Encryption != "none" {

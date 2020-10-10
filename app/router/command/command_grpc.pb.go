@@ -11,7 +11,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+const _ = grpc.SupportPackageIsVersion7
 
 // RoutingServiceClient is the client API for RoutingService service.
 //
@@ -83,13 +83,20 @@ type RoutingServiceServer interface {
 type UnimplementedRoutingServiceServer struct {
 }
 
-func (*UnimplementedRoutingServiceServer) SubscribeRoutingStats(*SubscribeRoutingStatsRequest, RoutingService_SubscribeRoutingStatsServer) error {
+func (UnimplementedRoutingServiceServer) SubscribeRoutingStats(*SubscribeRoutingStatsRequest, RoutingService_SubscribeRoutingStatsServer) error {
 	return status.Errorf(codes.Unimplemented, "method SubscribeRoutingStats not implemented")
 }
-func (*UnimplementedRoutingServiceServer) TestRoute(context.Context, *TestRouteRequest) (*RoutingContext, error) {
+func (UnimplementedRoutingServiceServer) TestRoute(context.Context, *TestRouteRequest) (*RoutingContext, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TestRoute not implemented")
 }
-func (*UnimplementedRoutingServiceServer) mustEmbedUnimplementedRoutingServiceServer() {}
+func (UnimplementedRoutingServiceServer) mustEmbedUnimplementedRoutingServiceServer() {}
+
+// UnsafeRoutingServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to RoutingServiceServer will
+// result in compilation errors.
+type UnsafeRoutingServiceServer interface {
+	mustEmbedUnimplementedRoutingServiceServer()
+}
 
 func RegisterRoutingServiceServer(s *grpc.Server, srv RoutingServiceServer) {
 	s.RegisterService(&_RoutingService_serviceDesc, srv)

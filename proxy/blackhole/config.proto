@@ -8,11 +8,9 @@ option java_multiple_files = true;
 
 import "common/serial/typed_message.proto";
 
-message NoneResponse {
-}
+message NoneResponse {}
 
-message HTTPResponse {
-}
+message HTTPResponse {}
 
 message Config {
   v2ray.core.common.serial.TypedMessage response = 1;

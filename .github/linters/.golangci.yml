@@ -1,42 +1,23 @@
 run:
   timeout: 5m
-  skip-dirs:
-    - external
   skip-files:
     - generated.*
 
 issues:
   new: true
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - goconst
 
 linters:
   enable:
     - bodyclose
-    - deadcode
     - depguard
-    - dogsled
-    - dupl
-    - errcheck
-    - exhaustive
-    - goconst
     - gocritic
-    - gocyclo
     - gofmt
     - goimports
     - golint
     - goprintffuncname
-    - gosec
     - gosimple
     - govet
     - ineffassign
-    - interfacer
     - misspell
     - nakedret
     - noctx
@@ -49,6 +30,9 @@ linters:
     - typecheck
     - unconvert
     - unparam
-    - unused
     - varcheck
     - whitespace
+  disable:
+    - deadcode
+    - errcheck
+    - unused

@@ -13,6 +13,7 @@ on:
 
 jobs:
   lint:
+    if: github.repository != 'v2ray/v2ray-core'
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go 1.x

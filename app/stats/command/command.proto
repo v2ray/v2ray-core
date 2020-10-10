@@ -31,8 +31,7 @@ message QueryStatsResponse {
   repeated Stat stat = 1;
 }
 
-message SysStatsRequest {
-}
+message SysStatsRequest {}
 
 message SysStatsResponse {
   uint32 NumGoroutine = 1;

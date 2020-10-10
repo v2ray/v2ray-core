@@ -14,10 +14,9 @@ message Account {
 
 message ServerConfig {
   // User is a list of users that allowed to connect to this inbound.
-  // Although this is a repeated field, only the first user is effective for now.
+  // Although this is a repeated field, only the first user is effective for
+  // now.
   repeated v2ray.core.common.protocol.User user = 1;
 }
 
-message ClientConfig {
-
-}
+message ClientConfig {}

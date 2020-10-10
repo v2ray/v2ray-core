@@ -3,15 +3,15 @@
 package stats
 
 import (
+	"context"
 	"sync"
-	"time"
 
 	"v2ray.com/core/common"
 )
 
 // Channel is an implementation of stats.Channel.
 type Channel struct {
-	channel     chan interface{}
+	channel     chan channelMessage
 	subscribers []chan interface{}
 
 	// Synchronization components
@@ -19,26 +19,19 @@ type Channel struct {
 	closed chan struct{}
 
 	// Channel options
-	subscriberLimit   int           // Set to 0 as no subscriber limit
-	channelBufferSize int           // Set to 0 as no buffering
-	broadcastTimeout  time.Duration // Set to 0 as non-blocking immediate timeout
+	blocking   bool // Set blocking state if channel buffer reaches limit
+	bufferSize int  // Set to 0 as no buffering
+	subsLimit  int  // Set to 0 as no subscriber limit
 }
 
 // NewChannel creates an instance of Statistics Channel.
 func NewChannel(config *ChannelConfig) *Channel {
 	return &Channel{
-		channel:           make(chan interface{}, config.BufferSize),
-		subscriberLimit:   int(config.SubscriberLimit),
-		channelBufferSize: int(config.BufferSize),
-		broadcastTimeout:  time.Duration(config.BroadcastTimeout+1) * time.Millisecond,
+		channel:    make(chan channelMessage, config.BufferSize),
+		subsLimit:  int(config.SubscriberLimit),
+		bufferSize: int(config.BufferSize),
+		blocking:   config.Blocking,
 	}
-}
-
-// Channel returns the underlying go channel.
-func (c *Channel) Channel() chan interface{} {
-	c.access.RLock()
-	defer c.access.RUnlock()
-	return c.channel
 }
 
 // Subscribers implements stats.Channel.
@@ -52,10 +45,10 @@ func (c *Channel) Subscribers() []chan interface{} {
 func (c *Channel) Subscribe() (chan interface{}, error) {
 	c.access.Lock()
 	defer c.access.Unlock()
-	if c.subscriberLimit > 0 && len(c.subscribers) >= c.subscriberLimit {
+	if c.subsLimit > 0 && len(c.subscribers) >= c.subsLimit {
 		return nil, newError("Number of subscribers has reached limit")
 	}
-	subscriber := make(chan interface{}, c.channelBufferSize)
+	subscriber := make(chan interface{}, c.bufferSize)
 	c.subscribers = append(c.subscribers, subscriber)
 	return subscriber, nil
 }
@@ -77,16 +70,17 @@ func (c *Channel) Unsubscribe(subscriber chan interface{}) error {
 }
 
 // Publish implements stats.Channel.
-func (c *Channel) Publish(message interface{}) {
+func (c *Channel) Publish(ctx context.Context, msg interface{}) {
 	select { // Early exit if channel closed
 	case <-c.closed:
 		return
 	default:
-	}
-	select { // Drop message if not successfully sent
-	case c.channel <- message:
-	default:
-		return
+		pub := channelMessage{context: ctx, message: msg}
+		if c.blocking {
+			pub.publish(c.channel)
+		} else {
+			pub.publishNonBlocking(c.channel)
+		}
 	}
 }
 
@@ -111,13 +105,12 @@ func (c *Channel) Start() error {
 		go func() {
 			for {
 				select {
-				case message := <-c.channel: // Broadcast message
-					for _, sub := range c.Subscribers() { // Concurrency-safe subscribers retreivement
-						select {
-						case sub <- message: // Successfully sent message
-						case <-time.After(c.broadcastTimeout): // Remove timeout subscriber
-							common.Must(c.Unsubscribe(sub))
-							close(sub) // Actively close subscriber as notification
+				case pub := <-c.channel: // Published message received
+					for _, sub := range c.Subscribers() { // Concurrency-safe subscribers retrievement
+						if c.blocking {
+							pub.broadcast(sub)
+						} else {
+							pub.broadcastNonBlocking(sub)
 						}
 					}
 				case <-c.closed: // Channel closed
@@ -141,4 +134,41 @@ func (c *Channel) Close() error {
 		close(c.closed) // Send closed signal
 	}
 	return nil
+}
+
+// channelMessage is the published message with guaranteed delivery.
+// message is discarded only when the context is early cancelled.
+type channelMessage struct {
+	context context.Context
+	message interface{}
+}
+
+func (c channelMessage) publish(publisher chan channelMessage) {
+	select {
+	case publisher <- c:
+	case <-c.context.Done():
+	}
+}
+
+func (c channelMessage) publishNonBlocking(publisher chan channelMessage) {
+	select {
+	case publisher <- c:
+	default: // Create another goroutine to keep sending message
+		go c.publish(publisher)
+	}
+}
+
+func (c channelMessage) broadcast(subscriber chan interface{}) {
+	select {
+	case subscriber <- c.message:
+	case <-c.context.Done():
+	}
+}
+
+func (c channelMessage) broadcastNonBlocking(subscriber chan interface{}) {
+	select {
+	case subscriber <- c.message:
+	default: // Create another goroutine to keep sending message
+		go c.broadcast(subscriber)
+	}
 }

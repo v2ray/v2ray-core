@@ -12,6 +12,7 @@ import "common/serial/typed_message.proto";
 message Config {
   // Tag of the outbound handler that handles grpc connections.
   string tag = 1;
-  // Services that supported by this server. All services must implement Service interface.
+  // Services that supported by this server. All services must implement Service
+  // interface.
   repeated v2ray.core.common.serial.TypedMessage service = 2;
 }

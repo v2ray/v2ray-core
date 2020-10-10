@@ -484,12 +484,13 @@ type RoutingRule struct {
 	//
 	// Deprecated: Do not use.
 	Cidr []*CIDR `protobuf:"bytes,3,rep,name=cidr,proto3" json:"cidr,omitempty"`
-	// List of GeoIPs for target IP address matching. If this entry exists, the cidr above will have no effect.
-	// GeoIP fields with the same country code are supposed to contain exactly same content. They will be merged during runtime.
-	// For customized GeoIPs, please leave country code empty.
+	// List of GeoIPs for target IP address matching. If this entry exists, the
+	// cidr above will have no effect. GeoIP fields with the same country code are
+	// supposed to contain exactly same content. They will be merged during
+	// runtime. For customized GeoIPs, please leave country code empty.
 	Geoip []*GeoIP `protobuf:"bytes,10,rep,name=geoip,proto3" json:"geoip,omitempty"`
-	// A range of port [from, to]. If the destination port is in this range, this rule takes effect.
-	// Deprecated. Use port_list.
+	// A range of port [from, to]. If the destination port is in this range, this
+	// rule takes effect. Deprecated. Use port_list.
 	//
 	// Deprecated: Do not use.
 	PortRange *net.PortRange `protobuf:"bytes,4,opt,name=port_range,json=portRange,proto3" json:"port_range,omitempty"`
@@ -505,7 +506,8 @@ type RoutingRule struct {
 	//
 	// Deprecated: Do not use.
 	SourceCidr []*CIDR `protobuf:"bytes,6,rep,name=source_cidr,json=sourceCidr,proto3" json:"source_cidr,omitempty"`
-	// List of GeoIPs for source IP address matching. If this entry exists, the source_cidr above will have no effect.
+	// List of GeoIPs for source IP address matching. If this entry exists, the
+	// source_cidr above will have no effect.
 	SourceGeoip []*GeoIP `protobuf:"bytes,11,rep,name=source_geoip,json=sourceGeoip,proto3" json:"source_geoip,omitempty"`
 	// List of ports for source port matching.
 	SourcePortList *net.PortList `protobuf:"bytes,16,opt,name=source_port_list,json=sourcePortList,proto3" json:"source_port_list,omitempty"`

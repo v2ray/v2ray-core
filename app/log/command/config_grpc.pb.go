@@ -11,7 +11,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+const _ = grpc.SupportPackageIsVersion7
 
 // LoggerServiceClient is the client API for LoggerService service.
 //
@@ -49,10 +49,17 @@ type LoggerServiceServer interface {
 type UnimplementedLoggerServiceServer struct {
 }
 
-func (*UnimplementedLoggerServiceServer) RestartLogger(context.Context, *RestartLoggerRequest) (*RestartLoggerResponse, error) {
+func (UnimplementedLoggerServiceServer) RestartLogger(context.Context, *RestartLoggerRequest) (*RestartLoggerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RestartLogger not implemented")
 }
-func (*UnimplementedLoggerServiceServer) mustEmbedUnimplementedLoggerServiceServer() {}
+func (UnimplementedLoggerServiceServer) mustEmbedUnimplementedLoggerServiceServer() {}
+
+// UnsafeLoggerServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to LoggerServiceServer will
+// result in compilation errors.
+type UnsafeLoggerServiceServer interface {
+	mustEmbedUnimplementedLoggerServiceServer()
+}
 
 func RegisterLoggerServiceServer(s *grpc.Server, srv LoggerServiceServer) {
 	s.RegisterService(&_LoggerService_serviceDesc, srv)

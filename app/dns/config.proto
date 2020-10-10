@@ -36,8 +36,9 @@ enum DomainMatchingType {
 }
 
 message Config {
-  // Nameservers used by this DNS. Only traditional UDP servers are support at the moment.
-  // A special value 'localhost' as a domain address can be set to use DNS on local system.
+  // Nameservers used by this DNS. Only traditional UDP servers are support at
+  // the moment. A special value 'localhost' as a domain address can be set to
+  // use DNS on local system.
   repeated v2ray.core.common.net.Endpoint NameServers = 1 [deprecated = true];
 
   // NameServer list used by this DNS client.
@@ -47,7 +48,8 @@ message Config {
   // Deprecated. Use static_hosts.
   map<string, v2ray.core.common.net.IPOrDomain> Hosts = 2 [deprecated = true];
 
-  // Client IP for EDNS client subnet. Must be 4 bytes (IPv4) or 16 bytes (IPv6).
+  // Client IP for EDNS client subnet. Must be 4 bytes (IPv4) or 16 bytes
+  // (IPv6).
   bytes client_ip = 3;
 
   message HostMapping {
@@ -56,8 +58,9 @@ message Config {
 
     repeated bytes ip = 3;
 
-    // ProxiedDomain indicates the mapped domain has the same IP address on this domain. V2Ray will use this domain for IP queries.
-    // This field is only effective if ip is empty.
+    // ProxiedDomain indicates the mapped domain has the same IP address on this
+    // domain. V2Ray will use this domain for IP queries. This field is only
+    // effective if ip is empty.
     string proxied_domain = 4;
   }
 

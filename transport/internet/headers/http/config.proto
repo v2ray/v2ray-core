@@ -10,7 +10,8 @@ message Header {
   // "Accept", "Cookie", etc
   string name = 1;
 
-  // Each entry must be valid in one piece. Random entry will be chosen if multiple entries present.
+  // Each entry must be valid in one piece. Random entry will be chosen if
+  // multiple entries present.
   repeated string value = 2;
 }
 
@@ -54,9 +55,11 @@ message ResponseConfig {
 }
 
 message Config {
-  // Settings for authenticating requests. If not set, client side will not send authenication header, and server side will bypass authentication.
+  // Settings for authenticating requests. If not set, client side will not send
+  // authenication header, and server side will bypass authentication.
   RequestConfig request = 1;
 
-  // Settings for authenticating responses. If not set, client side will bypass authentication, and server side will not send authentication header.
+  // Settings for authenticating responses. If not set, client side will bypass
+  // authentication, and server side will not send authentication header.
   ResponseConfig response = 2;
 }

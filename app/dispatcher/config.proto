@@ -8,7 +8,6 @@ option java_multiple_files = true;
 
 message SessionConfig {
   reserved 1;
-  
 }
 
 message Config {

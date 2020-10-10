@@ -10,6 +10,6 @@ option java_multiple_files = true;
 message TypedMessage {
   // The name of the message type, retrieved from protobuf API.
   string type = 1;
-  // Serialized proto message. 
+  // Serialized proto message.
   bytes value = 2;
 }

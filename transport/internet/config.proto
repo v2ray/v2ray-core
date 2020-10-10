@@ -40,7 +40,7 @@ message StreamConfig {
 
   // Type of security. Must be a message name of the settings proto.
   string security_type = 3;
-  
+
   // Settings for transport security. For now the only choice is TLS.
   repeated v2ray.core.common.serial.TypedMessage security_settings = 4;
 
@@ -80,8 +80,8 @@ message SocketConfig {
   // TProxy is for enabling TProxy socket option.
   TProxyMode tproxy = 3;
 
-  // ReceiveOriginalDestAddress is for enabling IP_RECVORIGDSTADDR socket option.
-  // This option is for UDP only.
+  // ReceiveOriginalDestAddress is for enabling IP_RECVORIGDSTADDR socket
+  // option. This option is for UDP only.
   bool receive_original_dest_address = 4;
 
   bytes bind_address = 5;
