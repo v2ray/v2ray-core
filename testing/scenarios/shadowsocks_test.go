@@ -35,7 +35,6 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 	account := serial.ToTypedMessage(&shadowsocks.Account{
 		Password:   "shadowsocks-password",
 		CipherType: shadowsocks.CipherType_AES_256_CFB,
-		Ota:        shadowsocks.Account_Enabled,
 	})
 
 	serverPort := tcp.PickPort()
@@ -134,7 +133,6 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 	account := serial.ToTypedMessage(&shadowsocks.Account{
 		Password:   "shadowsocks-password",
 		CipherType: shadowsocks.CipherType_AES_128_CFB,
-		Ota:        shadowsocks.Account_Enabled,
 	})
 
 	serverPort := tcp.PickPort()
@@ -261,7 +259,6 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 	account := serial.ToTypedMessage(&shadowsocks.Account{
 		Password:   "shadowsocks-password",
 		CipherType: shadowsocks.CipherType_CHACHA20_IETF,
-		Ota:        shadowsocks.Account_Enabled,
 	})
 
 	serverPort := tcp.PickPort()
@@ -749,7 +746,6 @@ func TestShadowsocksNone(t *testing.T) {
 	account := serial.ToTypedMessage(&shadowsocks.Account{
 		Password:   "shadowsocks-password",
 		CipherType: shadowsocks.CipherType_NONE,
-		Ota:        shadowsocks.Account_Enabled,
 	})
 
 	serverPort := tcp.PickPort()

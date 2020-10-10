@@ -32,7 +32,8 @@ type Header struct {
 
 	// "Accept", "Cookie", etc
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Each entry must be valid in one piece. Random entry will be chosen if multiple entries present.
+	// Each entry must be valid in one piece. Random entry will be chosen if
+	// multiple entries present.
 	Value []string `protobuf:"bytes,2,rep,name=value,proto3" json:"value,omitempty"`
 }
 
@@ -377,9 +378,11 @@ type Config struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Settings for authenticating requests. If not set, client side will not send authenication header, and server side will bypass authentication.
+	// Settings for authenticating requests. If not set, client side will not send
+	// authenication header, and server side will bypass authentication.
 	Request *RequestConfig `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
-	// Settings for authenticating responses. If not set, client side will bypass authentication, and server side will not send authentication header.
+	// Settings for authenticating responses. If not set, client side will bypass
+	// authentication, and server side will not send authentication header.
 	Response *ResponseConfig `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"`
 }
 

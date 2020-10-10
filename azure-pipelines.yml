@@ -7,68 +7,32 @@ trigger:
       - refs/tags/*
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: "ubuntu-latest"
 
 variables:
   - group: GithubToken
-  - name: GOPATH
-    value: '$(system.defaultWorkingDirectory)/gopath'
-  - name: BAZEL_VER
-    value: '3.5.0'
 
 steps:
   - checkout: self
   - task: GoTool@0
     inputs:
-      version: '1.15.2'
-  - script: |
-      mkdir triggersrc
-      ls -I "triggersrc" | xargs cp -rf -t triggersrc
-      mkdir gopath
-    displayName: Prepare Environment
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-  - script: |
-      sudo apt-get -y update
-      sudo apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python openssl tree
-    displayName: Apt Install
+      version: "1.15.2"
   - script: |
       go version
-      unset GOPATH
-      mkdir ./src
-      mkdir ./src/v2ray.com
-      ln -s $(pwd)/../triggersrc ./src/v2ray.com/core
-      go get -v -t -d ./src/v2ray.com/core/...
-      tree
-    workingDirectory: '$(GOPATH)'
-    displayName: 'Fetch sources'
+      go mod download
+    workingDirectory: $(system.defaultWorkingDirectory)
+    displayName: "Fetch sources"
   - script: |
-      mkdir release
-      cd src
-      zip -9 -r ../release/src_all.zip * -x '*.git*'
-    workingDirectory: '$(GOPATH)'
-    displayName: 'Dump sources'
+      bazel build --action_env=PATH=$PATH --action_env=GOPATH=$(go env GOPATH) --action_env=GOCACHE=$(go env GOCACHE) --action_env=SPWD=$(pwd) --spawn_strategy local //release:all
+    workingDirectory: $(system.defaultWorkingDirectory)
+    displayName: "Build Binaries"
   - script: |
-      curl -L -o bazel-installer.sh https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VER}/bazel-${BAZEL_VER}-installer-linux-x86_64.sh
-      chmod +x bazel-installer.sh
-      ./bazel-installer.sh --user
-    workingDirectory: '$(GOPATH)'
-    displayName: 'Install Bazel'
-  - script: |
-      cd ./src/v2ray.com/core
-      $HOME/bin/bazel build --action_env=GOPATH=$GOPATH --action_env=PATH=$PATH --action_env=GPG_PASS=${SIGN_KEY_PASS} --action_env=SPWD=$PWD --action_env=GOCACHE=$(go env GOCACHE) --spawn_strategy local //release:all
-    workingDirectory: '$(GOPATH)'
-    displayName: 'Build Binaries'
-  - script: |
-      cp ./src/v2ray.com/core/bazel-bin/release/*.zip ./release/
-    workingDirectory: '$(GOPATH)'
-    displayName: 'Dump Binaries'
-  - script: |
-      cd ./src/v2ray.com/core
       echo $RELEASE_TAG
       ./release/bleedingrelease.sh
-    workingDirectory: '$(GOPATH)'
-    displayName: 'Generate Bleeding Edge Release'
+    workingDirectory: $(system.defaultWorkingDirectory)
+    displayName: "Generate Bleeding Edge Release"
     env:
+      WORKDIR: $(system.defaultWorkingDirectory)
       GITHUB_TOKEN: $(GITHUB_TOKEN)
       PRERELEASE: true
       RELEASE_TAG: unstable-$(Build.SourceVersion)
@@ -77,13 +41,14 @@ steps:
       GITHUB_REPO_OWNER: v2fly
       GITHUB_REPO_NAME: v2ray-core
   - script: |
-      cd ./src/v2ray.com/core
       echo $RELEASE_TAG
       ./release/tagrelease.sh
-    workingDirectory: '$(GOPATH)'
-    displayName: 'Generate Tag Release'
+    workingDirectory: $(system.defaultWorkingDirectory)
+    displayName: "Generate Tag Release"
     env:
+      WORKDIR: $(system.defaultWorkingDirectory)
       GITHUB_TOKEN: $(GITHUB_TOKEN)
       PRERELEASE: true
       RELEASE_TAG: unstable-$(Build.SourceVersion)
+      RELEASE_SHA: $(Build.SourceVersion)
       TRIGGER_REASON: $(Build.SourceBranch)

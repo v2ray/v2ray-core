@@ -19,7 +19,6 @@ message Control {
 message BridgeConfig {
   string tag = 1;
   string domain = 2;
-
 }
 
 message PortalConfig {

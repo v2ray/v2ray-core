@@ -11,7 +11,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+const _ = grpc.SupportPackageIsVersion7
 
 // StatsServiceClient is the client API for StatsService service.
 //
@@ -71,16 +71,23 @@ type StatsServiceServer interface {
 type UnimplementedStatsServiceServer struct {
 }
 
-func (*UnimplementedStatsServiceServer) GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error) {
+func (UnimplementedStatsServiceServer) GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStats not implemented")
 }
-func (*UnimplementedStatsServiceServer) QueryStats(context.Context, *QueryStatsRequest) (*QueryStatsResponse, error) {
+func (UnimplementedStatsServiceServer) QueryStats(context.Context, *QueryStatsRequest) (*QueryStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryStats not implemented")
 }
-func (*UnimplementedStatsServiceServer) GetSysStats(context.Context, *SysStatsRequest) (*SysStatsResponse, error) {
+func (UnimplementedStatsServiceServer) GetSysStats(context.Context, *SysStatsRequest) (*SysStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSysStats not implemented")
 }
-func (*UnimplementedStatsServiceServer) mustEmbedUnimplementedStatsServiceServer() {}
+func (UnimplementedStatsServiceServer) mustEmbedUnimplementedStatsServiceServer() {}
+
+// UnsafeStatsServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to StatsServiceServer will
+// result in compilation errors.
+type UnsafeStatsServiceServer interface {
+	mustEmbedUnimplementedStatsServiceServer()
+}
 
 func RegisterStatsServiceServer(s *grpc.Server, srv StatsServiceServer) {
 	s.RegisterService(&_StatsService_serviceDesc, srv)

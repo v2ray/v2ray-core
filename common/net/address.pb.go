@@ -25,7 +25,8 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-// Address of a network host. It may be either an IP address or a domain address.
+// Address of a network host. It may be either an IP address or a domain
+// address.
 type IPOrDomain struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

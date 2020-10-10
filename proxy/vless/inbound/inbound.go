@@ -2,7 +2,7 @@
 
 package inbound
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 import (
 	"context"
@@ -158,9 +158,9 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	}
 
 	first := buf.New()
-	first.ReadFrom(connection)
+	defer first.Release()
 
-	firstLen := first.Len()
+	firstLen, _ := first.ReadFrom(connection)
 	newError("firstLen = ", firstLen).AtInfo().WriteToLog(sid)
 
 	reader := &buf.BufferedReader{
@@ -171,23 +171,14 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	var request *protocol.RequestHeader
 	var requestAddons *encoding.Addons
 	var err error
-	var pre *buf.Buffer
 
-	isfb := false
 	apfb := h.fallbacks
-	if apfb != nil {
-		isfb = true
-	}
+	isfb := apfb != nil
 
 	if isfb && firstLen < 18 {
 		err = newError("fallback directly")
 	} else {
-		request, requestAddons, err, pre = encoding.DecodeRequestHeader(reader, h.validator)
-		if pre != nil {
-			defer pre.Release()
-		} else {
-			isfb = false
-		}
+		request, requestAddons, err, isfb = encoding.DecodeRequestHeader(isfb, first, reader, h.validator)
 	}
 
 	if err != nil {
@@ -233,13 +224,13 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 						}
 					}
 				*/
-				if pre != nil && pre.Len() == 1 && first.Byte(3) != '*' { // firstLen >= 18 && invalid request version && not h2c
+				if firstLen >= 18 && first.Byte(4) != '*' { // not h2c
 					firstBytes := first.Bytes()
-					for i := 3; i <= 7; i++ { // 5 -> 9
+					for i := 4; i <= 8; i++ { // 5 -> 9
 						if firstBytes[i] == '/' && firstBytes[i-1] == ' ' {
 							search := len(firstBytes)
 							if search > 64 {
-								search = 64 // up to 60
+								search = 64 // up to about 60
 							}
 							for j := i + 1; j < search; j++ {
 								k := firstBytes[j]
@@ -331,11 +322,6 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 						return newError("failed to set PROXY protocol v", fb.Xver).Base(err).AtWarning()
 					}
 				}
-				if pre != nil && pre.Len() > 0 {
-					if err := serverWriter.WriteMultiBuffer(buf.MultiBuffer{pre}); err != nil {
-						return newError("failed to fallback request pre").Base(err).AtWarning()
-					}
-				}
 				if err := buf.Copy(reader, serverWriter, buf.UpdateActivity(timer)); err != nil {
 					return newError("failed to fallback request payload").Base(err).AtInfo()
 				}
@@ -390,25 +376,31 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	}
 
 	switch requestAddons.Flow {
-	case vless.XRO:
-		if account.Flow == vless.XRO {
+	case vless.XRO, vless.XRD:
+		if account.Flow == requestAddons.Flow {
 			switch request.Command {
 			case protocol.RequestCommandMux:
-				return newError(vless.XRO + " doesn't support Mux").AtWarning()
+				return newError(requestAddons.Flow + " doesn't support Mux").AtWarning()
 			case protocol.RequestCommandUDP:
-				return newError(vless.XRO + " doesn't support UDP").AtWarning()
+				return newError(requestAddons.Flow + " doesn't support UDP").AtWarning()
 			case protocol.RequestCommandTCP:
 				if xtlsConn, ok := iConn.(*xtls.Conn); ok {
 					xtlsConn.RPRX = true
 					xtlsConn.SHOW = xtls_show
 					xtlsConn.MARK = "XTLS"
+					if requestAddons.Flow == vless.XRD {
+						xtlsConn.DirectMode = true
+					}
 				} else {
-					return newError(`failed to use ` + vless.XRO + `, maybe "security" is not "xtls"`).AtWarning()
+					return newError(`failed to use ` + requestAddons.Flow + `, maybe "security" is not "xtls"`).AtWarning()
 				}
 			}
 		} else {
-			return newError(account.ID.String() + " is not able to use " + vless.XRO).AtWarning()
+			return newError(account.ID.String() + " is not able to use " + requestAddons.Flow).AtWarning()
 		}
+	case "":
+	default:
+		return newError("unknown request flow " + requestAddons.Flow).AtWarning()
 	}
 
 	if request.Command != protocol.RequestCommandMux {

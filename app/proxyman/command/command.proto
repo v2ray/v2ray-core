@@ -22,9 +22,7 @@ message AddInboundRequest {
   core.InboundHandlerConfig inbound = 1;
 }
 
-message AddInboundResponse{
-
-}
+message AddInboundResponse {}
 
 message RemoveInboundRequest {
   string tag = 1;
@@ -37,31 +35,26 @@ message AlterInboundRequest {
   v2ray.core.common.serial.TypedMessage operation = 2;
 }
 
-message AlterInboundResponse {
-}
+message AlterInboundResponse {}
 
 message AddOutboundRequest {
   core.OutboundHandlerConfig outbound = 1;
 }
 
-message AddOutboundResponse {
-
-}
+message AddOutboundResponse {}
 
 message RemoveOutboundRequest {
   string tag = 1;
 }
 
-message RemoveOutboundResponse {
-}
+message RemoveOutboundResponse {}
 
 message AlterOutboundRequest {
   string tag = 1;
   v2ray.core.common.serial.TypedMessage operation = 2;
 }
 
-message AlterOutboundResponse {
-}
+message AlterOutboundResponse {}
 
 service HandlerService {
   rpc AddInbound(AddInboundRequest) returns (AddInboundResponse) {}

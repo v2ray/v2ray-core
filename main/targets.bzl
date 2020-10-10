@@ -1,8 +1,7 @@
 load("//infra/bazel:build.bzl", "foreign_go_binary")
-load("//infra/bazel:gpg.bzl", "gpg_sign")
 
 def gen_targets(matrix):
-  pkg = "v2ray.com/core/main"
+  pkg = "./main"
   output = "v2ray"
 
   for (os, arch, ver) in matrix:
@@ -19,11 +18,6 @@ def gen_targets(matrix):
         arm = ver,
       )
 
-      gpg_sign(
-        name = bin_name + "_sig",
-        base = ":" + bin_name,
-      )
-
       if os in ["windows"]:
         bin_name = "v2ray_" + os + "_" + arch + "_" + ver + "_nowindow"
         foreign_go_binary(
@@ -37,11 +31,6 @@ def gen_targets(matrix):
           ld = "-H windowsgui",
         )
 
-        gpg_sign(
-          name = bin_name + "_sig",
-          base = ":" + bin_name,
-        )
-
     else:
       bin_name = "v2ray_" + os + "_" + arch
       foreign_go_binary(
@@ -51,11 +40,6 @@ def gen_targets(matrix):
         os = os,
         arch = arch,
         ver = ver,
-      )
-
-      gpg_sign(
-        name = bin_name + "_sig",
-        base = ":" + bin_name,
       )
 
       if os in ["windows"]:
@@ -70,11 +54,6 @@ def gen_targets(matrix):
           ld = "-H windowsgui",
         )
 
-        gpg_sign(
-          name = bin_name + "_sig",
-          base = ":" + bin_name,
-        )
-
       if arch in ["mips", "mipsle"]:
         bin_name = "v2ray_" + os + "_" + arch + "_softfloat"
         foreign_go_binary(
@@ -85,9 +64,4 @@ def gen_targets(matrix):
           arch = arch,
           ver = ver,
           mips = "softfloat",
-        )
-
-        gpg_sign(
-          name = bin_name + "_sig",
-          base = ":" + bin_name,
         )

@@ -34,7 +34,8 @@ type Config struct {
 
 	// Tag of the outbound handler that handles grpc connections.
 	Tag string `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
-	// Services that supported by this server. All services must implement Service interface.
+	// Services that supported by this server. All services must implement Service
+	// interface.
 	Service []*serial.TypedMessage `protobuf:"bytes,2,rep,name=service,proto3" json:"service,omitempty"`
 }
 

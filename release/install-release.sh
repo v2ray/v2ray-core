@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This file is accessible as https://install.direct/go.sh
 # Original source is located at github.com/v2fly/v2ray-core/release/install-release.sh

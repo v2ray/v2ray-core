@@ -13,6 +13,7 @@ message User {
   uint32 level = 1;
   string email = 2;
 
-  // Protocol specific account information. Must be the account proto in one of the proxies.
+  // Protocol specific account information. Must be the account proto in one of
+  // the proxies.
   v2ray.core.common.serial.TypedMessage account = 3;
 }

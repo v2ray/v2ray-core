@@ -15,7 +15,7 @@ import (
 func EncodeHeaderAddons(buffer *buf.Buffer, addons *Addons) error {
 
 	switch addons.Flow {
-	case vless.XRO:
+	case vless.XRO, vless.XRD:
 
 		bytes, err := proto.Marshal(addons)
 		if err != nil {

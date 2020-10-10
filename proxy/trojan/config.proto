@@ -14,8 +14,11 @@ message Account {
 }
 
 message Fallback {
-  string type = 1;
-  string dest = 2;
+  string alpn = 1;
+  string path = 2;
+  string type = 3;
+  string dest = 4;
+  uint64 xver = 5;
 }
 
 message ClientConfig {
@@ -24,5 +27,5 @@ message ClientConfig {
 
 message ServerConfig {
   repeated v2ray.core.common.protocol.User users = 1;
-  Fallback fallback = 2;
+  repeated Fallback fallbacks = 3;
 }

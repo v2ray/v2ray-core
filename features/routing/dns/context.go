@@ -1,6 +1,6 @@
 package dns
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 import (
 	"v2ray.com/core/common/net"

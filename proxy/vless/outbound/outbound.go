@@ -2,7 +2,7 @@
 
 package outbound
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 import (
 	"context"
@@ -126,14 +126,19 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		Flow: account.Flow,
 	}
 
+	allowUDP443 := false
 	switch requestAddons.Flow {
-	case vless.XRO, vless.XRO + "-udp443":
+	case vless.XRO + "-udp443", vless.XRD + "-udp443":
+		allowUDP443 = true
+		requestAddons.Flow = requestAddons.Flow[:16]
+		fallthrough
+	case vless.XRO, vless.XRD:
 		switch request.Command {
 		case protocol.RequestCommandMux:
-			return newError(vless.XRO + " doesn't support Mux").AtWarning()
+			return newError(requestAddons.Flow + " doesn't support Mux").AtWarning()
 		case protocol.RequestCommandUDP:
-			if requestAddons.Flow == vless.XRO && request.Port == 443 {
-				return newError(vless.XRO + " stopped UDP/443").AtWarning()
+			if !allowUDP443 && request.Port == 443 {
+				return newError(requestAddons.Flow + " stopped UDP/443").AtInfo()
 			}
 			requestAddons.Flow = ""
 		case protocol.RequestCommandTCP:
@@ -141,10 +146,12 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 				xtlsConn.RPRX = true
 				xtlsConn.SHOW = xtls_show
 				xtlsConn.MARK = "XTLS"
+				if requestAddons.Flow == vless.XRD {
+					xtlsConn.DirectMode = true
+				}
 			} else {
-				return newError(`failed to use ` + vless.XRO + `, maybe "security" is not "xtls"`).AtWarning()
+				return newError(`failed to use ` + requestAddons.Flow + `, maybe "security" is not "xtls"`).AtWarning()
 			}
-			requestAddons.Flow = vless.XRO
 		}
 	default:
 		if _, ok := iConn.(*xtls.Conn); ok {

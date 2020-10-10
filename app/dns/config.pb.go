@@ -155,8 +155,9 @@ type Config struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Nameservers used by this DNS. Only traditional UDP servers are support at the moment.
-	// A special value 'localhost' as a domain address can be set to use DNS on local system.
+	// Nameservers used by this DNS. Only traditional UDP servers are support at
+	// the moment. A special value 'localhost' as a domain address can be set to
+	// use DNS on local system.
 	//
 	// Deprecated: Do not use.
 	NameServers []*net.Endpoint `protobuf:"bytes,1,rep,name=NameServers,proto3" json:"NameServers,omitempty"`
@@ -167,7 +168,8 @@ type Config struct {
 	//
 	// Deprecated: Do not use.
 	Hosts map[string]*net.IPOrDomain `protobuf:"bytes,2,rep,name=Hosts,proto3" json:"Hosts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Client IP for EDNS client subnet. Must be 4 bytes (IPv4) or 16 bytes (IPv6).
+	// Client IP for EDNS client subnet. Must be 4 bytes (IPv4) or 16 bytes
+	// (IPv6).
 	ClientIp    []byte                `protobuf:"bytes,3,opt,name=client_ip,json=clientIp,proto3" json:"client_ip,omitempty"`
 	StaticHosts []*Config_HostMapping `protobuf:"bytes,4,rep,name=static_hosts,json=staticHosts,proto3" json:"static_hosts,omitempty"`
 	// Tag is the inbound tag of DNS client.
@@ -368,8 +370,9 @@ type Config_HostMapping struct {
 	Type   DomainMatchingType `protobuf:"varint,1,opt,name=type,proto3,enum=v2ray.core.app.dns.DomainMatchingType" json:"type,omitempty"`
 	Domain string             `protobuf:"bytes,2,opt,name=domain,proto3" json:"domain,omitempty"`
 	Ip     [][]byte           `protobuf:"bytes,3,rep,name=ip,proto3" json:"ip,omitempty"`
-	// ProxiedDomain indicates the mapped domain has the same IP address on this domain. V2Ray will use this domain for IP queries.
-	// This field is only effective if ip is empty.
+	// ProxiedDomain indicates the mapped domain has the same IP address on this
+	// domain. V2Ray will use this domain for IP queries. This field is only
+	// effective if ip is empty.
 	ProxiedDomain string `protobuf:"bytes,4,opt,name=proxied_domain,json=proxiedDomain,proto3" json:"proxied_domain,omitempty"`
 }
 

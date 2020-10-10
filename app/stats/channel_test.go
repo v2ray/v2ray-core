@@ -1,6 +1,7 @@
 package stats_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -12,8 +13,7 @@ import (
 
 func TestStatsChannel(t *testing.T) {
 	// At most 2 subscribers could be registered
-	c := NewChannel(&ChannelConfig{SubscriberLimit: 2})
-	source := c.Channel()
+	c := NewChannel(&ChannelConfig{SubscriberLimit: 2, Blocking: true})
 
 	a, err := stats.SubscribeRunnableChannel(c)
 	common.Must(err)
@@ -34,21 +34,12 @@ func TestStatsChannel(t *testing.T) {
 	stopCh := make(chan struct{})
 	errCh := make(chan string)
 
-	go func() { // Blocking publish
-		source <- 1
-		source <- 2
-		source <- "3"
-		source <- []int{4}
-		source <- nil // Dummy messsage with no subscriber receiving, will block reading goroutine
-		for i := 0; i < cap(source); i++ {
-			source <- nil // Fill source channel's buffer
-		}
-		select {
-		case source <- nil: // Source writing should be blocked here, for last message was not cleared and buffer was full
-			errCh <- fmt.Sprint("unexpected non-blocked source channel")
-		default:
-			close(stopCh)
-		}
+	go func() {
+		c.Publish(context.Background(), 1)
+		c.Publish(context.Background(), 2)
+		c.Publish(context.Background(), "3")
+		c.Publish(context.Background(), []int{4})
+		stopCh <- struct{}{}
 	}()
 
 	go func() {
@@ -64,6 +55,7 @@ func TestStatsChannel(t *testing.T) {
 		if v, ok := (<-a).([]int); !ok || v[0] != 4 {
 			errCh <- fmt.Sprint("unexpected receiving: ", v, ", wanted ", []int{4})
 		}
+		stopCh <- struct{}{}
 	}()
 
 	go func() {
@@ -79,14 +71,18 @@ func TestStatsChannel(t *testing.T) {
 		if v, ok := (<-b).([]int); !ok || v[0] != 4 {
 			errCh <- fmt.Sprint("unexpected receiving: ", v, ", wanted ", []int{4})
 		}
+		stopCh <- struct{}{}
 	}()
 
-	select {
-	case <-time.After(2 * time.Second):
-		t.Fatal("Test timeout after 2s")
-	case e := <-errCh:
-		t.Fatal(e)
-	case <-stopCh:
+	timeout := time.After(2 * time.Second)
+	for i := 0; i < 3; i++ {
+		select {
+		case <-timeout:
+			t.Fatal("Test timeout after 2s")
+		case e := <-errCh:
+			t.Fatal(e)
+		case <-stopCh:
+		}
 	}
 
 	// Test the unsubscription of channel
@@ -100,11 +96,9 @@ func TestStatsChannel(t *testing.T) {
 }
 
 func TestStatsChannelUnsubcribe(t *testing.T) {
-	c := NewChannel(&ChannelConfig{})
+	c := NewChannel(&ChannelConfig{Blocking: true})
 	common.Must(c.Start())
 	defer c.Close()
-
-	source := c.Channel()
 
 	a, err := c.Subscribe()
 	common.Must(err)
@@ -133,9 +127,9 @@ func TestStatsChannelUnsubcribe(t *testing.T) {
 	}
 
 	go func() { // Blocking publish
-		source <- 1
+		c.Publish(context.Background(), 1)
 		<-pauseCh // Wait for `b` goroutine to resume sending message
-		source <- 2
+		c.Publish(context.Background(), 2)
 	}()
 
 	go func() {
@@ -151,7 +145,7 @@ func TestStatsChannelUnsubcribe(t *testing.T) {
 		if v, ok := (<-b).(int); !ok || v != 1 {
 			errCh <- fmt.Sprint("unexpected receiving: ", v, ", wanted ", 1)
 		}
-		// Unsubscribe `b` while `source`'s messaging is paused
+		// Unsubscribe `b` while publishing is paused
 		c.Unsubscribe(b)
 		{ // Test `b` is not in subscribers
 			var aSet, bSet bool
@@ -167,7 +161,7 @@ func TestStatsChannelUnsubcribe(t *testing.T) {
 				errCh <- fmt.Sprint("unexpected subscribers: ", c.Subscribers())
 			}
 		}
-		// Resume `source`'s progress
+		// Resume publishing progress
 		close(pauseCh)
 		// Test `b` is neither closed nor able to receive any data
 		select {
@@ -191,78 +185,142 @@ func TestStatsChannelUnsubcribe(t *testing.T) {
 	}
 }
 
-func TestStatsChannelTimeout(t *testing.T) {
+func TestStatsChannelBlocking(t *testing.T) {
 	// Do not use buffer so as to create blocking scenario
-	c := NewChannel(&ChannelConfig{BufferSize: 0, BroadcastTimeout: 50})
+	c := NewChannel(&ChannelConfig{BufferSize: 0, Blocking: true})
 	common.Must(c.Start())
 	defer c.Close()
-
-	source := c.Channel()
 
 	a, err := c.Subscribe()
 	common.Must(err)
 	defer c.Unsubscribe(a)
 
-	b, err := c.Subscribe()
-	common.Must(err)
-	defer c.Unsubscribe(b)
-
+	pauseCh := make(chan struct{})
 	stopCh := make(chan struct{})
 	errCh := make(chan string)
 
-	go func() { // Blocking publish
-		source <- 1
-		source <- 2
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Test blocking channel publishing
+	go func() {
+		// Dummy messsage with no subscriber receiving, will block broadcasting goroutine
+		c.Publish(context.Background(), nil)
+
+		<-pauseCh
+
+		// Publishing should be blocked here, for last message was not cleared and buffer was full
+		c.Publish(context.Background(), nil)
+
+		pauseCh <- struct{}{}
+
+		// Publishing should still be blocked here
+		c.Publish(ctx, nil)
+
+		// Check publishing is done because context is canceled
+		select {
+		case <-ctx.Done():
+			if ctx.Err() != context.Canceled {
+				errCh <- fmt.Sprint("unexpected error: ", ctx.Err())
+			}
+		default:
+			errCh <- "unexpected non-blocked publishing"
+		}
+		close(stopCh)
 	}()
 
 	go func() {
-		if v, ok := (<-a).(int); !ok || v != 1 {
-			errCh <- fmt.Sprint("unexpected receiving: ", v, ", wanted ", 1)
+		pauseCh <- struct{}{}
+
+		select {
+		case <-pauseCh:
+			errCh <- "unexpected non-blocked publishing"
+		case <-time.After(100 * time.Millisecond):
 		}
-		if v, ok := (<-a).(int); !ok || v != 2 {
-			errCh <- fmt.Sprint("unexpected receiving: ", v, ", wanted ", 2)
+
+		// Receive first published message
+		<-a
+
+		select {
+		case <-pauseCh:
+		case <-time.After(100 * time.Millisecond):
+			errCh <- "unexpected blocking publishing"
 		}
-		{ // Test `b` is still in subscribers yet (because `a` receives 2 first)
-			var aSet, bSet bool
-			for _, s := range c.Subscribers() {
-				if s == a {
-					aSet = true
-				}
-				if s == b {
-					bSet = true
-				}
+
+		// Manually cancel the context to end publishing
+		cancel()
+	}()
+
+	select {
+	case <-time.After(2 * time.Second):
+		t.Fatal("Test timeout after 2s")
+	case e := <-errCh:
+		t.Fatal(e)
+	case <-stopCh:
+	}
+}
+
+func TestStatsChannelNonBlocking(t *testing.T) {
+	// Do not use buffer so as to create blocking scenario
+	c := NewChannel(&ChannelConfig{BufferSize: 0, Blocking: false})
+	common.Must(c.Start())
+	defer c.Close()
+
+	a, err := c.Subscribe()
+	common.Must(err)
+	defer c.Unsubscribe(a)
+
+	pauseCh := make(chan struct{})
+	stopCh := make(chan struct{})
+	errCh := make(chan string)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Test blocking channel publishing
+	go func() {
+		c.Publish(context.Background(), nil)
+		c.Publish(context.Background(), nil)
+		pauseCh <- struct{}{}
+		<-pauseCh
+		c.Publish(ctx, nil)
+		c.Publish(ctx, nil)
+		// Check publishing is done because context is canceled
+		select {
+		case <-ctx.Done():
+			if ctx.Err() != context.Canceled {
+				errCh <- fmt.Sprint("unexpected error: ", ctx.Err())
 			}
-			if !(aSet && bSet) {
-				errCh <- fmt.Sprint("unexpected subscribers: ", c.Subscribers())
-			}
+		case <-time.After(100 * time.Millisecond):
+			errCh <- "unexpected non-cancelled publishing"
 		}
 	}()
 
 	go func() {
-		if v, ok := (<-b).(int); !ok || v != 1 {
-			errCh <- fmt.Sprint("unexpected receiving: ", v, ", wanted ", 1)
+		// Check publishing won't block even if there is no subscriber receiving message
+		select {
+		case <-pauseCh:
+		case <-time.After(100 * time.Millisecond):
+			errCh <- "unexpected blocking publishing"
 		}
-		// Block `b` channel for a time longer than `source`'s timeout
-		<-time.After(200 * time.Millisecond)
-		{ // Test `b` has been unsubscribed by source
-			var aSet, bSet bool
-			for _, s := range c.Subscribers() {
-				if s == a {
-					aSet = true
-				}
-				if s == b {
-					bSet = true
-				}
-			}
-			if !(aSet && !bSet) {
-				errCh <- fmt.Sprint("unexpected subscribers: ", c.Subscribers())
-			}
+
+		// Receive first and second published message
+		<-a
+		<-a
+
+		pauseCh <- struct{}{}
+
+		// Manually cancel the context to end publishing
+		cancel()
+
+		// Check third and forth published message is cancelled and cannot receive
+		<-time.After(100 * time.Millisecond)
+		select {
+		case <-a:
+			errCh <- "unexpected non-cancelled publishing"
+		default:
 		}
-		select { // Test `b` has been closed by source
-		case v, ok := <-b:
-			if ok {
-				errCh <- fmt.Sprint("unexpected data received: ", v)
-			}
+		select {
+		case <-a:
+			errCh <- "unexpected non-cancelled publishing"
 		default:
 		}
 		close(stopCh)
@@ -279,11 +337,9 @@ func TestStatsChannelTimeout(t *testing.T) {
 
 func TestStatsChannelConcurrency(t *testing.T) {
 	// Do not use buffer so as to create blocking scenario
-	c := NewChannel(&ChannelConfig{BufferSize: 0, BroadcastTimeout: 100})
+	c := NewChannel(&ChannelConfig{BufferSize: 0, Blocking: true})
 	common.Must(c.Start())
 	defer c.Close()
-
-	source := c.Channel()
 
 	a, err := c.Subscribe()
 	common.Must(err)
@@ -297,8 +353,8 @@ func TestStatsChannelConcurrency(t *testing.T) {
 	errCh := make(chan string)
 
 	go func() { // Blocking publish
-		source <- 1
-		source <- 2
+		c.Publish(context.Background(), 1)
+		c.Publish(context.Background(), 2)
 	}()
 
 	go func() {
@@ -311,8 +367,7 @@ func TestStatsChannelConcurrency(t *testing.T) {
 	}()
 
 	go func() {
-		// Block `b` for a time shorter than `source`'s timeout
-		// So as to ensure source channel is trying to send message to `b`.
+		// Block `b` for a time so as to ensure source channel is trying to send message to `b`.
 		<-time.After(25 * time.Millisecond)
 		// This causes concurrency scenario: unsubscribe `b` while trying to send message to it
 		c.Unsubscribe(b)
@@ -327,11 +382,11 @@ func TestStatsChannelConcurrency(t *testing.T) {
 			errCh <- fmt.Sprint("unexpected block from receiving data: ", 1)
 		}
 		// Test `b` is not closed but cannot receive data 2:
-		// Becuase in a new round of messaging, `b` has been unsubscribed.
+		// Because in a new round of messaging, `b` has been unsubscribed.
 		select {
 		case v, ok := <-b:
 			if ok {
-				errCh <- fmt.Sprint("unexpected receving: ", v)
+				errCh <- fmt.Sprint("unexpected receiving: ", v)
 			} else {
 				errCh <- fmt.Sprint("unexpected closing of channel")
 			}

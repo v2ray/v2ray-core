@@ -408,8 +408,8 @@ type SocketConfig struct {
 	Tfo SocketConfig_TCPFastOpenState `protobuf:"varint,2,opt,name=tfo,proto3,enum=v2ray.core.transport.internet.SocketConfig_TCPFastOpenState" json:"tfo,omitempty"`
 	// TProxy is for enabling TProxy socket option.
 	Tproxy SocketConfig_TProxyMode `protobuf:"varint,3,opt,name=tproxy,proto3,enum=v2ray.core.transport.internet.SocketConfig_TProxyMode" json:"tproxy,omitempty"`
-	// ReceiveOriginalDestAddress is for enabling IP_RECVORIGDSTADDR socket option.
-	// This option is for UDP only.
+	// ReceiveOriginalDestAddress is for enabling IP_RECVORIGDSTADDR socket
+	// option. This option is for UDP only.
 	ReceiveOriginalDestAddress bool   `protobuf:"varint,4,opt,name=receive_original_dest_address,json=receiveOriginalDestAddress,proto3" json:"receive_original_dest_address,omitempty"`
 	BindAddress                []byte `protobuf:"bytes,5,opt,name=bind_address,json=bindAddress,proto3" json:"bind_address,omitempty"`
 	BindPort                   uint32 `protobuf:"varint,6,opt,name=bind_port,json=bindPort,proto3" json:"bind_port,omitempty"`

@@ -79,7 +79,8 @@ type ServerConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// User is a list of users that allowed to connect to this inbound.
-	// Although this is a repeated field, only the first user is effective for now.
+	// Although this is a repeated field, only the first user is effective for
+	// now.
 	User []*protocol.User `protobuf:"bytes,1,rep,name=user,proto3" json:"user,omitempty"`
 }
 

@@ -6,17 +6,15 @@ def _go_command(ctx):
   output_file = ctx.actions.declare_file(ctx.attr.os + "/" + ctx.attr.arch + "/" + ctx.attr.ver + "/" + output)
   pkg = ctx.attr.pkg
 
-  ld_flags = "-s -w"
+  ld_flags = "-s -w -buildid="
   if ctx.attr.ld:
     ld_flags = ld_flags + " " + ctx.attr.ld
 
   options = [
     "go",
     "build",
-    "-o", output_file.path,
-    "-compiler", "gc",
-    "-gcflags", '"all=-trimpath=${GOPATH}/src"',
-    "-asmflags", '"all=-trimpath=${GOPATH}/src"',
+    "-trimpath",
+    "-o", output_file.path, 
     "-ldflags", "'%s'" % ld_flags,
     "-tags", "'%s'" % ctx.attr.gotags,
     pkg,
@@ -28,7 +26,6 @@ def _go_command(ctx):
     "CGO_ENABLED=0",
     "GOOS="+ctx.attr.os,
     "GOARCH="+ctx.attr.arch,
-    #"GOROOT_FINAL=/go",
     "GO111MODULE=on",
     "GOCACHE=${TMPDIR}/gocache"
   ]

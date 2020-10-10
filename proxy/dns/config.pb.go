@@ -31,7 +31,8 @@ type Config struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Server is the DNS server address. If specified, this address overrides the original one.
+	// Server is the DNS server address. If specified, this address overrides the
+	// original one.
 	Server *net.Endpoint `protobuf:"bytes,1,opt,name=server,proto3" json:"server,omitempty"`
 }
 

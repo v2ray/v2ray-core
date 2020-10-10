@@ -2,7 +2,7 @@
 
 package encoding
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 import (
 	"io"
@@ -60,49 +60,53 @@ func EncodeRequestHeader(writer io.Writer, request *protocol.RequestHeader, requ
 }
 
 // DecodeRequestHeader decodes and returns (if successful) a RequestHeader from an input stream.
-func DecodeRequestHeader(reader io.Reader, validator *vless.Validator) (*protocol.RequestHeader, *Addons, error, *buf.Buffer) {
+func DecodeRequestHeader(isfb bool, first *buf.Buffer, reader io.Reader, validator *vless.Validator) (*protocol.RequestHeader, *Addons, error, bool) {
 
 	buffer := buf.StackNew()
 	defer buffer.Release()
 
-	pre := buf.New()
+	request := new(protocol.RequestHeader)
 
-	if _, err := buffer.ReadFullFrom(reader, 1); err != nil {
-		pre.Write(buffer.Bytes())
-		return nil, nil, newError("failed to read request version").Base(err), pre
+	if isfb {
+		request.Version = first.Byte(0)
+	} else {
+		if _, err := buffer.ReadFullFrom(reader, 1); err != nil {
+			return nil, nil, newError("failed to read request version").Base(err), false
+		}
+		request.Version = buffer.Byte(0)
 	}
-
-	request := &protocol.RequestHeader{
-		Version: buffer.Byte(0),
-	}
-
-	pre.Write(buffer.Bytes())
 
 	switch request.Version {
 	case 0:
 
-		buffer.Clear()
-		if _, err := buffer.ReadFullFrom(reader, protocol.IDBytesLen); err != nil {
-			pre.Write(buffer.Bytes())
-			return nil, nil, newError("failed to read request user id").Base(err), pre
+		var id [16]byte
+
+		if isfb {
+			copy(id[:], first.BytesRange(1, 17))
+		} else {
+			buffer.Clear()
+			if _, err := buffer.ReadFullFrom(reader, 16); err != nil {
+				return nil, nil, newError("failed to read request user id").Base(err), false
+			}
+			copy(id[:], buffer.Bytes())
 		}
 
-		var id [16]byte
-		copy(id[:], buffer.Bytes())
-
 		if request.User = validator.Get(id); request.User == nil {
-			pre.Write(buffer.Bytes())
-			return nil, nil, newError("invalid request user id"), pre
+			return nil, nil, newError("invalid request user id"), isfb
+		}
+
+		if isfb {
+			first.Advance(17)
 		}
 
 		requestAddons, err := DecodeHeaderAddons(&buffer, reader)
 		if err != nil {
-			return nil, nil, newError("failed to decode request header addons").Base(err), nil
+			return nil, nil, newError("failed to decode request header addons").Base(err), false
 		}
 
 		buffer.Clear()
 		if _, err := buffer.ReadFullFrom(reader, 1); err != nil {
-			return nil, nil, newError("failed to read request command").Base(err), nil
+			return nil, nil, newError("failed to read request command").Base(err), false
 		}
 
 		request.Command = protocol.RequestCommand(buffer.Byte(0))
@@ -118,14 +122,14 @@ func DecodeRequestHeader(reader io.Reader, validator *vless.Validator) (*protoco
 		}
 
 		if request.Address == nil {
-			return nil, nil, newError("invalid request address"), nil
+			return nil, nil, newError("invalid request address"), false
 		}
 
-		return request, requestAddons, nil, nil
+		return request, requestAddons, nil, false
 
 	default:
 
-		return nil, nil, newError("invalid request version"), pre
+		return nil, nil, newError("invalid request version"), isfb
 
 	}
 

@@ -496,8 +496,8 @@ func (c *StreamConfig) Build() (*internet.StreamConfig, error) {
 		config.SecurityType = tm.Type
 	}
 	if strings.EqualFold(c.Security, "xtls") {
-		if config.ProtocolName != "tcp" && config.ProtocolName != "domainsocket" {
-			return nil, newError("XTLS only supports TCP and DomainSocket for now.")
+		if config.ProtocolName != "tcp" && config.ProtocolName != "mkcp" && config.ProtocolName != "domainsocket" {
+			return nil, newError("XTLS only supports TCP, mKCP and DomainSocket for now.")
 		}
 		xtlsSettings := c.XTLSSettings
 		if xtlsSettings == nil {

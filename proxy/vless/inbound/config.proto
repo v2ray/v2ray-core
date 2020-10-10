@@ -18,7 +18,8 @@ message Fallback {
 
 message Config {
   repeated v2ray.core.common.protocol.User clients = 1;
-  // Decryption settings. Only applies to server side, and only accepts "none" for now.
+  // Decryption settings. Only applies to server side, and only accepts "none"
+  // for now.
   string decryption = 2;
   repeated Fallback fallbacks = 3;
 }
