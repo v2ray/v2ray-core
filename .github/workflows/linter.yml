@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v2.2.1
         with:
           version: v1.31
           args: --config=.github/linters/.golangci.yml
