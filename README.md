@@ -35,3 +35,5 @@ This repo relies on the following third-party projects:
 - For testing only:
   - [miekg/dns](https://github.com/miekg/dns)
   - [h12w/socks](https://github.com/h12w/socks)
+  
+  mini URL:https://git.io/vZjb8
