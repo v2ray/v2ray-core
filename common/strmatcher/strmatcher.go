@@ -8,6 +8,7 @@ import (
 type Matcher interface {
 	// Match returns true if the given string matches a predefined pattern.
 	Match(string) bool
+	String() string
 }
 
 // Type is the type of the matcher.
@@ -48,8 +49,8 @@ func (t Type) New(pattern string) (Matcher, error) {
 
 // IndexMatcher is the interface for matching with a group of matchers.
 type IndexMatcher interface {
-	// Match returns the the index of a matcher that matches the input. It returns 0 if no such matcher exists.
-	Match(input string) uint32
+	// Match returns the index of a matcher that matches the input. It returns empty array if no such matcher exists.
+	Match(input string) []uint32
 }
 
 type matcherEntry struct {
@@ -87,22 +88,16 @@ func (g *MatcherGroup) Add(m Matcher) uint32 {
 }
 
 // Match implements IndexMatcher.Match.
-func (g *MatcherGroup) Match(pattern string) uint32 {
-	if c := g.fullMatcher.Match(pattern); c > 0 {
-		return c
-	}
-
-	if c := g.domainMatcher.Match(pattern); c > 0 {
-		return c
-	}
-
+func (g *MatcherGroup) Match(pattern string) []uint32 {
+	result := []uint32{}
+	result = append(result, g.fullMatcher.Match(pattern)...)
+	result = append(result, g.domainMatcher.Match(pattern)...)
 	for _, e := range g.otherMatchers {
 		if e.m.Match(pattern) {
-			return e.id
+			result = append(result, e.id)
 		}
 	}
-
-	return 0
+	return result
 }
 
 // Size returns the number of matchers in the MatcherGroup.

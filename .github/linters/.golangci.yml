@@ -1,0 +1,38 @@
+run:
+  timeout: 5m
+  skip-files:
+    - generated.*
+
+issues:
+  new: true
+
+linters:
+  enable:
+    - bodyclose
+    - depguard
+    - gocritic
+    - gofmt
+    - goimports
+    - golint
+    - goprintffuncname
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - rowserrcheck
+    - scopelint
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - varcheck
+    - whitespace
+  disable:
+    - deadcode
+    - errcheck
+    - unused

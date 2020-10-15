@@ -5,4 +5,4 @@
 //    xtaci@github for translating to Golang
 package kcp
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen

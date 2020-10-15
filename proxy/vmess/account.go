@@ -8,7 +8,7 @@ import (
 	"v2ray.com/core/common/uuid"
 )
 
-// MemoryAccount is an in-memory from of VMess account.
+// MemoryAccount is an in-memory form of VMess account.
 type MemoryAccount struct {
 	// ID is the main ID of the account.
 	ID *protocol.ID

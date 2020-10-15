@@ -22,7 +22,7 @@ func TestBufferClear(t *testing.T) {
 
 	buffer.Clear()
 	if buffer.Len() != 0 {
-		t.Error("expect 0 lenght, but got ", buffer.Len())
+		t.Error("expect 0 length, but got ", buffer.Len())
 	}
 }
 

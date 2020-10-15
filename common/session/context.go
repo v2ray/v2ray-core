@@ -10,6 +10,7 @@ const (
 	outboundSessionKey
 	contentSessionKey
 	muxPreferedSessionKey
+	sockoptSessionKey
 )
 
 // ContextWithID returns a new context with the given ID.
@@ -69,4 +70,17 @@ func MuxPreferedFromContext(ctx context.Context) bool {
 		return val
 	}
 	return false
+}
+
+// ContextWithSockopt returns a new context with Socket configs included
+func ContextWithSockopt(ctx context.Context, s *Sockopt) context.Context {
+	return context.WithValue(ctx, sockoptSessionKey, s)
+}
+
+// SockoptFromContext returns Socket configs in this context, or nil if not contained.
+func SockoptFromContext(ctx context.Context) *Sockopt {
+	if sockopt, ok := ctx.Value(sockoptSessionKey).(*Sockopt); ok {
+		return sockopt
+	}
+	return nil
 }

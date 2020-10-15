@@ -2,7 +2,7 @@
 
 package outbound
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 import (
 	"context"
@@ -36,7 +36,7 @@ type Handler struct {
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Receiver {
-		s, err := protocol.NewServerSpecFromPB(*rec)
+		s, err := protocol.NewServerSpecFromPB(rec)
 		if err != nil {
 			return nil, newError("failed to parse server spec").Base(err)
 		}
@@ -54,12 +54,12 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 }
 
 // Process implements proxy.Outbound.Process().
-func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
+func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
 	err := retry.ExponentialBackoff(5, 200).On(func() error {
-		rec = v.serverPicker.PickServer()
+		rec = h.serverPicker.PickServer()
 		rawConn, err := dialer.Dial(ctx, rec.Destination())
 		if err != nil {
 			return err
@@ -89,9 +89,10 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		command = protocol.RequestCommandMux
 	}
 
+	user := rec.PickUser()
 	request := &protocol.RequestHeader{
 		Version: encoding.Version,
-		User:    rec.PickUser(),
+		User:    user,
 		Command: command,
 		Address: target.Address,
 		Port:    target.Port,
@@ -112,8 +113,13 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	input := link.Reader
 	output := link.Writer
 
-	session := encoding.NewClientSession(protocol.DefaultIDHash)
-	sessionPolicy := v.policyManager.ForLevel(request.User.Level)
+	isAEAD := false
+	if !aead_disabled && len(account.AlterIDs) == 0 {
+		isAEAD = true
+	}
+
+	session := encoding.NewClientSession(isAEAD, protocol.DefaultIDHash, ctx)
+	sessionPolicy := h.policyManager.ForLevel(request.User.Level)
 
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
@@ -156,7 +162,7 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		if err != nil {
 			return newError("failed to read header").Base(err)
 		}
-		v.handleCommand(rec.Destination(), header.Command)
+		h.handleCommand(rec.Destination(), header.Command)
 
 		bodyReader := session.DecodeResponseBody(request, reader)
 
@@ -173,6 +179,7 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 
 var (
 	enablePadding = false
+	aead_disabled = false
 )
 
 func shouldEnablePadding(s protocol.SecurityType) bool {
@@ -185,8 +192,14 @@ func init() {
 	}))
 
 	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+
 	paddingValue := platform.NewEnvFlag("v2ray.vmess.padding").GetValue(func() string { return defaultFlagValue })
 	if paddingValue != defaultFlagValue {
 		enablePadding = true
+	}
+
+	aeadDisabled := platform.NewEnvFlag("v2ray.vmess.aead.disabled").GetValue(func() string { return defaultFlagValue })
+	if aeadDisabled == "true" {
+		aead_disabled = true
 	}
 }

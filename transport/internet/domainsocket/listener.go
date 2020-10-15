@@ -9,21 +9,27 @@ import (
 	gotls "crypto/tls"
 	"os"
 	"strings"
-	"syscall"
+
+	"github.com/pires/go-proxyproto"
+	goxtls "github.com/xtls/go"
+	"golang.org/x/sys/unix"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
+	"v2ray.com/core/transport/internet/xtls"
 )
 
 type Listener struct {
-	addr      *net.UnixAddr
-	ln        net.Listener
-	tlsConfig *gotls.Config
-	config    *Config
-	addConn   internet.ConnHandler
-	locker    *fileLocker
+	addr       *net.UnixAddr
+	ln         net.Listener
+	tlsConfig  *gotls.Config
+	xtlsConfig *goxtls.Config
+	config     *Config
+	addConn    internet.ConnHandler
+	locker     *fileLocker
 }
 
 func Listen(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, handler internet.ConnHandler) (internet.Listener, error) {
@@ -38,11 +44,23 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 		return nil, newError("failed to listen domain socket").Base(err).AtWarning()
 	}
 
-	ln := &Listener{
-		addr:    addr,
-		ln:      unixListener,
-		config:  settings,
-		addConn: handler,
+	var ln *Listener
+	if settings.AcceptProxyProtocol {
+		policyFunc := func(upstream net.Addr) (proxyproto.Policy, error) { return proxyproto.REQUIRE, nil }
+		ln = &Listener{
+			addr:    addr,
+			ln:      &proxyproto.Listener{Listener: unixListener, Policy: policyFunc},
+			config:  settings,
+			addConn: handler,
+		}
+		newError("accepting PROXY protocol").AtWarning().WriteToLog(session.ExportIDToError(ctx))
+	} else {
+		ln = &Listener{
+			addr:    addr,
+			ln:      unixListener,
+			config:  settings,
+			addConn: handler,
+		}
 	}
 
 	if !settings.Abstract {
@@ -57,6 +75,9 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 
 	if config := tls.ConfigFromStreamSettings(streamSettings); config != nil {
 		ln.tlsConfig = config.GetTLSConfig()
+	}
+	if config := xtls.ConfigFromStreamSettings(streamSettings); config != nil {
+		ln.xtlsConfig = config.GetXTLSConfig()
 	}
 
 	go ln.run()
@@ -88,6 +109,8 @@ func (ln *Listener) run() {
 
 		if ln.tlsConfig != nil {
 			conn = tls.Server(conn, ln.tlsConfig)
+		} else if ln.xtlsConfig != nil {
+			conn = xtls.Server(conn, ln.xtlsConfig)
 		}
 
 		ln.addConn(internet.Connection(conn))
@@ -104,7 +127,7 @@ func (fl *fileLocker) Acquire() error {
 	if err != nil {
 		return err
 	}
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+	if err := unix.Flock(int(f.Fd()), unix.LOCK_EX); err != nil {
 		f.Close()
 		return newError("failed to lock file: ", fl.path).Base(err)
 	}
@@ -113,7 +136,7 @@ func (fl *fileLocker) Acquire() error {
 }
 
 func (fl *fileLocker) Release() {
-	if err := syscall.Flock(int(fl.file.Fd()), syscall.LOCK_UN); err != nil {
+	if err := unix.Flock(int(fl.file.Fd()), unix.LOCK_UN); err != nil {
 		newError("failed to unlock file: ", fl.path).Base(err).WriteToLog()
 	}
 	if err := fl.file.Close(); err != nil {

@@ -43,6 +43,8 @@ type tcpWorker struct {
 	downlinkCounter stats.Counter
 
 	hub internet.Listener
+
+	ctx context.Context
 }
 
 func getTProxyType(s *internet.MemoryStreamConfig) internet.SocketConfig_TProxyMode {
@@ -53,7 +55,7 @@ func getTProxyType(s *internet.MemoryStreamConfig) internet.SocketConfig_TProxyM
 }
 
 func (w *tcpWorker) callback(conn internet.Connection) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(w.ctx)
 	sid := session.NewID()
 	ctx = session.ContextWithID(ctx, sid)
 
@@ -89,9 +91,9 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	ctx = session.ContextWithContent(ctx, content)
 	if w.uplinkCounter != nil || w.downlinkCounter != nil {
 		conn = &internet.StatCouterConnection{
-			Connection: conn,
-			Uplink:     w.uplinkCounter,
-			Downlink:   w.downlinkCounter,
+			Connection:   conn,
+			ReadCounter:  w.uplinkCounter,
+			WriteCounter: w.downlinkCounter,
 		}
 	}
 	if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
@@ -198,7 +200,7 @@ func (c *udpConn) RemoteAddr() net.Addr {
 }
 
 func (c *udpConn) LocalAddr() net.Addr {
-	return c.remote
+	return c.local
 }
 
 func (*udpConn) SetDeadline(time.Time) error {
@@ -330,7 +332,7 @@ func (w *udpWorker) clean() error {
 	}
 
 	for addr, conn := range w.activeConn {
-		if nowSec-atomic.LoadInt64(&conn.lastActivityTime) > 8 {
+		if nowSec-atomic.LoadInt64(&conn.lastActivityTime) > 8 { //TODO Timeout too small
 			delete(w.activeConn, addr)
 			conn.Close() // nolint: errcheck
 		}

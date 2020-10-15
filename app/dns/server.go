@@ -2,10 +2,11 @@
 
 package dns
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/url"
 	"strings"
@@ -28,13 +29,20 @@ import (
 // Server is a DNS rely server.
 type Server struct {
 	sync.Mutex
-	hosts          *StaticHosts
-	clients        []Client
-	clientIP       net.IP
-	domainMatcher  strmatcher.IndexMatcher
-	domainIndexMap map[uint32]uint32
-	ipIndexMap     map[uint32]*MultiGeoIPMatcher
-	tag            string
+	hosts         *StaticHosts
+	clientIP      net.IP
+	clients       []Client             // clientIdx -> Client
+	ipIndexMap    []*MultiGeoIPMatcher // clientIdx -> *MultiGeoIPMatcher
+	domainRules   [][]string           // clientIdx -> domainRuleIdx -> DomainRule
+	domainMatcher strmatcher.IndexMatcher
+	matcherInfos  []DomainMatcherInfo // matcherIdx -> DomainMatcherInfo
+	tag           string
+}
+
+// DomainMatcherInfo contains information attached to index returned by Server.domainMatcher
+type DomainMatcherInfo struct {
+	clientIdx     uint16
+	domainRuleIdx uint16
 }
 
 // MultiGeoIPMatcher for match
@@ -86,10 +94,27 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	}
 	server.hosts = hosts
 
-	addNameServer := func(endpoint *net.Endpoint) int {
+	addNameServer := func(ns *NameServer) int {
+		endpoint := ns.Address
 		address := endpoint.Address.AsAddress()
 		if address.Family().IsDomain() && address.Domain() == "localhost" {
 			server.clients = append(server.clients, NewLocalNameServer())
+			// Priotize local domains with specific TLDs or without any dot to local DNS
+			// References:
+			// https://www.iana.org/assignments/special-use-domain-names/special-use-domain-names.xhtml
+			// https://unix.stackexchange.com/questions/92441/whats-the-difference-between-local-home-and-lan
+			localTLDsAndDotlessDomains := []*NameServer_PriorityDomain{
+				{Type: DomainMatchingType_Regex, Domain: "^[^.]+$"}, // This will only match domains without any dot
+				{Type: DomainMatchingType_Subdomain, Domain: "local"},
+				{Type: DomainMatchingType_Subdomain, Domain: "localdomain"},
+				{Type: DomainMatchingType_Subdomain, Domain: "localhost"},
+				{Type: DomainMatchingType_Subdomain, Domain: "lan"},
+				{Type: DomainMatchingType_Subdomain, Domain: "home.arpa"},
+				{Type: DomainMatchingType_Subdomain, Domain: "example"},
+				{Type: DomainMatchingType_Subdomain, Domain: "invalid"},
+				{Type: DomainMatchingType_Subdomain, Domain: "test"},
+			}
+			ns.PrioritizedDomain = append(ns.PrioritizedDomain, localTLDsAndDotlessDomains...)
 		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "https+local://") {
 			// URI schemed string treated as domain
 			// DOH Local mode
@@ -98,8 +123,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 				log.Fatalln(newError("DNS config error").Base(err))
 			}
 			server.clients = append(server.clients, NewDoHLocalNameServer(u, server.clientIP))
-		} else if address.Family().IsDomain() &&
-			strings.HasPrefix(address.Domain(), "https://") {
+		} else if address.Family().IsDomain() && strings.HasPrefix(address.Domain(), "https://") {
 			// DOH Remote mode
 			u, err := url.Parse(address.Domain())
 			if err != nil {
@@ -131,33 +155,66 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 				}))
 			}
 		}
+		server.ipIndexMap = append(server.ipIndexMap, nil)
 		return len(server.clients) - 1
 	}
 
 	if len(config.NameServers) > 0 {
 		features.PrintDeprecatedFeatureWarning("simple DNS server")
 		for _, destPB := range config.NameServers {
-			addNameServer(destPB)
+			addNameServer(&NameServer{Address: destPB})
 		}
 	}
 
 	if len(config.NameServer) > 0 {
-		domainMatcher := &strmatcher.MatcherGroup{}
-		domainIndexMap := make(map[uint32]uint32)
-		ipIndexMap := make(map[uint32]*MultiGeoIPMatcher)
-		var geoIPMatcherContainer router.GeoIPMatcherContainer
-
+		clientIndices := []int{}
+		domainRuleCount := 0
 		for _, ns := range config.NameServer {
-			idx := addNameServer(ns.Address)
+			idx := addNameServer(ns)
+			clientIndices = append(clientIndices, idx)
+			domainRuleCount += len(ns.PrioritizedDomain)
+		}
 
+		domainRules := make([][]string, len(server.clients))
+		domainMatcher := &strmatcher.MatcherGroup{}
+		matcherInfos := make([]DomainMatcherInfo, domainRuleCount+1) // matcher index starts from 1
+		var geoIPMatcherContainer router.GeoIPMatcherContainer
+		for nidx, ns := range config.NameServer {
+			idx := clientIndices[nidx]
+
+			// Establish domain rule matcher
+			rules := []string{}
+			ruleCurr := 0
+			ruleIter := 0
 			for _, domain := range ns.PrioritizedDomain {
 				matcher, err := toStrMatcher(domain.Type, domain.Domain)
 				if err != nil {
 					return nil, newError("failed to create prioritized domain").Base(err).AtWarning()
 				}
 				midx := domainMatcher.Add(matcher)
-				domainIndexMap[midx] = uint32(idx)
+				if midx >= uint32(len(matcherInfos)) { // This rarely happens according to current matcher's implementation
+					newError("expanding domain matcher info array to size ", midx, " when adding ", matcher).AtDebug().WriteToLog()
+					matcherInfos = append(matcherInfos, make([]DomainMatcherInfo, midx-uint32(len(matcherInfos))+1)...)
+				}
+				info := &matcherInfos[midx]
+				info.clientIdx = uint16(idx)
+				if ruleCurr < len(ns.OriginalRules) {
+					info.domainRuleIdx = uint16(ruleCurr)
+					rule := ns.OriginalRules[ruleCurr]
+					if ruleCurr >= len(rules) {
+						rules = append(rules, rule.Rule)
+					}
+					ruleIter++
+					if ruleIter >= int(rule.Size) {
+						ruleIter = 0
+						ruleCurr++
+					}
+				} else { // No original rule, generate one according to current domain matcher (majorly for compatibility with tests)
+					info.domainRuleIdx = uint16(len(rules))
+					rules = append(rules, matcher.String())
+				}
 			}
+			domainRules[idx] = rules
 
 			// only add to ipIndexMap if GeoIP is configured
 			if len(ns.Geoip) > 0 {
@@ -170,17 +227,17 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 					matchers = append(matchers, matcher)
 				}
 				matcher := &MultiGeoIPMatcher{matchers: matchers}
-				ipIndexMap[uint32(idx)] = matcher
+				server.ipIndexMap[idx] = matcher
 			}
 		}
-
+		server.domainRules = domainRules
 		server.domainMatcher = domainMatcher
-		server.domainIndexMap = domainIndexMap
-		server.ipIndexMap = ipIndexMap
+		server.matcherInfos = matcherInfos
 	}
 
 	if len(server.clients) == 0 {
 		server.clients = append(server.clients, NewLocalNameServer())
+		server.ipIndexMap = append(server.ipIndexMap, nil)
 	}
 
 	return server, nil
@@ -207,9 +264,12 @@ func (s *Server) IsOwnLink(ctx context.Context) bool {
 }
 
 // Match check dns ip match geoip
-func (s *Server) Match(idx uint32, client Client, domain string, ips []net.IP) ([]net.IP, error) {
-	matcher, exist := s.ipIndexMap[idx]
-	if !exist {
+func (s *Server) Match(idx int, client Client, domain string, ips []net.IP) ([]net.IP, error) {
+	var matcher *MultiGeoIPMatcher
+	if idx < len(s.ipIndexMap) {
+		matcher = s.ipIndexMap[idx]
+	}
+	if matcher == nil {
 		return ips, nil
 	}
 
@@ -231,7 +291,7 @@ func (s *Server) Match(idx uint32, client Client, domain string, ips []net.IP) (
 	return newIps, nil
 }
 
-func (s *Server) queryIPTimeout(idx uint32, client Client, domain string, option IPOption) ([]net.IP, error) {
+func (s *Server) queryIPTimeout(idx int, client Client, domain string, option IPOption) ([]net.IP, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
 	if len(s.tag) > 0 {
 		ctx = session.ContextWithInbound(ctx, &session.Inbound{
@@ -307,11 +367,6 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 		domain = domain[:len(domain)-1]
 	}
 
-	// skip domain without any dot
-	if strings.Index(domain, ".") == -1 {
-		return nil, newError("invalid domain name").AtWarning()
-	}
-
 	ips := s.lookupStatic(domain, option, 0)
 	if ips != nil && ips[0].Family().IsIP() {
 		newError("returning ", len(ips), " IPs for domain ", domain).WriteToLog()
@@ -327,10 +382,25 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 	var lastErr error
 	var matchedClient Client
 	if s.domainMatcher != nil {
-		idx := s.domainMatcher.Match(domain)
-		if idx > 0 {
-			matchedClient = s.clients[s.domainIndexMap[idx]]
-			ips, err := s.queryIPTimeout(s.domainIndexMap[idx], matchedClient, domain, option)
+		indices := s.domainMatcher.Match(domain)
+		domainRules := []string{}
+		matchingDNS := []string{}
+		for _, idx := range indices {
+			info := s.matcherInfos[idx]
+			rule := s.domainRules[info.clientIdx][info.domainRuleIdx]
+			domainRules = append(domainRules, fmt.Sprintf("%s(DNS idx:%d)", rule, info.clientIdx))
+			matchingDNS = append(matchingDNS, s.clients[info.clientIdx].Name())
+		}
+		if len(domainRules) > 0 {
+			newError("domain ", domain, " matches following rules: ", domainRules).AtDebug().WriteToLog()
+		}
+		if len(matchingDNS) > 0 {
+			newError("domain ", domain, " uses following DNS first: ", matchingDNS).AtDebug().WriteToLog()
+		}
+		for _, idx := range indices {
+			clientIdx := int(s.matcherInfos[idx].clientIdx)
+			matchedClient = s.clients[clientIdx]
+			ips, err := s.queryIPTimeout(clientIdx, matchedClient, domain, option)
 			if len(ips) > 0 {
 				return ips, nil
 			}
@@ -350,7 +420,7 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 			continue
 		}
 
-		ips, err := s.queryIPTimeout(uint32(idx), client, domain, option)
+		ips, err := s.queryIPTimeout(idx, client, domain, option)
 		if len(ips) > 0 {
 			return ips, nil
 		}

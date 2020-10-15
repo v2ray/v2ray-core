@@ -1,6 +1,7 @@
 package encoding_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -42,7 +43,7 @@ func TestRequestSerialization(t *testing.T) {
 	}
 
 	buffer := buf.New()
-	client := NewClientSession(protocol.DefaultIDHash)
+	client := NewClientSession(true, protocol.DefaultIDHash, context.TODO())
 	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()
@@ -92,7 +93,7 @@ func TestInvalidRequest(t *testing.T) {
 	}
 
 	buffer := buf.New()
-	client := NewClientSession(protocol.DefaultIDHash)
+	client := NewClientSession(true, protocol.DefaultIDHash, context.TODO())
 	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()
@@ -133,7 +134,7 @@ func TestMuxRequest(t *testing.T) {
 	}
 
 	buffer := buf.New()
-	client := NewClientSession(protocol.DefaultIDHash)
+	client := NewClientSession(true, protocol.DefaultIDHash, context.TODO())
 	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()

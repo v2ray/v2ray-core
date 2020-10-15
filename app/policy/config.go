@@ -50,8 +50,8 @@ func (p *Policy) overrideWith(another *Policy) {
 		p.Timeout.overrideWith(another.Timeout)
 	}
 	if another.Stats != nil && p.Stats == nil {
-		p.Stats = new(Policy_Stats)
-		*p.Stats = *another.Stats
+		p.Stats = &Policy_Stats{}
+		p.Stats = another.Stats
 	}
 	if another.Buffer != nil {
 		p.Buffer = &Policy_Buffer{
@@ -84,8 +84,10 @@ func (p *Policy) ToCorePolicy() policy.Session {
 func (p *SystemPolicy) ToCorePolicy() policy.System {
 	return policy.System{
 		Stats: policy.SystemStats{
-			InboundUplink:   p.Stats.InboundUplink,
-			InboundDownlink: p.Stats.InboundDownlink,
+			InboundUplink:    p.Stats.InboundUplink,
+			InboundDownlink:  p.Stats.InboundDownlink,
+			OutboundUplink:   p.Stats.OutboundUplink,
+			OutboundDownlink: p.Stats.OutboundDownlink,
 		},
 	}
 }

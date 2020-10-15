@@ -44,17 +44,17 @@ func (p Port) String() string {
 }
 
 // FromPort returns the beginning port of this PortRange.
-func (p PortRange) FromPort() Port {
+func (p *PortRange) FromPort() Port {
 	return Port(p.From)
 }
 
 // ToPort returns the end port of this PortRange.
-func (p PortRange) ToPort() Port {
+func (p *PortRange) ToPort() Port {
 	return Port(p.To)
 }
 
 // Contains returns true if the given port is within the range of a PortRange.
-func (p PortRange) Contains(port Port) bool {
+func (p *PortRange) Contains(port Port) bool {
 	return p.FromPort() <= port && port <= p.ToPort()
 }
 
