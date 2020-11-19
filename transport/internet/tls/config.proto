@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package v2ray.core.transport.internet.tls;
 option csharp_namespace = "V2Ray.Core.Transport.Internet.Tls";
-option go_package = "tls";
+option go_package = "v2ray.com/core/transport/internet/tls";
 option java_package = "com.v2ray.core.transport.internet.tls";
 option java_multiple_files = true;
 
@@ -41,6 +41,7 @@ message Config {
   // Whether or not to disable session (ticket) resumption.
   bool disable_session_resumption = 6;
 
-  // If true, root certificates on the system will not be loaded for verification.
+  // If true, root certificates on the system will not be loaded for
+  // verification.
   bool disable_system_root = 7;
 }

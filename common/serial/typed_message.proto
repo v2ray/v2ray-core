@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package v2ray.core.common.serial;
 option csharp_namespace = "V2Ray.Core.Common.Serial";
-option go_package = "serial";
+option go_package = "v2ray.com/core/common/serial";
 option java_package = "com.v2ray.core.common.serial";
 option java_multiple_files = true;
 
@@ -10,6 +10,6 @@ option java_multiple_files = true;
 message TypedMessage {
   // The name of the message type, retrieved from protobuf API.
   string type = 1;
-  // Serialized proto message. 
+  // Serialized proto message.
   bytes value = 2;
 }

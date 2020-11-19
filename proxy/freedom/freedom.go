@@ -2,7 +2,7 @@
 
 package freedom
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 import (
 	"context"
@@ -39,12 +39,12 @@ func init() {
 type Handler struct {
 	policyManager policy.Manager
 	dns           dns.Client
-	config        Config
+	config        *Config
 }
 
 // Init initializes the Handler with necessary parameters.
 func (h *Handler) Init(config *Config, pm policy.Manager, d dns.Client) error {
-	h.config = *config
+	h.config = config
 	h.policyManager = pm
 	h.dns = d
 

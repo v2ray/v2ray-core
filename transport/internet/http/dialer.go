@@ -20,12 +20,12 @@ import (
 
 var (
 	globalDialerMap    map[net.Destination]*http.Client
-	globalDailerAccess sync.Mutex
+	globalDialerAccess sync.Mutex
 )
 
 func getHTTPClient(ctx context.Context, dest net.Destination, tlsSettings *tls.Config) (*http.Client, error) {
-	globalDailerAccess.Lock()
-	defer globalDailerAccess.Unlock()
+	globalDialerAccess.Lock()
+	defer globalDialerAccess.Unlock()
 
 	if globalDialerMap == nil {
 		globalDialerMap = make(map[net.Destination]*http.Client)
@@ -54,9 +54,26 @@ func getHTTPClient(ctx context.Context, dest net.Destination, tlsSettings *tls.C
 			if err != nil {
 				return nil, err
 			}
-			return gotls.Client(pconn, tlsConfig), nil
+
+			cn := gotls.Client(pconn, tlsConfig)
+			if err := cn.Handshake(); err != nil {
+				return nil, err
+			}
+			if !tlsConfig.InsecureSkipVerify {
+				if err := cn.VerifyHostname(tlsConfig.ServerName); err != nil {
+					return nil, err
+				}
+			}
+			state := cn.ConnectionState()
+			if p := state.NegotiatedProtocol; p != http2.NextProtoTLS {
+				return nil, newError("http2: unexpected ALPN protocol " + p + "; want q" + http2.NextProtoTLS).AtError()
+			}
+			if !state.NegotiatedProtocolIsMutual {
+				return nil, newError("http2: could not negotiate protocol mutually").AtError()
+			}
+			return cn, nil
 		},
-		TLSClientConfig: tlsSettings.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("h2")),
+		TLSClientConfig: tlsSettings.GetTLSConfig(tls.WithDestination(dest)),
 	}
 
 	client := &http.Client{

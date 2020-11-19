@@ -1,6 +1,6 @@
 package inbound
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 import (
 	"context"
@@ -148,6 +148,13 @@ func NewHandler(ctx context.Context, config *core.InboundHandlerConfig) (inbound
 	receiverSettings, ok := rawReceiverSettings.(*proxyman.ReceiverConfig)
 	if !ok {
 		return nil, newError("not a ReceiverConfig").AtError()
+	}
+
+	streamSettings := receiverSettings.StreamSettings
+	if streamSettings != nil && streamSettings.SocketSettings != nil {
+		ctx = session.ContextWithSockopt(ctx, &session.Sockopt{
+			Mark: streamSettings.SocketSettings.Mark,
+		})
 	}
 
 	allocStrategy := receiverSettings.AllocationStrategy

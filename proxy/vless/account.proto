@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package v2ray.core.proxy.vless;
+option csharp_namespace = "V2Ray.Core.Proxy.Vless";
+option go_package = "v2ray.com/core/proxy/vless";
+option java_package = "com.v2ray.core.proxy.vless";
+option java_multiple_files = true;
+
+message Account {
+  // ID of the account, in the form of a UUID, e.g., "66ad4540-b58c-4ad2-9926-ea63445a9b57".
+  string id = 1;
+  // Flow settings. May be "xtls-rprx-origin".
+  string flow = 2;
+  // Encryption settings. Only applies to client side, and only accepts "none" for now.
+  string encryption = 3;
+}

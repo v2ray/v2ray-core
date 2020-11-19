@@ -12,14 +12,9 @@ import (
 	"golang.org/x/net/dns/dnsmessage"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	v2net "v2ray.com/core/common/net"
 )
 
 func Test_parseResponse(t *testing.T) {
-	type args struct {
-		payload []byte
-	}
-
 	var p [][]byte
 
 	ans := new(dns.Msg)
@@ -56,7 +51,7 @@ func Test_parseResponse(t *testing.T) {
 		wantErr bool
 	}{
 		{"empty",
-			&IPRecord{0, []v2net.Address(nil), time.Time{}, dnsmessage.RCodeSuccess},
+			&IPRecord{0, []net.Address(nil), time.Time{}, dnsmessage.RCodeSuccess},
 			false,
 		},
 		{"error",
@@ -64,12 +59,12 @@ func Test_parseResponse(t *testing.T) {
 			true,
 		},
 		{"a record",
-			&IPRecord{1, []v2net.Address{v2net.ParseAddress("8.8.8.8"), v2net.ParseAddress("8.8.4.4")},
+			&IPRecord{1, []net.Address{net.ParseAddress("8.8.8.8"), net.ParseAddress("8.8.4.4")},
 				time.Time{}, dnsmessage.RCodeSuccess},
 			false,
 		},
 		{"aaaa record",
-			&IPRecord{2, []v2net.Address{v2net.ParseAddress("2001::123:8888"), v2net.ParseAddress("2001::123:8844")}, time.Time{}, dnsmessage.RCodeSuccess},
+			&IPRecord{2, []net.Address{net.ParseAddress("2001::123:8888"), net.ParseAddress("2001::123:8844")}, time.Time{}, dnsmessage.RCodeSuccess},
 			false,
 		},
 	}

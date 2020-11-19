@@ -2,91 +2,53 @@ trigger:
   batch: true
   branches:
     include:
-    - master
+      - master
+      - dev*
+      - refs/tags/*
 
-pr: none
+pool:
+  vmImage: "ubuntu-latest"
 
-jobs:
-- template: azure-pipelines.template.yml
-  parameters:
-    name: linux
-    vmImage: 'ubuntu-latest'
+variables:
+  - group: GithubToken
 
-- template: azure-pipelines.template.yml
-  parameters:
-    name: windows
-    vmImage: 'windows-latest'
-
-- template: azure-pipelines.template.yml
-  parameters:
-    name: macos
-    vmImage: 'macOS-latest'
-
-- job: linux_coverage
-  dependsOn: linux
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-  timeoutInMinutes: 30
-
-  pool:
-    vmImage: 'ubuntu-latest'
-
-  variables:
-    CODECOV_TOKEN: '$(coverage.token)'
-
-  steps:
+steps:
   - checkout: self
   - task: GoTool@0
     inputs:
-      version: '1.14.1'
-  - script: |
-      bash ./testing/coverage/coverall
-    workingDirectory: '$(Build.SourcesDirectory)'
-    displayName: 'Coverage'
-
-- job: make_release
-  dependsOn: linux
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-  timeoutInMinutes: 60
-
-  pool:
-    vmImage: 'ubuntu-latest'
-  
-  variables:
-    GOPATH: '$(system.defaultWorkingDirectory)'
-    BAZEL_VER: '0.23.0'
-
-  steps:
-  - checkout: none
-  - task: GoTool@0
-    inputs:
-      version: '1.14.1'
-  - script: |
-      sudo apt-get -y update
-      sudo apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python openssl
-    displayName: Apt Install
+      version: "1.15.2"
   - script: |
       go version
-      go get -insecure -v -t -d v2ray.com/core/...
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-    displayName: 'Fetch sources'
+      go mod download
+    workingDirectory: $(system.defaultWorkingDirectory)
+    displayName: "Fetch sources"
   - script: |
-      mkdir release
-      cd src
-      zip -9 -r ../release/src_all.zip * -x '*.git*'
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-    displayName: 'Dump sources'
+      bazel build --action_env=PATH=$PATH --action_env=GOPATH=$(go env GOPATH) --action_env=GOCACHE=$(go env GOCACHE) --action_env=SPWD=$(pwd) --spawn_strategy local //release:all
+    workingDirectory: $(system.defaultWorkingDirectory)
+    displayName: "Build Binaries"
   - script: |
-      curl -L -o bazel-installer.sh https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VER}/bazel-${BAZEL_VER}-installer-linux-x86_64.sh
-      chmod +x bazel-installer.sh
-      ./bazel-installer.sh --user
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-    displayName: 'Install Bazel'
+      echo $RELEASE_TAG
+      ./release/bleedingrelease.sh
+    workingDirectory: $(system.defaultWorkingDirectory)
+    displayName: "Generate Bleeding Edge Release"
+    env:
+      WORKDIR: $(system.defaultWorkingDirectory)
+      GITHUB_TOKEN: $(GITHUB_TOKEN)
+      PRERELEASE: true
+      RELEASE_TAG: unstable-$(Build.SourceVersion)
+      RELEASE_SHA: $(Build.SourceVersion)
+      TRIGGER_REASON: $(Build.SourceBranch)
+      GITHUB_REPO_OWNER: v2fly
+      GITHUB_REPO_NAME: v2ray-core
   - script: |
-      cd ./src/v2ray.com/core
-      $HOME/bin/bazel build --action_env=GOPATH=$GOPATH --action_env=PATH=$PATH --action_env=GPG_PASS=${SIGN_KEY_PASS} //release:all
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-    displayName: 'Build Binaries'
-  - script: |
-      cp ./src/v2ray.com/core/bazel-bin/release/*.zip ./release/
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-    displayName: 'Dump Binaries'
+      echo $RELEASE_TAG
+      ./release/tagrelease.sh
+    workingDirectory: $(system.defaultWorkingDirectory)
+    displayName: "Generate Tag Release"
+    env:
+      WORKDIR: $(system.defaultWorkingDirectory)
+      GITHUB_TOKEN: $(GITHUB_TOKEN)
+      PRERELEASE: true
+      RELEASE_TAG: unstable-$(Build.SourceVersion)
+      RELEASE_SHA: $(Build.SourceVersion)
+      TRIGGER_REASON: $(Build.SourceBranch)

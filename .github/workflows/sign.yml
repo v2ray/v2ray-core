@@ -1,0 +1,25 @@
+name: Sign
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  sign:
+    if: github.repository != 'v2ray/v2ray-core'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v2
+
+      - name: Grant it execution permission
+        run: |
+          chmod +x $GITHUB_WORKSPACE/release/requestsign_github.sh
+          chmod +x $GITHUB_WORKSPACE/release/requestsign.sh
+
+      - name: Invoke release signing
+        env:
+          SIGN_SERVICE_PASSWORD: ${{ secrets.SIGN_SERVICE_PASSWORD }}
+          SIGN_SERIVCE_URL: ${{ secrets.SIGN_SERIVCE_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: $GITHUB_WORKSPACE/release/requestsign_github.sh

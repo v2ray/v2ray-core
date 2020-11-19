@@ -17,27 +17,41 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/session"
+	"v2ray.com/core/features/routing"
+	routing_session "v2ray.com/core/features/routing/session"
 )
 
 func init() {
 	wd, err := os.Getwd()
 	common.Must(err)
 
-	common.Must(filesystem.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(wd, "..", "..", "release", "config", "geoip.dat")))
-	common.Must(filesystem.CopyFile(platform.GetAssetLocation("geosite.dat"), filepath.Join(wd, "..", "..", "release", "config", "geosite.dat")))
+	if _, err := os.Stat(platform.GetAssetLocation("geoip.dat")); err != nil && os.IsNotExist(err) {
+		common.Must(filesystem.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(wd, "..", "..", "release", "config", "geoip.dat")))
+	}
+	if _, err := os.Stat(platform.GetAssetLocation("geosite.dat")); err != nil && os.IsNotExist(err) {
+		common.Must(filesystem.CopyFile(platform.GetAssetLocation("geosite.dat"), filepath.Join(wd, "..", "..", "release", "config", "geosite.dat")))
+	}
 }
 
-func withOutbound(outbound *session.Outbound) *Context {
-	return &Context{Outbound: outbound}
+func withBackground() routing.Context {
+	return &routing_session.Context{}
 }
 
-func withInbound(inbound *session.Inbound) *Context {
-	return &Context{Inbound: inbound}
+func withOutbound(outbound *session.Outbound) routing.Context {
+	return &routing_session.Context{Outbound: outbound}
+}
+
+func withInbound(inbound *session.Inbound) routing.Context {
+	return &routing_session.Context{Inbound: inbound}
+}
+
+func withContent(content *session.Content) routing.Context {
+	return &routing_session.Context{Content: content}
 }
 
 func TestRoutingRule(t *testing.T) {
 	type ruleTest struct {
-		input  *Context
+		input  routing.Context
 		output bool
 	}
 
@@ -88,7 +102,7 @@ func TestRoutingRule(t *testing.T) {
 					output: false,
 				},
 				{
-					input:  &Context{},
+					input:  withBackground(),
 					output: false,
 				},
 			},
@@ -124,7 +138,7 @@ func TestRoutingRule(t *testing.T) {
 					output: true,
 				},
 				{
-					input:  &Context{},
+					input:  withBackground(),
 					output: false,
 				},
 			},
@@ -164,7 +178,7 @@ func TestRoutingRule(t *testing.T) {
 					output: true,
 				},
 				{
-					input:  &Context{},
+					input:  withBackground(),
 					output: false,
 				},
 			},
@@ -205,7 +219,7 @@ func TestRoutingRule(t *testing.T) {
 					output: false,
 				},
 				{
-					input:  &Context{},
+					input:  withBackground(),
 					output: false,
 				},
 			},
@@ -216,7 +230,7 @@ func TestRoutingRule(t *testing.T) {
 			},
 			test: []ruleTest{
 				{
-					input:  &Context{Content: &session.Content{Protocol: (&http.SniffHeader{}).Protocol()}},
+					input:  withContent(&session.Content{Protocol: (&http.SniffHeader{}).Protocol()}),
 					output: true,
 				},
 			},
@@ -266,12 +280,40 @@ func TestRoutingRule(t *testing.T) {
 		},
 		{
 			rule: &RoutingRule{
+				SourcePortList: &net.PortList{
+					Range: []*net.PortRange{
+						{From: 123, To: 123},
+						{From: 9993, To: 9999},
+					},
+				},
+			},
+			test: []ruleTest{
+				{
+					input:  withInbound(&session.Inbound{Source: net.UDPDestination(net.LocalHostIP, 123)}),
+					output: true,
+				},
+				{
+					input:  withInbound(&session.Inbound{Source: net.UDPDestination(net.LocalHostIP, 9999)}),
+					output: true,
+				},
+				{
+					input:  withInbound(&session.Inbound{Source: net.UDPDestination(net.LocalHostIP, 9994)}),
+					output: true,
+				},
+				{
+					input:  withInbound(&session.Inbound{Source: net.UDPDestination(net.LocalHostIP, 53)}),
+					output: false,
+				},
+			},
+		},
+		{
+			rule: &RoutingRule{
 				Protocol:   []string{"http"},
 				Attributes: "attrs[':path'].startswith('/test')",
 			},
 			test: []ruleTest{
 				{
-					input:  &Context{Content: &session.Content{Protocol: "http/1.1", Attributes: map[string]interface{}{":path": "/test/1"}}},
+					input:  withContent(&session.Content{Protocol: "http/1.1", Attributes: map[string]string{":path": "/test/1"}}),
 					output: true,
 				},
 			},

@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package v2ray.core.app.router.command;
+option csharp_namespace = "V2Ray.Core.App.Router.Command";
+option go_package = "v2ray.com/core/app/router/command";
+option java_package = "com.v2ray.core.app.router.command";
+option java_multiple_files = true;
+
+import "common/net/network.proto";
+
+// RoutingContext is the context with information relative to routing process.
+// It conforms to the structure of v2ray.core.features.routing.Context and
+// v2ray.core.features.routing.Route.
+message RoutingContext {
+  string InboundTag = 1;
+  v2ray.core.common.net.Network Network = 2;
+  repeated bytes SourceIPs = 3;
+  repeated bytes TargetIPs = 4;
+  uint32 SourcePort = 5;
+  uint32 TargetPort = 6;
+  string TargetDomain = 7;
+  string Protocol = 8;
+  string User = 9;
+  map<string, string> Attributes = 10;
+  repeated string OutboundGroupTags = 11;
+  string OutboundTag = 12;
+}
+
+// SubscribeRoutingStatsRequest subscribes to routing statistics channel if
+// opened by v2ray-core.
+// * FieldSelectors selects a subset of fields in routing statistics to return.
+// Valid selectors:
+//  - inbound: Selects connection's inbound tag.
+//  - network: Selects connection's network.
+//  - ip: Equivalent as "ip_source" and "ip_target", selects both source and
+//  target IP.
+//  - port: Equivalent as "port_source" and "port_target", selects both source
+//  and target port.
+//  - domain: Selects target domain.
+//  - protocol: Select connection's protocol.
+//  - user: Select connection's inbound user email.
+//  - attributes: Select connection's additional attributes.
+//  - outbound: Equivalent as "outbound" and "outbound_group", select both
+//  outbound tag and outbound group tags.
+// * If FieldSelectors is left empty, all fields will be returned.
+message SubscribeRoutingStatsRequest {
+  repeated string FieldSelectors = 1;
+}
+
+// TestRouteRequest manually tests a routing result according to the routing
+// context message.
+// * RoutingContext is the routing message without outbound information.
+// * FieldSelectors selects the fields to return in the routing result. All
+// fields are returned if left empty.
+// * PublishResult broadcasts the routing result to routing statistics channel
+// if set true.
+message TestRouteRequest {
+  RoutingContext RoutingContext = 1;
+  repeated string FieldSelectors = 2;
+  bool PublishResult = 3;
+}
+
+service RoutingService {
+  rpc SubscribeRoutingStats(SubscribeRoutingStatsRequest)
+      returns (stream RoutingContext) {}
+  rpc TestRoute(TestRouteRequest) returns (RoutingContext) {}
+}
+
+message Config {}

@@ -2,7 +2,7 @@ package features
 
 import "v2ray.com/core/common"
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 // Feature is the interface for V2Ray features. All features must implement this interface.
 // All existing features have an implementation in app directory. These features can be replaced by third-party ones.

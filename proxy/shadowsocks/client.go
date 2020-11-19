@@ -29,7 +29,7 @@ type Client struct {
 func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Server {
-		s, err := protocol.NewServerSpecFromPB(*rec)
+		s, err := protocol.NewServerSpecFromPB(rec)
 		if err != nil {
 			return nil, newError("failed to parse server spec").Base(err)
 		}
@@ -90,15 +90,11 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	}
 
 	user := server.PickUser()
-	account, ok := user.Account.(*MemoryAccount)
+	_, ok := user.Account.(*MemoryAccount)
 	if !ok {
 		return newError("user account is not valid")
 	}
 	request.User = user
-
-	if account.OneTimeAuth == Account_Auto || account.OneTimeAuth == Account_Enabled {
-		request.Option |= RequestOptionOneTimeAuth
-	}
 
 	sessionPolicy := c.policyManager.ForLevel(user.Level)
 	ctx, cancel := context.WithCancel(ctx)

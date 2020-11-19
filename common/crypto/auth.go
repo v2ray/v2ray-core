@@ -248,13 +248,14 @@ func (w *AuthenticationWriter) seal(b []byte) (*buf.Buffer, error) {
 		paddingSize = int32(w.padding.NextPaddingLen())
 	}
 
-	totalSize := encryptedSize + paddingSize
+	sizeBytes := w.sizeParser.SizeBytes()
+	totalSize := sizeBytes + encryptedSize + paddingSize
 	if totalSize > buf.Size {
 		return nil, newError("size too large: ", totalSize)
 	}
 
 	eb := buf.New()
-	w.sizeParser.Encode(uint16(encryptedSize+paddingSize), eb.Extend(w.sizeParser.SizeBytes()))
+	w.sizeParser.Encode(uint16(encryptedSize+paddingSize), eb.Extend(sizeBytes))
 	if _, err := w.auth.Seal(eb.Extend(encryptedSize)[:0], b); err != nil {
 		eb.Release()
 		return nil, err

@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package v2ray.core.transport.internet.kcp;
 option csharp_namespace = "V2Ray.Core.Transport.Internet.Kcp";
-option go_package = "kcp";
+option go_package = "v2ray.com/core/transport/internet/kcp";
 option java_package = "com.v2ray.core.transport.internet.kcp";
 option java_multiple_files = true;
 
-import "v2ray.com/core/common/serial/typed_message.proto";
+import "common/serial/typed_message.proto";
 
 // Maximum Transmission Unit, in bytes.
 message MTU {
@@ -42,6 +42,11 @@ message ConnectionReuse {
   bool enable = 1;
 }
 
+// Maximum Transmission Unit, in bytes.
+message EncryptionSeed {
+  string seed = 1;
+}
+
 message Config {
   MTU mtu = 1;
   TTI tti = 2;
@@ -52,4 +57,5 @@ message Config {
   ReadBuffer read_buffer = 7;
   v2ray.core.common.serial.TypedMessage header_config = 8;
   reserved 9;
+  EncryptionSeed seed = 10;
 }

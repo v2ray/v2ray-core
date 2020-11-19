@@ -2,14 +2,14 @@ syntax = "proto3";
 
 package v2ray.core.app.router;
 option csharp_namespace = "V2Ray.Core.App.Router";
-option go_package = "router";
+option go_package = "v2ray.com/core/app/router";
 option java_package = "com.v2ray.core.app.router";
 option java_multiple_files = true;
 
-import "v2ray.com/core/common/net/port.proto";
-import "v2ray.com/core/common/net/network.proto";
+import "common/net/port.proto";
+import "common/net/network.proto";
 
-// Domain for routing decision. 
+// Domain for routing decision.
 message Domain {
   // Type of domain value.
   enum Type {
@@ -65,7 +65,7 @@ message GeoSite {
   repeated Domain domain = 2;
 }
 
-message GeoSiteList{
+message GeoSiteList {
   repeated GeoSite entry = 1;
 }
 
@@ -77,7 +77,6 @@ message RoutingRule {
     // Tag of routing balancer.
     string balancing_tag = 12;
   }
-  
 
   // List of domains for target domain matching.
   repeated Domain domain = 2;
@@ -85,14 +84,15 @@ message RoutingRule {
   // List of CIDRs for target IP address matching.
   // Deprecated. Use geoip below.
   repeated CIDR cidr = 3 [deprecated = true];
-  
-  // List of GeoIPs for target IP address matching. If this entry exists, the cidr above will have no effect.
-  // GeoIP fields with the same country code are supposed to contain exactly same content. They will be merged during runtime.
-  // For customized GeoIPs, please leave country code empty.
+
+  // List of GeoIPs for target IP address matching. If this entry exists, the
+  // cidr above will have no effect. GeoIP fields with the same country code are
+  // supposed to contain exactly same content. They will be merged during
+  // runtime. For customized GeoIPs, please leave country code empty.
   repeated GeoIP geoip = 10;
 
-  // A range of port [from, to]. If the destination port is in this range, this rule takes effect.
-  // Deprecated. Use port_list.
+  // A range of port [from, to]. If the destination port is in this range, this
+  // rule takes effect. Deprecated. Use port_list.
   v2ray.core.common.net.PortRange port_range = 4 [deprecated = true];
 
   // List of ports.
@@ -107,8 +107,12 @@ message RoutingRule {
   // List of CIDRs for source IP address matching.
   repeated CIDR source_cidr = 6 [deprecated = true];
 
-  // List of GeoIPs for source IP address matching. If this entry exists, the source_cidr above will have no effect.
+  // List of GeoIPs for source IP address matching. If this entry exists, the
+  // source_cidr above will have no effect.
   repeated GeoIP source_geoip = 11;
+
+  // List of ports for source port matching.
+  v2ray.core.common.net.PortList source_port_list = 16;
 
   repeated string user_email = 7;
   repeated string inbound_tag = 8;

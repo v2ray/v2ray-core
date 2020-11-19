@@ -1,0 +1,32 @@
+name: Linter
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "**/*.go"
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+    paths:
+      - "**/*.go"
+
+jobs:
+  lint:
+    if: github.repository != 'v2ray/v2ray-core'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.15
+
+      - name: Checkout codebase
+        uses: actions/checkout@v2
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.31
+          args: --config=.github/linters/.golangci.yml
+          only-new-issues: true
