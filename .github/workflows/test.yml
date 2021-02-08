@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Cache go module
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.4
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
