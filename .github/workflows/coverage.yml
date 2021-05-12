@@ -17,7 +17,7 @@ jobs:
           go-version: ^1.15
 
       - name: Checkout codebase
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.3.4
 
       - name: Cache go module
         uses: actions/cache@v2
