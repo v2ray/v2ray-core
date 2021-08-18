@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/dgryski/go-metro v0.0.0-20200812162917-85c65e2d0165 // indirect
 	github.com/golang/mock v1.4.4
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.4.3
 	github.com/google/go-cmp v0.5.3
 	github.com/gorilla/websocket v1.4.2
 	github.com/lucas-clemente/quic-go v0.18.1
@@ -20,7 +20,7 @@ require (
 	golang.org/x/net v0.0.0-20201006153459-a7d1128ccaa0
 	golang.org/x/sync v0.0.0-20200930132711-30421366ff76
 	golang.org/x/sys v0.0.0-20201006155630-ac719f4daadf
-	google.golang.org/grpc v1.32.0
+	google.golang.org/grpc v1.40.0
 	google.golang.org/protobuf v1.25.0
 	h12.io/socks v1.0.1
 )
