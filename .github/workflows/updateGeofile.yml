@@ -4,8 +4,13 @@ on:
   schedule:
     - cron: "0 0 * * FRI"
 
+permissions:
+  contents: read
+
 jobs:
   update:
+    permissions:
+      contents: write  # for Git to git push
     if: github.repository == 'v2fly/v2ray-core'
     runs-on: ubuntu-latest
     steps:

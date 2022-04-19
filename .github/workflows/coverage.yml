@@ -6,6 +6,9 @@ on:
     paths:
       - "**/*.go"
 
+permissions:
+  contents: read
+
 jobs:
   coverage:
     if: github.repository != 'v2ray/v2ray-core'
