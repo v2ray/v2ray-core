@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package v2ray.core.proxy.freedom;
 option csharp_namespace = "V2Ray.Core.Proxy.Freedom";
-option go_package = "freedom";
+option go_package = "v2ray.com/core/proxy/freedom";
 option java_package = "com.v2ray.core.proxy.freedom";
 option java_multiple_files = true;
 
-import "v2ray.com/core/common/protocol/server_spec.proto";
+import "common/protocol/server_spec.proto";
 
 message DestinationOverride {
   v2ray.core.common.protocol.ServerEndpoint server = 1;

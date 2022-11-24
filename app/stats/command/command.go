@@ -2,7 +2,7 @@
 
 package command
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 import (
 	"context"
@@ -63,7 +63,7 @@ func (s *statsServer) QueryStats(ctx context.Context, request *QueryStatsRequest
 		return nil, newError("QueryStats only works its own stats.Manager.")
 	}
 
-	manager.Visit(func(name string, c feature_stats.Counter) bool {
+	manager.VisitCounters(func(name string, c feature_stats.Counter) bool {
 		if matcher.Match(name) {
 			var value int64
 			if request.Reset_ {
@@ -103,6 +103,8 @@ func (s *statsServer) GetSysStats(ctx context.Context, request *SysStatsRequest)
 
 	return response, nil
 }
+
+func (s *statsServer) mustEmbedUnimplementedStatsServiceServer() {}
 
 type service struct {
 	statsManager feature_stats.Manager

@@ -2,10 +2,14 @@ syntax = "proto3";
 
 package v2ray.core.app.stats;
 option csharp_namespace = "V2Ray.Core.App.Stats";
-option go_package = "stats";
+option go_package = "v2ray.com/core/app/stats";
 option java_package = "com.v2ray.core.app.stats";
 option java_multiple_files = true;
 
-message Config {
-  
+message Config {}
+
+message ChannelConfig {
+  bool Blocking = 1;
+  int32 SubscriberLimit = 2;
+  int32 BufferSize = 3;
 }

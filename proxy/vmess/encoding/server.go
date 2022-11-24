@@ -12,19 +12,18 @@ import (
 	"io/ioutil"
 	"sync"
 	"time"
-	"v2ray.com/core/common/dice"
-	vmessaead "v2ray.com/core/proxy/vmess/aead"
 
 	"golang.org/x/crypto/chacha20poly1305"
-
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
+	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy/vmess"
+	vmessaead "v2ray.com/core/proxy/vmess/aead"
 )
 
 type sessionId struct {
@@ -170,7 +169,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	var fixedSizeAuthID [16]byte
 	copy(fixedSizeAuthID[:], buffer.Bytes())
 
-	if foundAEAD == true {
+	if foundAEAD {
 		vmessAccount = user.Account.(*vmess.MemoryAccount)
 		var fixedSizeCmdKey [16]byte
 		copy(fixedSizeCmdKey[:], vmessAccount.ID.CmdKey())
@@ -375,7 +374,7 @@ func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, wr
 	} else {
 		BodyKey := sha256.Sum256(s.requestBodyKey[:])
 		copy(s.responseBodyKey[:], BodyKey[:16])
-		BodyIV := sha256.Sum256(s.requestBodyKey[:])
+		BodyIV := sha256.Sum256(s.requestBodyIV[:])
 		copy(s.responseBodyIV[:], BodyIV[:16])
 	}
 
@@ -405,8 +404,7 @@ func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, wr
 
 		aeadResponseHeaderLengthEncryptionBuffer := bytes.NewBuffer(nil)
 
-		var decryptedResponseHeaderLengthBinaryDeserializeBuffer uint16
-		decryptedResponseHeaderLengthBinaryDeserializeBuffer = uint16(aeadEncryptedHeaderBuffer.Len())
+		decryptedResponseHeaderLengthBinaryDeserializeBuffer := uint16(aeadEncryptedHeaderBuffer.Len())
 
 		common.Must(binary.Write(aeadResponseHeaderLengthEncryptionBuffer, binary.BigEndian, decryptedResponseHeaderLengthBinaryDeserializeBuffer))
 

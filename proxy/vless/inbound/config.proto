@@ -2,31 +2,24 @@ syntax = "proto3";
 
 package v2ray.core.proxy.vless.inbound;
 option csharp_namespace = "V2Ray.Core.Proxy.Vless.Inbound";
-option go_package = "inbound";
+option go_package = "v2ray.com/core/proxy/vless/inbound";
 option java_package = "com.v2ray.core.proxy.vless.inbound";
 option java_multiple_files = true;
 
-import "v2ray.com/core/common/net/address.proto";
-import "v2ray.com/core/common/protocol/user.proto";
+import "common/protocol/user.proto";
 
 message Fallback {
-  v2ray.core.common.net.IPOrDomain addr = 1;
-  uint32 port = 2;
-  string unix = 3;
-  uint32 xver = 4;
-}
-
-message Fallback_h2 {
-  v2ray.core.common.net.IPOrDomain addr = 1;
-  uint32 port = 2;
-  string unix = 3;
-  uint32 xver = 4;
+  string alpn = 1;
+  string path = 2;
+  string type = 3;
+  string dest = 4;
+  uint64 xver = 5;
 }
 
 message Config {
-  repeated v2ray.core.common.protocol.User user = 1;
-  // Decryption settings. Only applies to server side, and only accepts "none" for now.
+  repeated v2ray.core.common.protocol.User clients = 1;
+  // Decryption settings. Only applies to server side, and only accepts "none"
+  // for now.
   string decryption = 2;
-  Fallback fallback = 3;
-  Fallback_h2 fallback_h2 = 4;
+  repeated Fallback fallbacks = 3;
 }

@@ -2,30 +2,38 @@ name: Coverage
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
+    paths:
+      - "**/*.go"
 
 jobs:
-
-  build:
-    name: Coverage
+  coverage:
+    if: github.repository != 'v2ray/v2ray-core'
     runs-on: ubuntu-latest
-
     steps:
-
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
-          go-version: ^1.14
-        id: go
+          go-version: ^1.15
 
-      - name: Check out code into the Go module directory
+      - name: Checkout codebase
         uses: actions/checkout@v2
 
+      - name: Cache go module
+        uses: actions/cache@v2
+        id: cache-gomodules
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Get dependencies
+        if: steps.cache-gomodules.outputs.cache-hit != 'true'
         run: |
           go get -v -t -d ./...
 
-      - name: Run Coverage
+      - name: Run coverage
         run: ./testing/coverage/coverall2
 
       - name: Upload coverage to Codecov

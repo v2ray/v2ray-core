@@ -1,6 +1,6 @@
 package http
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 import (
 	"bufio"
@@ -126,7 +126,7 @@ func (h *HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 		}
 	}
 
-	if hasThisUri == false {
+	if !hasThisUri {
 		return nil, ErrHeaderMisMatch
 	}
 

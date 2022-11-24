@@ -162,7 +162,7 @@ func loadIP(filename, country string) ([]*router.CIDR, error) {
 		}
 	}
 
-	return nil, newError("country not found: " + country)
+	return nil, newError("country not found in ", filename, ": ", country)
 }
 
 func loadSite(filename, country string) ([]*router.Domain, error) {
@@ -181,7 +181,7 @@ func loadSite(filename, country string) ([]*router.Domain, error) {
 		}
 	}
 
-	return nil, newError("country not found: " + country)
+	return nil, newError("list not found in ", filename, ": ", country)
 }
 
 type AttributeMatcher interface {
@@ -307,7 +307,7 @@ func parseDomainRule(domain string) ([]*router.Domain, error) {
 		case !strings.Contains(substr, "."):
 			domainRule.Value = "^[^.]*" + substr + "[^.]*$"
 		default:
-			return nil, newError("Substr in dotless rule should not contain a dot: ", substr)
+			return nil, newError("substr in dotless rule should not contain a dot: ", substr)
 		}
 	default:
 		domainRule.Type = router.Domain_Plain

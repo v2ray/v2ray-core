@@ -34,7 +34,6 @@ func TestReaderWriter(t *testing.T) {
 		t.Error("unknown error ", err)
 	}
 	_ = buffer
-	return
 	/*
 		if buffer.String() != "efg" {
 			t.Error("buffer: ", buffer.String())
@@ -256,7 +255,6 @@ func TestConnectionInvPath(t *testing.T) {
 			break
 		}
 	}
-	return
 }
 
 func TestConnectionInvReq(t *testing.T) {
@@ -315,5 +313,4 @@ func TestConnectionInvReq(t *testing.T) {
 	if !strings.HasPrefix(string(l), "HTTP/1.1 400 Bad Request") {
 		t.Error("Resp to non http conn", string(l))
 	}
-	return
 }

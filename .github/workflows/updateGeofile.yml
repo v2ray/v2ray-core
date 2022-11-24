@@ -1,0 +1,25 @@
+name: Update Geofiles
+
+on:
+  schedule:
+    - cron: "0 0 * * FRI"
+
+jobs:
+  update:
+    if: github.repository == 'v2fly/v2ray-core'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codebase
+        uses: actions/checkout@v2
+
+      - name: Download
+        run: |
+          curl -L -o release/config/geoip.dat "https://github.com/v2fly/geoip/raw/release/geoip.dat"
+          curl -L -o release/config/geosite.dat "https://github.com/v2fly/domain-list-community/raw/release/dlc.dat"
+
+      - name: push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -am "update geoip, geosite"
+          git push -v --progress

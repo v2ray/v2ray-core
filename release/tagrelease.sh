@@ -1,11 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 CONST_refs="refs"
 
 TRIGGER_REASON_A=${TRIGGER_REASON:0:${#CONST_refs}}
 
-if [ $TRIGGER_REASON_A != $CONST_refs ]
-then
+if [ $TRIGGER_REASON_A != $CONST_refs ]; then
   echo "not a tag: $TRIGGER_REASON_A"
   exit
 fi
@@ -14,21 +13,18 @@ CONST_refsB="refs/tags/"
 
 TRIGGER_REASON_B=${TRIGGER_REASON:0:${#CONST_refsB}}
 
-if [ $TRIGGER_REASON_B != $CONST_refsB ]
-then
+if [ $TRIGGER_REASON_B != $CONST_refsB ]; then
   echo "not a tag (B)"
   exit
 fi
-
 
 GITHUB_RELEASE_TAG=${TRIGGER_REASON:${#CONST_refsB}:25}
 
 echo ${GITHUB_RELEASE_TAG}
 
-
 RELEASE_DATA=$(curl -H "Authorization: token ${GITHUB_TOKEN}" -X GET https://api.github.com/repos/v2fly/v2ray-core/releases/tags/${GITHUB_RELEASE_TAG})
 echo $RELEASE_DATA
-RELEASE_ID=$(echo $RELEASE_DATA| jq ".id")
+RELEASE_ID=$(echo $RELEASE_DATA | jq ".id")
 
 echo $RELEASE_ID
 
@@ -44,16 +40,15 @@ function uploadfile() {
 function upload() {
   FILE=$1
   DGST=$1.dgst
-  openssl dgst -md5 $FILE | sed 's/([^)]*)//g' >> $DGST
-  openssl dgst -sha1 $FILE | sed 's/([^)]*)//g' >> $DGST
-  openssl dgst -sha256 $FILE | sed 's/([^)]*)//g' >> $DGST
-  openssl dgst -sha512 $FILE | sed 's/([^)]*)//g' >> $DGST
+  openssl dgst -md5 $FILE | sed 's/([^)]*)//g' >>$DGST
+  openssl dgst -sha1 $FILE | sed 's/([^)]*)//g' >>$DGST
+  openssl dgst -sha256 $FILE | sed 's/([^)]*)//g' >>$DGST
+  openssl dgst -sha512 $FILE | sed 's/([^)]*)//g' >>$DGST
   uploadfile $FILE
   uploadfile $DGST
 }
 
-ART_ROOT=$GOPATH/src/v2ray.com/core/bazel-bin/release
-
+ART_ROOT=${WORKDIR}/bazel-bin/release
 
 pushd ${ART_ROOT}
 {
@@ -83,7 +78,7 @@ pushd ${ART_ROOT}
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-openbsd-32.zip
   go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen file v2ray-dragonfly-64.zip
 } >Release.unsigned.unsorted
-  go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen sort < Release.unsigned.unsorted > Release.unsigned
+go run github.com/xiaokangwang/V2BuildAssist/v2buildutil gen sort <Release.unsigned.unsorted >Release.unsigned
 
 popd
 

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package v2ray.core.transport.internet.websocket;
 option csharp_namespace = "V2Ray.Core.Transport.Internet.Websocket";
-option go_package = "websocket";
+option go_package = "v2ray.com/core/transport/internet/websocket";
 option java_package = "com.v2ray.core.transport.internet.websocket";
 option java_multiple_files = true;
 
@@ -18,4 +18,6 @@ message Config {
   string path = 2;
 
   repeated Header header = 3;
+
+  bool accept_proxy_protocol = 4;
 }

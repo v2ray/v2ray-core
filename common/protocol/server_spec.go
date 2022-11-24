@@ -58,7 +58,7 @@ func NewServerSpec(dest net.Destination, valid ValidationStrategy, users ...*Mem
 	}
 }
 
-func NewServerSpecFromPB(spec ServerEndpoint) (*ServerSpec, error) {
+func NewServerSpecFromPB(spec *ServerEndpoint) (*ServerSpec, error) {
 	dest := net.TCPDestination(spec.Address.AsAddress(), net.Port(spec.Port))
 	mUsers := make([]*MemoryUser, len(spec.User))
 	for idx, u := range spec.User {

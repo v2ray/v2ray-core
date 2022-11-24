@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/pires/go-proxyproto"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	http_proto "v2ray.com/core/common/protocol/http"
@@ -61,16 +63,27 @@ type Listener struct {
 }
 
 func ListenWS(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, addConn internet.ConnHandler) (internet.Listener, error) {
+	listener, err := internet.ListenSystem(ctx, &net.TCPAddr{
+		IP:   address.IP(),
+		Port: int(port),
+	}, streamSettings.SocketSettings)
+	if err != nil {
+		return nil, newError("failed to listen TCP(for WS) on", address, ":", port).Base(err)
+	}
+	newError("listening TCP(for WS) on ", address, ":", port).WriteToLog(session.ExportIDToError(ctx))
+
 	wsSettings := streamSettings.ProtocolSettings.(*Config)
 
-	var tlsConfig *tls.Config
-	if config := v2tls.ConfigFromStreamSettings(streamSettings); config != nil {
-		tlsConfig = config.GetTLSConfig()
+	if wsSettings.AcceptProxyProtocol {
+		policyFunc := func(upstream net.Addr) (proxyproto.Policy, error) { return proxyproto.REQUIRE, nil }
+		listener = &proxyproto.Listener{Listener: listener, Policy: policyFunc}
+		newError("accepting PROXY protocol").AtWarning().WriteToLog(session.ExportIDToError(ctx))
 	}
 
-	listener, err := listenTCP(ctx, address, port, tlsConfig, streamSettings.SocketSettings)
-	if err != nil {
-		return nil, err
+	if config := v2tls.ConfigFromStreamSettings(streamSettings); config != nil {
+		if tlsConfig := config.GetTLSConfig(); tlsConfig != nil {
+			listener = tls.NewListener(listener, tlsConfig)
+		}
 	}
 
 	l := &Listener{
@@ -95,22 +108,6 @@ func ListenWS(ctx context.Context, address net.Address, port net.Port, streamSet
 	}()
 
 	return l, err
-}
-
-func listenTCP(ctx context.Context, address net.Address, port net.Port, tlsConfig *tls.Config, sockopt *internet.SocketConfig) (net.Listener, error) {
-	listener, err := internet.ListenSystem(ctx, &net.TCPAddr{
-		IP:   address.IP(),
-		Port: int(port),
-	}, sockopt)
-	if err != nil {
-		return nil, newError("failed to listen TCP on", address, ":", port).Base(err)
-	}
-
-	if tlsConfig != nil {
-		return tls.NewListener(listener, tlsConfig), nil
-	}
-
-	return listener, nil
 }
 
 // Addr implements net.Listener.Addr().

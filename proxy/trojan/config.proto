@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package v2ray.core.proxy.trojan;
+option csharp_namespace = "V2Ray.Core.Proxy.Trojan";
+option go_package = "v2ray.com/core/proxy/trojan";
+option java_package = "com.v2ray.core.proxy.trojan";
+option java_multiple_files = true;
+
+import "common/protocol/user.proto";
+import "common/protocol/server_spec.proto";
+
+message Account {
+  string password = 1;
+}
+
+message Fallback {
+  string alpn = 1;
+  string path = 2;
+  string type = 3;
+  string dest = 4;
+  uint64 xver = 5;
+}
+
+message ClientConfig {
+  repeated v2ray.core.common.protocol.ServerEndpoint server = 1;
+}
+
+message ServerConfig {
+  repeated v2ray.core.common.protocol.User users = 1;
+  repeated Fallback fallbacks = 3;
+}

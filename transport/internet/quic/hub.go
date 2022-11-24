@@ -6,11 +6,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol/tls/cert"
 	"v2ray.com/core/common/signal/done"
-	quic "v2ray.com/core/external/github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
@@ -25,14 +25,16 @@ type Listener struct {
 
 func (l *Listener) acceptStreams(session quic.Session) {
 	for {
-		stream, err := session.AcceptStream()
+		stream, err := session.AcceptStream(context.Background())
 		if err != nil {
 			newError("failed to accept stream").Base(err).WriteToLog()
 			select {
 			case <-session.Context().Done():
 				return
 			case <-l.done.Wait():
-				session.Close()
+				if err := session.CloseWithError(0, ""); err != nil {
+					newError("failed to close session").Base(err).WriteToLog()
+				}
 				return
 			default:
 				time.Sleep(time.Second)
@@ -53,7 +55,7 @@ func (l *Listener) acceptStreams(session quic.Session) {
 
 func (l *Listener) keepAccepting() {
 	for {
-		conn, err := l.listener.Accept()
+		conn, err := l.listener.Accept(context.Background())
 		if err != nil {
 			newError("failed to accept QUIC sessions").Base(err).WriteToLog()
 			if l.done.Done() {
@@ -105,7 +107,7 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 	quicConfig := &quic.Config{
 		ConnectionIDLength:    12,
 		HandshakeTimeout:      time.Second * 8,
-		IdleTimeout:           time.Second * 45,
+		MaxIdleTimeout:        time.Second * 45,
 		MaxIncomingStreams:    32,
 		MaxIncomingUniStreams: -1,
 	}

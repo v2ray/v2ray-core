@@ -2,7 +2,7 @@
 
 package outbound
 
-//go:generate errorgen
+//go:generate go run v2ray.com/core/common/errors/errorgen
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/platform"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/session"
@@ -22,12 +23,24 @@ import (
 	"v2ray.com/core/proxy/vless/encoding"
 	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/xtls"
+)
+
+var (
+	xtls_show = false
 )
 
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		return New(ctx, config.(*Config))
 	}))
+
+	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+
+	xtlsShow := platform.NewEnvFlag("v2ray.vless.xtls.show").GetValue(func() string { return defaultFlagValue })
+	if xtlsShow == "true" {
+		xtls_show = true
+	}
 }
 
 // Handler is an outbound connection handler for VLess protocol.
@@ -41,8 +54,8 @@ type Handler struct {
 func New(ctx context.Context, config *Config) (*Handler, error) {
 
 	serverList := protocol.NewServerList()
-	for _, rec := range config.Receiver {
-		s, err := protocol.NewServerSpecFromPB(*rec)
+	for _, rec := range config.Vnext {
+		s, err := protocol.NewServerSpecFromPB(rec)
 		if err != nil {
 			return nil, newError("failed to parse server spec").Base(err).AtError()
 		}
@@ -60,13 +73,13 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 }
 
 // Process implements proxy.Outbound.Process().
-func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
+func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
 
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
 	if err := retry.ExponentialBackoff(5, 200).On(func() error {
-		rec = v.serverPicker.PickServer()
+		rec = h.serverPicker.PickServer()
 		var err error
 		conn, err = dialer.Dial(ctx, rec.Destination())
 		if err != nil {
@@ -77,6 +90,11 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		return newError("failed to find an available destination").Base(err).AtWarning()
 	}
 	defer conn.Close() // nolint: errcheck
+
+	iConn := conn
+	if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
+		iConn = statConn.Connection
+	}
 
 	outbound := session.OutboundFromContext(ctx)
 	if outbound == nil || !outbound.Target.IsValid() {
@@ -105,16 +123,48 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	account := request.User.Account.(*vless.MemoryAccount)
 
 	requestAddons := &encoding.Addons{
-		Scheduler: account.Schedulers,
+		Flow: account.Flow,
 	}
 
-	sessionPolicy := v.policyManager.ForLevel(request.User.Level)
+	allowUDP443 := false
+	switch requestAddons.Flow {
+	case vless.XRO + "-udp443", vless.XRD + "-udp443":
+		allowUDP443 = true
+		requestAddons.Flow = requestAddons.Flow[:16]
+		fallthrough
+	case vless.XRO, vless.XRD:
+		switch request.Command {
+		case protocol.RequestCommandMux:
+			return newError(requestAddons.Flow + " doesn't support Mux").AtWarning()
+		case protocol.RequestCommandUDP:
+			if !allowUDP443 && request.Port == 443 {
+				return newError(requestAddons.Flow + " stopped UDP/443").AtInfo()
+			}
+			requestAddons.Flow = ""
+		case protocol.RequestCommandTCP:
+			if xtlsConn, ok := iConn.(*xtls.Conn); ok {
+				xtlsConn.RPRX = true
+				xtlsConn.SHOW = xtls_show
+				xtlsConn.MARK = "XTLS"
+				if requestAddons.Flow == vless.XRD {
+					xtlsConn.DirectMode = true
+				}
+			} else {
+				return newError(`failed to use ` + requestAddons.Flow + `, maybe "security" is not "xtls"`).AtWarning()
+			}
+		}
+	default:
+		if _, ok := iConn.(*xtls.Conn); ok {
+			panic(`To avoid misunderstanding, you must fill in VLESS "flow" when using XTLS.`)
+		}
+	}
 
+	sessionPolicy := h.policyManager.ForLevel(request.User.Level)
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 
-	clientReader := link.Reader
-	clientWriter := link.Writer
+	clientReader := link.Reader // .(*pipe.Reader)
+	clientWriter := link.Writer // .(*pipe.Writer)
 
 	postRequest := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
@@ -141,7 +191,7 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		}
 
 		// Indicates the end of request payload.
-		switch requestAddons.Scheduler {
+		switch requestAddons.Flow {
 		default:
 
 		}
@@ -152,9 +202,8 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	getResponse := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
-		responseAddons := new(encoding.Addons)
-
-		if err := encoding.DecodeResponseHeader(conn, request, responseAddons); err != nil {
+		responseAddons, err := encoding.DecodeResponseHeader(conn, request)
+		if err != nil {
 			return newError("failed to decode response header").Base(err).AtWarning()
 		}
 

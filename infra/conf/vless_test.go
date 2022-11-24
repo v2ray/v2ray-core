@@ -26,7 +26,7 @@ func TestVLessOutbound(t *testing.T) {
 					"users": [
 						{
 							"id": "27848739-7e62-4138-9fd3-098a63964b6b",
-							"schedulers": "",
+							"flow": "xtls-rprx-origin-udp443",
 							"encryption": "none",
 							"level": 0
 						}
@@ -35,7 +35,7 @@ func TestVLessOutbound(t *testing.T) {
 			}`,
 			Parser: loadJSON(creator),
 			Output: &outbound.Config{
-				Receiver: []*protocol.ServerEndpoint{
+				Vnext: []*protocol.ServerEndpoint{
 					{
 						Address: &net.IPOrDomain{
 							Address: &net.IPOrDomain_Domain{
@@ -47,7 +47,7 @@ func TestVLessOutbound(t *testing.T) {
 							{
 								Account: serial.ToTypedMessage(&vless.Account{
 									Id:         "27848739-7e62-4138-9fd3-098a63964b6b",
-									Schedulers: "",
+									Flow:       "xtls-rprx-origin-udp443",
 									Encryption: "none",
 								}),
 								Level: 0,
@@ -71,49 +71,62 @@ func TestVLessInbound(t *testing.T) {
 				"clients": [
 					{
 						"id": "27848739-7e62-4138-9fd3-098a63964b6b",
-						"schedulers": "",
+						"flow": "xtls-rprx-origin",
 						"level": 0,
 						"email": "love@v2fly.org"
 					}
 				],
 				"decryption": "none",
-				"fallback": {
-					"port": 80
-				},
-				"fallback_h2": {
-					"unix": "@/dev/shm/domain.socket",
-					"xver": 2
-				}
+				"fallbacks": [
+					{
+						"dest": 80
+					},
+					{
+						"alpn": "h2",
+						"dest": "@/dev/shm/domain.socket",
+						"xver": 2
+					},
+					{
+						"path": "/innerws",
+						"dest": "serve-ws-none"
+					}
+				]
 			}`,
 			Parser: loadJSON(creator),
 			Output: &inbound.Config{
-				User: []*protocol.User{
+				Clients: []*protocol.User{
 					{
 						Account: serial.ToTypedMessage(&vless.Account{
-							Id:         "27848739-7e62-4138-9fd3-098a63964b6b",
-							Schedulers: "",
+							Id:   "27848739-7e62-4138-9fd3-098a63964b6b",
+							Flow: "xtls-rprx-origin",
 						}),
 						Level: 0,
 						Email: "love@v2fly.org",
 					},
 				},
 				Decryption: "none",
-				Fallback: &inbound.Fallback{
-					Addr: &net.IPOrDomain{
-						Address: &net.IPOrDomain_Ip{
-							Ip: []byte{127, 0, 0, 1},
-						},
+				Fallbacks: []*inbound.Fallback{
+					{
+						Alpn: "",
+						Path: "",
+						Type: "tcp",
+						Dest: "127.0.0.1:80",
+						Xver: 0,
 					},
-					Port: 80,
-				},
-				FallbackH2: &inbound.FallbackH2{
-					Addr: &net.IPOrDomain{
-						Address: &net.IPOrDomain_Ip{
-							Ip: []byte{127, 0, 0, 1},
-						},
+					{
+						Alpn: "h2",
+						Path: "",
+						Type: "unix",
+						Dest: "@/dev/shm/domain.socket",
+						Xver: 2,
 					},
-					Unix: "\x00/dev/shm/domain.socket",
-					Xver: 2,
+					{
+						Alpn: "",
+						Path: "/innerws",
+						Type: "serve",
+						Dest: "serve-ws-none",
+						Xver: 0,
+					},
 				},
 			},
 		},

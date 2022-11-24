@@ -43,7 +43,7 @@ func TestRequestSerialization(t *testing.T) {
 	}
 
 	buffer := buf.New()
-	client := NewClientSession(protocol.DefaultIDHash, context.TODO())
+	client := NewClientSession(true, protocol.DefaultIDHash, context.TODO())
 	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()
@@ -93,7 +93,7 @@ func TestInvalidRequest(t *testing.T) {
 	}
 
 	buffer := buf.New()
-	client := NewClientSession(protocol.DefaultIDHash, context.TODO())
+	client := NewClientSession(true, protocol.DefaultIDHash, context.TODO())
 	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()
@@ -134,7 +134,7 @@ func TestMuxRequest(t *testing.T) {
 	}
 
 	buffer := buf.New()
-	client := NewClientSession(protocol.DefaultIDHash, context.TODO())
+	client := NewClientSession(true, protocol.DefaultIDHash, context.TODO())
 	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()

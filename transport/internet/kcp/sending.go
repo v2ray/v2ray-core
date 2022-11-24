@@ -121,10 +121,7 @@ func (sw *SendingWindow) Flush(current uint32, rto uint32, maxInFlightSize uint3
 		segment.transmit++
 		sw.writer.Write(segment)
 		inFlightSize++
-		if inFlightSize >= maxInFlightSize {
-			return false
-		}
-		return true
+		return inFlightSize < maxInFlightSize
 	})
 
 	if sw.onPacketLoss != nil && inFlightSize > 0 && sw.totalInFlightSize != 0 {
