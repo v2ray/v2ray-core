@@ -5,7 +5,6 @@ package external
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,9 +22,9 @@ func ConfigLoader(arg string) (out io.Reader, err error) {
 	if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
 		data, err = FetchHTTPContent(arg)
 	} else if arg == "stdin:" {
-		data, err = ioutil.ReadAll(os.Stdin)
+		data, err = io.ReadAll(os.Stdin)
 	} else {
-		data, err = ioutil.ReadFile(arg)
+		data, err = os.ReadFile(arg)
 	}
 
 	if err != nil {

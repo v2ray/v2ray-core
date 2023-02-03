@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
@@ -283,11 +282,11 @@ func (s *DoHNameServer) dohHTTPSContext(ctx context.Context, b []byte) ([]byte, 
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		io.Copy(ioutil.Discard, resp.Body) // flush resp.Body so that the conn is reusable
+		io.Copy(io.Discard, resp.Body) // flush resp.Body so that the conn is reusable
 		return nil, fmt.Errorf("DOH server returned code %d", resp.StatusCode)
 	}
 
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }
 
 func (s *DoHNameServer) findIPsForDomain(domain string, option IPOption) ([]net.IP, error) {

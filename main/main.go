@@ -5,7 +5,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -55,7 +54,7 @@ func dirExists(file string) bool {
 }
 
 func readConfDir(dirPath string) {
-	confs, err := ioutil.ReadDir(dirPath)
+	confs, err := os.ReadDir(dirPath)
 	if err != nil {
 		log.Fatalln(err)
 	}

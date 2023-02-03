@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"testing"
@@ -73,7 +72,7 @@ func TestHttpConformance(t *testing.T) {
 			t.Fatal("status: ", resp.StatusCode)
 		}
 
-		content, err := ioutil.ReadAll(resp.Body)
+		content, err := io.ReadAll(resp.Body)
 		common.Must(err)
 		if string(content) != "Home" {
 			t.Fatal("body: ", string(content))
@@ -264,7 +263,7 @@ func TestHttpPost(t *testing.T) {
 			t.Fatal("status: ", resp.StatusCode)
 		}
 
-		content, err := ioutil.ReadAll(resp.Body)
+		content, err := io.ReadAll(resp.Body)
 		common.Must(err)
 		if r := cmp.Diff(content, xor(payload)); r != "" {
 			t.Fatal(r)
@@ -356,7 +355,7 @@ func TestHttpBasicAuth(t *testing.T) {
 				t.Fatal("status: ", resp.StatusCode)
 			}
 
-			content, err := ioutil.ReadAll(resp.Body)
+			content, err := io.ReadAll(resp.Body)
 			common.Must(err)
 			if string(content) != "Home" {
 				t.Fatal("body: ", string(content))

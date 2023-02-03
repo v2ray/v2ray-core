@@ -5,7 +5,6 @@ package common
 import (
 	"fmt"
 	"go/build"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,7 +68,7 @@ func GetRuntimeEnv(key string) (string, error) {
 	}
 	var data []byte
 	var runtimeEnv string
-	data, readErr := ioutil.ReadFile(file)
+	data, readErr := os.ReadFile(file)
 	if readErr != nil {
 		return "", readErr
 	}
@@ -131,7 +130,7 @@ func GetModuleName(pathToProjectRoot string) (string, error) {
 	for {
 		if idx := strings.LastIndex(loopPath, string(filepath.Separator)); idx >= 0 {
 			gomodPath := filepath.Join(loopPath, "go.mod")
-			gomodBytes, err := ioutil.ReadFile(gomodPath)
+			gomodBytes, err := os.ReadFile(gomodPath)
 			if err != nil {
 				loopPath = loopPath[:idx]
 				continue

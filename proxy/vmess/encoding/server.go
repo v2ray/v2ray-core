@@ -9,7 +9,6 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 	"io"
-	"io/ioutil"
 	"sync"
 	"time"
 
@@ -484,6 +483,6 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 }
 
 func (s *ServerSession) DrainConnN(reader io.Reader, n int) error {
-	_, err := io.CopyN(ioutil.Discard, reader, int64(n))
+	_, err := io.CopyN(io.Discard, reader, int64(n))
 	return err
 }
