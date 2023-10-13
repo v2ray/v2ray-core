@@ -388,7 +388,7 @@ func TestStatsChannelConcurrency(t *testing.T) {
 			if ok {
 				errCh <- fmt.Sprint("unexpected receiving: ", v)
 			} else {
-				errCh <- fmt.Sprint("unexpected closing of channel")
+				errCh <- "unexpected closing of channel"
 			}
 		default:
 		}
