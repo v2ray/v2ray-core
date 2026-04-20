@@ -17,7 +17,14 @@ func ParseXForwardedFor(header http.Header) []net.Address {
 	list := strings.Split(xff, ",")
 	addrs := make([]net.Address, 0, len(list))
 	for _, proxy := range list {
+		proxy = strings.TrimSpace(proxy)
+		if proxy == "" {
+			continue
+		}
 		addrs = append(addrs, net.ParseAddress(proxy))
+	}
+	if len(addrs) == 0 {
+		return nil
 	}
 	return addrs
 }
