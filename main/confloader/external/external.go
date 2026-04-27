@@ -42,8 +42,8 @@ func FetchHTTPContent(target string) ([]byte, error) {
 		return nil, newError("invalid URL: ", target).Base(err)
 	}
 
-	if s := strings.ToLower(parsedTarget.Scheme); s != "http" && s != "https" {
-		return nil, newError("invalid scheme: ", parsedTarget.Scheme)
+	if s := strings.ToLower(parsedTarget.Scheme); s != "https" {
+		return nil, newError("config fetch requires HTTPS, invalid scheme: ", parsedTarget.Scheme)
 	}
 
 	client := &http.Client{
