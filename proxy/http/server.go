@@ -63,6 +63,57 @@ func isTimeout(err error) bool {
 	return ok && nerr.Timeout()
 }
 
+func isPrivateDestination(dest net.Destination) bool {
+	if dest.Address.Family().IsIP() {
+		ip := dest.Address.IP()
+		if len(ip) == 4 {
+			// 127.0.0.0/8 loopback
+			if ip[0] == 127 {
+				return true
+			}
+			// 10.0.0.0/8 RFC-1918
+			if ip[0] == 10 {
+				return true
+			}
+			// 172.16.0.0/12 RFC-1918
+			if ip[0] == 172 && ip[1] >= 16 && ip[1] <= 31 {
+				return true
+			}
+			// 192.168.0.0/16 RFC-1918
+			if ip[0] == 192 && ip[1] == 168 {
+				return true
+			}
+			// 169.254.0.0/16 link-local
+			if ip[0] == 169 && ip[1] == 254 {
+				return true
+			}
+		} else if len(ip) == 16 {
+			// ::1/128 IPv6 loopback
+			isLoopback := ip[15] == 1
+			if isLoopback {
+				for i := 0; i < 15; i++ {
+					if ip[i] != 0 {
+						isLoopback = false
+						break
+					}
+				}
+			}
+			if isLoopback {
+				return true
+			}
+			// fc00::/7 IPv6 unique local
+			if ip[0]&0xfe == 0xfc {
+				return true
+			}
+			// fe80::/10 IPv6 link-local
+			if ip[0] == 0xfe && ip[1]&0xc0 == 0x80 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func parseBasicAuth(auth string) (username, password string, ok bool) {
 	const prefix = "Basic "
 	if !strings.HasPrefix(auth, prefix) {
@@ -134,6 +185,9 @@ Start:
 	dest, err := http_proto.ParseHost(host, defaultPort)
 	if err != nil {
 		return newError("malformed proxy host: ", host).AtWarning().Base(err)
+	}
+	if isPrivateDestination(dest) {
+		return newError("access to private address is forbidden: ", dest).AtWarning()
 	}
 	ctx = log.ContextWithAccessMessage(ctx, &log.AccessMessage{
 		From:   conn.RemoteAddr(),
